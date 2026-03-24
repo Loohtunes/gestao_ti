@@ -7,9 +7,7 @@
   <meta name="theme-color" content="#d32f2f">
   <title>Gestão de T.I</title>
   <link rel="icon" href="img/premovale (1).png">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
   <!-- ═══ CSS — Ordem de carregamento ═══ -->
   <link rel="stylesheet" href="assets/css/base.css">
@@ -24,6 +22,11 @@
   <link rel="stylesheet" href="assets/css/comments.css">
   <link rel="stylesheet" href="assets/css/history.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
+
+  <!-- ═══ Firebase SDK ═══ -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 
 <body>
@@ -38,8 +41,8 @@
       </span>
     </div>
     <div class="nav-right">
-      <button class="sync-fab-small" id="sync-fab-nav" onclick="openSyncModal()" title="Sincronizar com Dropbox">
-        <span id="sync-icon-nav">☁️</span>Dropbox
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão...">
+        <span id="sync-icon-nav">🟡</span>Firebase
       </button>
     </div>
   </nav>
@@ -80,8 +83,7 @@
           <h2 class="page-title">Visão geral de <em><u>Tickets</u></em></h2>
         </div>
         <div class="attendant-info">
-          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️
-            Configurações</button>
+          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️ Configurações</button>
           <span class="attendant-badge">👤 <span id="current-attendant">Usuário</span></span>
           <button class="logout-btn" onclick="performLogout()">Sair</button>
         </div>
@@ -114,8 +116,7 @@
         </div>
         <div class="tickets-header-right">
           <div class="search-widget" id="search-widget">
-            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()"
-              title="Pesquisar chamados">🔍</button>
+            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Pesquisar chamados">🔍</button>
             <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
               oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
           </div>
@@ -159,14 +160,9 @@
       </div>
       <div class="modal-body">
         <div id="user-list-container" style="display:none;">
-          <h3
-            style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">
-            Usuários Cadastrados</h3>
-          <div id="users-list"
-            style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);">
-          </div>
-          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo
-            Usuário</button>
+          <h3 style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">Usuários Cadastrados</h3>
+          <div id="users-list" style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);"></div>
+          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo Usuário</button>
         </div>
         <div id="user-form-container">
           <div class="form-row-2">
@@ -176,8 +172,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Senha</label>
-              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha"
-                autocomplete="new-password">
+              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha" autocomplete="new-password">
             </div>
           </div>
           <div class="form-row-2">
@@ -206,19 +201,14 @@
               </select>
             </div>
           </div>
-          <div class="form-group" id="user-admin-group"
-            style="display:none;flex-direction:row;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.7rem 1rem;">
-            <input type="checkbox" id="user-admin-input"
-              style="width:18px;height:18px;accent-color:var(--accent2);cursor:pointer;">
+          <div class="form-group" id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.7rem 1rem;">
+            <input type="checkbox" id="user-admin-input" style="width:18px;height:18px;accent-color:var(--accent2);cursor:pointer;">
             <div>
-              <label class="form-label" style="margin-bottom:0;cursor:pointer;" for="user-admin-input">É
-                Administrador?</label>
-              <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">Administradores gerenciam usuários e
-                chamados</div>
+              <label class="form-label" style="margin-bottom:0;cursor:pointer;" for="user-admin-input">É Administrador?</label>
+              <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">Administradores gerenciam usuários e chamados</div>
             </div>
           </div>
-          <div class="form-divider"><span>Informações de Contato <span class="form-optional">(opcional)</span></span>
-          </div>
+          <div class="form-divider"><span>Informações de Contato <span class="form-optional">(opcional)</span></span></div>
           <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">✉️ E-mail</label>
@@ -233,8 +223,7 @@
             <label class="form-label">🖥️ AnyDesk</label>
             <div class="anydesk-toggle">
               <label class="anydesk-option">
-                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked
-                  onchange="toggleAnydeskInput()">
+                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked onchange="toggleAnydeskInput()">
                 <span>Não tenho AnyDesk</span>
               </label>
               <label class="anydesk-option">
@@ -242,8 +231,7 @@
                 <span>Tenho AnyDesk</span>
               </label>
             </div>
-            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)"
-              style="display:none;margin-top:0.6rem;">
+            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.6rem;">
           </div>
         </div>
       </div>
@@ -293,15 +281,13 @@
             <option value="TI">TI</option>
             <option value="Contabilidade">Contabilidade</option>
           </select>
-          <div id="setor-locked-hint"
-            style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+          <div id="setor-locked-hint" style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
             🔒 Setor vinculado ao seu cadastro
           </div>
         </div>
         <div class="form-group">
           <label class="form-label" id="ticket-desc-label">Descrição</label>
-          <textarea class="form-textarea" id="ticket-description-input"
-            placeholder="Descreva o chamado em detalhes..."></textarea>
+          <textarea class="form-textarea" id="ticket-description-input" placeholder="Descreva o chamado em detalhes..."></textarea>
         </div>
         <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
           <div class="form-row-2">
@@ -335,8 +321,7 @@
           <div class="form-group">
             <label class="form-label">📅 Data de Necessidade</label>
             <input type="date" class="form-input" id="ticket-material-date" min="">
-            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
-              material é necessário?</div>
+            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o material é necessário?</div>
           </div>
         </div>
         <div class="form-group" id="ticket-priority-group">
@@ -389,8 +374,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">Dropbox Access Token</label>
-          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..."
-            autocomplete="off">
+          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..." autocomplete="off">
         </div>
         <div class="sync-actions">
           <button class="sync-btn secondary" onclick="testConnection()">🔍 Testar Conexão</button>
@@ -398,8 +382,7 @@
         </div>
         <div class="sync-actions">
           <button class="sync-btn" onclick="syncToCloud()" id="sync-upload-btn" disabled>⬆️ Enviar para Nuvem</button>
-          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da
-            Nuvem</button>
+          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da Nuvem</button>
         </div>
         <div class="sync-actions">
           <button class="sync-btn danger" onclick="disconnectDropbox()">🔌 Desconectar</button>
@@ -410,6 +393,7 @@
   </div>
 
   <!-- ═══ JS — Ordem de carregamento ═══ -->
+  <script src="assets/js/firebase.js"></script>
   <script src="assets/js/state.js"></script>
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/auth.js"></script>
@@ -422,5 +406,4 @@
   <script src="assets/js/init.js"></script>
 
 </body>
-
 </html>

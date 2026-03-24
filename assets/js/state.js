@@ -1,45 +1,43 @@
 // ===== STATE — Variáveis e constantes compartilhadas =====
 
 // Usuários
-let users = [];
-let currentUser = null;
+let users         = [];
+let currentUser   = null;
 let editingUserId = null;
 
 // Tickets
-let tickets = [];
+let tickets         = [];
 let editingTicketId = null;
-let ticketFiles = [];
-let currentFilter = 'all';
+let ticketFiles     = [];
+let currentFilter   = 'all';
 
 // Modal de detalhe
-let activeDetailId = null;
+let activeDetailId     = null;
 let detailPollInterval = null;
 
-// Dropbox
-let dropboxToken = localStorage.getItem('chamados-dropbox-token') || '';
-const DROPBOX_FILE_PATH = '/chamados_data.json';
-let autoSyncInterval = null;
+// Controle de escrita no Firestore (evita re-render do próprio write)
+let _pendingWrite = false;
 
 // Labels de prioridade
 const PRIORITY_LABEL = {
-  low: '🟢 Baixa',
+  low:    '🟢 Baixa',
   medium: '🟡 Média',
-  high: '🔴 Alta',
+  high:   '🔴 Alta',
   urgent: '🚨 Urgente'
 };
 
 // Labels de status
 const STATUS_LABEL = {
-  available: 'Aberto',
-  'in-progress': 'Em Atendimento',
-  completed: 'Concluído',
-  archived: 'Arquivado',
-  'waiting': 'Em Espera',
+  available:      'Aberto',
+  'in-progress':  'Em Atendimento',
+  completed:      'Concluído',
+  archived:       'Arquivado',
+  'waiting':      'Em Espera',
   'waiting-info': 'Aguardando Informações',
-  'in-analysis': 'Em Análise',
-  'requested': 'Solicitado',
-  'mat-seen': 'Visto',
-  'mat-ordered': 'Solicitado',
+  'in-analysis':  'Em Análise',
+  'requested':    'Solicitado',
+  'mat-seen':     'Visto',
+  'mat-ordered':  'Solicitado',
 };
 
 // Sub-statuses que contam como "em atendimento"

@@ -1,9 +1,11 @@
-// ===== AUTH — Gerenciamento de usuários e autenticação =====
+// ===== AUTH — Gerenciamento de usuários e autenticação (Firebase) =====
 
-function loadUsers() {
-  const saved = localStorage.getItem('chamados-users');
-  if (saved) users = JSON.parse(saved);
-  migrateSuperAdmin();
+async function loadUsers() {
+  try {
+    const snapshot = await db.collection('users').get();
+    users = snapshot.docs.map(doc => doc.data());
+    migrateSuperAdmin();
+  } catch (e) { console.error('[Auth] Erro ao carregar usuários:', e); }
 }
 
 function migrateSuperAdmin() {
@@ -12,27 +14,25 @@ function migrateSuperAdmin() {
   const candidate = users.find(u => u.isAdmin) || users[0];
   candidate.isSuperAdmin = true;
   candidate.isAdmin = true;
-  localStorage.setItem('chamados-users', JSON.stringify(users));
-  console.info('[Migração] "' + candidate.username + '" promovido a Administrador Geral.');
+  db.collection('users').doc(candidate.id).set(candidate).catch(console.error);
 }
 
 function saveUsers() {
-  localStorage.setItem('chamados-users', JSON.stringify(users));
+  const batch = db.batch();
+  users.forEach(user => batch.set(db.collection('users').doc(user.id), user));
+  batch.commit().catch(console.error);
   const btn = document.getElementById('first-user-btn');
   const hasSuperAdmin = users.some(u => u.isSuperAdmin);
   if (btn) btn.style.display = (!hasSuperAdmin) ? 'inline-block' : 'none';
 }
 
-function isSuperAdmin() {
-  return !!(currentUser && currentUser.isSuperAdmin);
-}
+function isSuperAdmin() { return !!(currentUser && currentUser.isSuperAdmin); }
 
 function capitalizeName(name) {
   if (!name) return name;
   return name.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 }
 
-// ── Modal de gerenciamento ──
 function openUserManagerModal() {
   editingUserId = null;
   document.getElementById('user-modal').classList.add('open');
@@ -68,12 +68,8 @@ function resetUserForm() {
 function toggleAdminCheckbox() {
   const role = document.getElementById('user-role-input').value;
   const adminGroup = document.getElementById('user-admin-group');
-  if (role === 'attendant' && isSuperAdmin()) {
-    adminGroup.style.display = 'flex';
-  } else {
-    adminGroup.style.display = 'none';
-    document.getElementById('user-admin-input').checked = false;
-  }
+  if (role === 'attendant' && isSuperAdmin()) { adminGroup.style.display = 'flex'; }
+  else { adminGroup.style.display = 'none'; document.getElementById('user-admin-input').checked = false; }
 }
 
 function toggleAnydeskInput() {
@@ -97,8 +93,7 @@ function openUserForm(isFirstUser = false) {
   document.getElementById('user-modal').classList.add('open');
   document.getElementById('user-list-container').style.display = 'none';
   document.getElementById('user-form-container').style.display = 'block';
-  document.getElementById('user-modal-title').textContent = isFirstUser
-    ? 'Criar Administrador Geral' : 'Novo Usuário';
+  document.getElementById('user-modal-title').textContent = isFirstUser ? 'Criar Administrador Geral' : 'Novo Usuário';
   resetUserForm();
   document.getElementById('user-pass-input').placeholder = 'Senha (obrigatória)';
   if (isFirstUser) {
@@ -112,10 +107,7 @@ function openUserForm(isFirstUser = false) {
 function openEditUser(userId) {
   const user = users.find(u => u.id === userId);
   if (!user) return;
-  if (user.isSuperAdmin && !isSuperAdmin()) {
-    showNotification('Apenas o Administrador Geral pode editar esta conta.', 'error');
-    return;
-  }
+  if (user.isSuperAdmin && !isSuperAdmin()) { showNotification('Apenas o Administrador Geral pode editar esta conta.', 'error'); return; }
   editingUserId = userId;
   document.getElementById('user-list-container').style.display = 'none';
   document.getElementById('user-form-container').style.display = 'block';
@@ -135,18 +127,17 @@ function openEditUser(userId) {
   toggleAdminCheckbox();
 }
 
-function saveUser() {
-  const name      = document.getElementById('user-name-input').value.trim();
-  const passRaw   = document.getElementById('user-pass-input').value.trim();
-  const role      = document.getElementById('user-role-input').value;
-  const email     = document.getElementById('user-email-input').value.trim();
-  const whatsapp  = document.getElementById('user-whatsapp-input').value.trim();
-  const setor     = document.getElementById('user-setor-input').value;
+async function saveUser() {
+  const name = document.getElementById('user-name-input').value.trim();
+  const passRaw = document.getElementById('user-pass-input').value.trim();
+  const role = document.getElementById('user-role-input').value;
+  const email = document.getElementById('user-email-input').value.trim();
+  const whatsapp = document.getElementById('user-whatsapp-input').value.trim();
+  const setor = document.getElementById('user-setor-input').value;
   const hasAnydesk = document.getElementById('anydesk-yes').checked;
-  const anydesk   = hasAnydesk ? document.getElementById('user-anydesk-input').value.trim() : '';
-  const isAdmin   = isSuperAdmin()
-    ? (document.getElementById('user-admin-input').checked ||
-       document.getElementById('user-role-group').style.display === 'none')
+  const anydesk = hasAnydesk ? document.getElementById('user-anydesk-input').value.trim() : '';
+  const isAdmin = isSuperAdmin()
+    ? (document.getElementById('user-admin-input').checked || document.getElementById('user-role-group').style.display === 'none')
     : (editingUserId ? (users.find(u => u.id === editingUserId)?.isAdmin || false) : false);
 
   if (!name) { alert('Preencha o nome de usuário'); return; }
@@ -159,51 +150,41 @@ function saveUser() {
     const idx = users.findIndex(u => u.id === editingUserId);
     if (idx !== -1) {
       const wasSuperAdmin = users[idx].isSuperAdmin;
-      const finalPass = passRaw || users[idx].password;
-      users[idx] = { ...users[idx], username: name, password: finalPass, role,
-        isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor };
+      const finalPass = passRaw ? await hashPassword(passRaw) : users[idx].password;
+      users[idx] = { ...users[idx], username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor };
     }
     saveUsers();
     if (currentUser && currentUser.id === editingUserId) {
       currentUser = users.find(u => u.id === editingUserId);
-      localStorage.setItem('chamados-current-user', JSON.stringify(currentUser));
+      localStorage.setItem('chamados-current-user-id', currentUser.id);
     }
     openUserManagerModal();
     showNotification('Usuário atualizado com sucesso.', 'success');
   } else {
     if (users.find(u => u.username === name)) { alert('Esse nome de usuário já existe!'); return; }
-    const isFirst = !currentUser && users.length === 0;
-    users.push({
-      id: Date.now().toString(), username: name, password: passRaw, role,
-      isAdmin: isFirst ? true : isAdmin,
-      isSuperAdmin: isFirst,
-      email, whatsapp, anydesk, setor
-    });
+    const isFirst = users.length === 0;
+    const hashedPass = await hashPassword(passRaw);
+    users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin: isFirst ? true : isAdmin, isSuperAdmin: isFirst, email, whatsapp, anydesk, setor });
     saveUsers();
-    if (!currentUser) {
-      closeUserModal();
-      showNotification('Administrador Geral criado! Faça login para continuar.', 'success');
-    } else {
-      openUserManagerModal();
-      showNotification('Usuário adicionado com sucesso.', 'success');
-    }
+    if (!currentUser) { closeUserModal(); showNotification('Administrador Geral criado! Faça login para continuar.', 'success'); }
+    else { openUserManagerModal(); showNotification('Usuário adicionado com sucesso.', 'success'); }
   }
 }
 
-function removeUser(userId) {
+async function removeUser(userId) {
   const u = users.find(u => u.id === userId);
   if (!u) return;
   if (u.isSuperAdmin) { showNotification('O Administrador Geral não pode ser removido.', 'error'); return; }
   if (!confirm('Deletar este usuário?')) return;
   users = users.filter(u => u.id !== userId);
-  saveUsers();
+  await db.collection('users').doc(userId).delete();
   renderUserList();
   if (currentUser && currentUser.id === userId) { closeUserModal(); performLogout(); }
 }
 
 function toggleUserDetails(userId) {
   const details = document.getElementById('uid-' + userId);
-  const chev    = document.getElementById('chev-' + userId);
+  const chev = document.getElementById('chev-' + userId);
   if (!details) return;
   const open = details.style.display === 'block';
   details.style.display = open ? 'none' : 'block';
@@ -212,81 +193,56 @@ function toggleUserDetails(userId) {
 
 function renderUserList() {
   const container = document.getElementById('users-list');
-  if (!users.length) {
-    container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem;">Nenhum usuário cadastrado.</div>';
-    return;
-  }
+  if (!users.length) { container.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:0.5rem;">Nenhum usuário cadastrado.</div>'; return; }
   container.innerHTML = users.map(u => {
     const roleLabel = u.role === 'attendant' ? 'Atendente' : 'Solicitante';
-    const extras = [
-      u.setor    ? `🏢 ${u.setor}`    : '',
-      u.anydesk  ? `🖥️ ${u.anydesk}` : '',
-      u.email    ? `✉️ ${u.email}`    : '',
-      u.whatsapp ? `📱 ${u.whatsapp}` : ''
-    ].filter(Boolean).join(' · ');
+    const extras = [u.setor ? `🏢 ${u.setor}` : '', u.anydesk ? `🖥️ ${u.anydesk}` : '', u.email ? `✉️ ${u.email}` : '', u.whatsapp ? `📱 ${u.whatsapp}` : ''].filter(Boolean).join(' · ');
     const superBadge = u.isSuperAdmin ? `<span class="ubadge super">★ Super Admin</span>` : '';
     const adminBadge = !u.isSuperAdmin && u.isAdmin ? `<span class="ubadge admin">Admin</span>` : '';
-    const canEdit   = isSuperAdmin() || (!u.isSuperAdmin && currentUser?.isAdmin);
+    const canEdit = isSuperAdmin() || (!u.isSuperAdmin && currentUser?.isAdmin);
     const canRemove = isSuperAdmin() && !u.isSuperAdmin;
-    return `
-      <div class="user-list-item" id="uli-${u.id}">
-        <div class="uli-summary" onclick="toggleUserDetails('${u.id}')">
-          <div class="uli-main">
-            <strong class="uli-name">${u.username}</strong>
-            ${superBadge}${adminBadge}
-            <span class="uli-role">· ${roleLabel}</span>
-            ${u.setor ? `<span class="uli-setor-tag">🏢 ${u.setor}</span>` : ''}
-          </div>
-          <div class="uli-actions">
-            ${canEdit ? `<button onclick="event.stopPropagation();openEditUser('${u.id}')" class="uli-edit-btn" title="Editar">✎</button>` : ''}
-            ${canRemove ? `<button onclick="event.stopPropagation();removeUser('${u.id}')" class="uli-del-btn" title="Remover">✕</button>` : ''}
-            <span class="uli-chevron" id="chev-${u.id}">›</span>
-          </div>
+    return `<div class="user-list-item" id="uli-${u.id}">
+      <div class="uli-summary" onclick="toggleUserDetails('${u.id}')">
+        <div class="uli-main"><strong class="uli-name">${u.username}</strong>${superBadge}${adminBadge}<span class="uli-role">· ${roleLabel}</span>${u.setor ? `<span class="uli-setor-tag">🏢 ${u.setor}</span>` : ''}</div>
+        <div class="uli-actions">
+          ${canEdit ? `<button onclick="event.stopPropagation();openEditUser('${u.id}')" class="uli-edit-btn" title="Editar">✎</button>` : ''}
+          ${canRemove ? `<button onclick="event.stopPropagation();removeUser('${u.id}')" class="uli-del-btn" title="Remover">✕</button>` : ''}
+          <span class="uli-chevron" id="chev-${u.id}">›</span>
         </div>
-        <div class="uli-details" id="uid-${u.id}" style="display:none;">
-          ${extras
-            ? `<div class="uli-extras">${extras.split(' · ').map(e => `<span>${e}</span>`).join('')}</div>`
-            : '<div class="uli-no-extras">Sem informações de contato cadastradas.</div>'}
-        </div>
-      </div>`;
+      </div>
+      <div class="uli-details" id="uid-${u.id}" style="display:none;">
+        ${extras ? `<div class="uli-extras">${extras.split(' · ').map(e => `<span>${e}</span>`).join('')}</div>` : '<div class="uli-no-extras">Sem informações de contato cadastradas.</div>'}
+      </div>
+    </div>`;
   }).join('');
 }
 
-// ── Login / Logout ──
-function performLogin() {
-  loadUsers();
+async function performLogin() {
+  await loadUsers();
   const name = document.getElementById('attendant-name').value.trim().toLowerCase();
   const pass = document.getElementById('attendant-pass').value.trim();
   if (!name || !pass) { alert('Preencha o nome de usuário e a senha.'); return; }
-  const user = users.find(u => u.username.toLowerCase() === name && u.password === pass);
+  const hashedPass = await hashPassword(pass);
+  const user = users.find(u => u.username.toLowerCase() === name && u.password === hashedPass);
   if (!user) { alert('Usuário ou senha incorretos.'); return; }
   currentUser = user;
-  localStorage.setItem('chamados-current-user', JSON.stringify(user));
+  localStorage.setItem('chamados-current-user-id', user.id);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('tickets-main').style.display = 'block';
   document.getElementById('current-attendant').textContent = user.username;
   document.getElementById('attendant-pass').value = '';
   applyRoleUI();
   loadTickets();
-  startAutoSync();
   showNotification(`Bem-vindo(a), ${user.username}! 👋`, 'success');
 }
 
 function applyRoleUI() {
   if (!currentUser) return;
   const adminBtn = document.getElementById('admin-shield-btn');
-  if (currentUser.isSuperAdmin) {
-    adminBtn.style.display = 'inline-flex';
-    adminBtn.textContent = '★ Super Admin';
-    adminBtn.classList.add('super-admin-btn');
-  } else if (currentUser.isAdmin) {
-    adminBtn.style.display = 'inline-flex';
-    adminBtn.textContent = '⚙️ Configurações';
-    adminBtn.classList.remove('super-admin-btn');
-  } else {
-    adminBtn.style.display = 'none';
-  }
-  const newTicketBtn   = document.getElementById('new-ticket-btn');
+  if (currentUser.isSuperAdmin) { adminBtn.style.display = 'inline-flex'; adminBtn.textContent = '★ Super Admin'; adminBtn.classList.add('super-admin-btn'); }
+  else if (currentUser.isAdmin) { adminBtn.style.display = 'inline-flex'; adminBtn.textContent = '⚙️ Configurações'; adminBtn.classList.remove('super-admin-btn'); }
+  else { adminBtn.style.display = 'none'; }
+  const newTicketBtn = document.getElementById('new-ticket-btn');
   const filtersWrapper = document.getElementById('tickets-filter');
   if (currentUser.role === 'requester') {
     filtersWrapper.style.display = 'none';
@@ -304,34 +260,34 @@ function applyRoleUI() {
 function performLogout() {
   if (!confirm('Deseja realmente sair do sistema?')) return;
   closeTicketDetail();
+  if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
   currentUser = null;
-  localStorage.removeItem('chamados-current-user');
-  stopAutoSync();
+  localStorage.removeItem('chamados-current-user-id');
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('tickets-main').style.display = 'none';
   document.getElementById('attendant-name').value = '';
-  loadUsers();
-  const hasSA = users.some(u => u.isSuperAdmin);
-  document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
+  loadUsers().then(() => {
+    const hasSA = users.some(u => u.isSuperAdmin);
+    document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
+  });
 }
 
-function checkLoginStatus() {
-  loadUsers();
+async function checkLoginStatus() {
+  await loadUsers();
   const hasSuperAdmin = users.some(u => u.isSuperAdmin);
   document.getElementById('first-user-btn').style.display = (!hasSuperAdmin) ? 'inline-block' : 'none';
-  const saved = localStorage.getItem('chamados-current-user');
-  if (saved) {
-    try {
-      currentUser = JSON.parse(saved);
-      const fresh = users.find(u => u.id === currentUser.id);
-      if (fresh) currentUser = fresh;
-      localStorage.setItem('chamados-current-user', JSON.stringify(currentUser));
+  const savedId = localStorage.getItem('chamados-current-user-id');
+  if (savedId) {
+    const fresh = users.find(u => u.id === savedId);
+    if (fresh) {
+      currentUser = fresh;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('tickets-main').style.display = 'block';
       document.getElementById('current-attendant').textContent = currentUser.username;
       applyRoleUI();
       loadTickets();
-      startAutoSync();
-    } catch (e) { localStorage.removeItem('chamados-current-user'); }
+    } else {
+      localStorage.removeItem('chamados-current-user-id');
+    }
   }
 }
