@@ -26,6 +26,7 @@
 .detail-header-strip {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 1rem; padding: 1.4rem 1.6rem 1.2rem; border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
 }
 
 .detail-header-strip.prio-low    { background: var(--prio-low-bg);    border-left: 5px solid var(--prio-low-stripe); }
@@ -86,6 +87,7 @@
   max-height: 0; overflow: hidden;
   transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--surface2);
+  flex-shrink: 0;
 }
 .detail-info-panel.open { max-height: 320px; border-bottom: 1px solid var(--border2); overflow-y: auto; }
 
