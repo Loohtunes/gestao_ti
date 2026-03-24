@@ -174,7 +174,7 @@ function renderTicketsCards(board, list) {
     const isMaterialCard = ticket.ticketType === 'material';
     const unseen = getUnseenCount(ticket);
     const badge = unseen > 0 ? `<span class="card-notif-badge">${unseen > 99 ? '99+' : unseen}</span>` : '';
-    return `<div class="ticket-card-wrapper" style="position:relative;">${badge}
+    return `<div class="ticket-card-wrapper" style="position:relative;" data-ticket-id="${ticket.id}">${badge}
       <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer;">
         <div class="ticket-prio-stripe" style="${isDone ? 'background:#22c55e;' : ''}"></div>
         <div class="ticket-card-inner">

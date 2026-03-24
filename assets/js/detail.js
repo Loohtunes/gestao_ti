@@ -21,10 +21,27 @@ function countNotifiableEvents(ticket) {
 
 function markTicketSeen(ticket) {
   localStorage.setItem(getSeenKey(ticket.id), String(countNotifiableEvents(ticket)));
+  // Atualiza badge imediatamente sem esperar o próximo ciclo do Firestore
+  const wrapper = document.querySelector(`[data-ticket-id="${ticket.id}"] .card-notif-badge`);
+  if (wrapper) wrapper.remove();
+  // Re-renderiza só os badges sem redesenhar tudo
+  document.querySelectorAll('.card-notif-badge').forEach(el => {
+    const card = el.closest('[data-ticket-id]');
+    if (!card) return;
+    const tid = card.dataset.ticketId;
+    const t   = tickets.find(t => t.id === tid);
+    if (!t || getUnseenCount(t) === 0) el.remove();
+  });
 }
 
 function getUnseenCount(ticket) {
   return Math.max(0, countNotifiableEvents(ticket) - getSeenCount(ticket.id));
+}
+
+// ── Helper para atualizar painel de histórico ──
+function updateHistoryPanel(ticket) {
+  const histBody = document.getElementById('hist-panel-body-content');
+  if (histBody) histBody.innerHTML = renderHistory(ticket);
 }
 
 // ── Abertura e fechamento do modal ──
@@ -34,39 +51,44 @@ function openTicketDetail(id) {
 
   activeDetailId = id;
   markTicketSeen(ticket);
+  renderTickets(); // Garante que o badge some imediatamente
 
   // Material visto automaticamente
   if (ticket.ticketType === 'material' && ticket.status === 'available' &&
       currentUser && currentUser.role !== 'requester') {
     ticket.status = 'mat-seen';
     logTicketEvent(ticket, 'Visualizado por ' + capitalizeName(currentUser.username));
-    localStorage.setItem('chamados-tickets', JSON.stringify(tickets));
     updateStats();
     updateMaterialTabBadge();
+    db.collection('tickets').doc(ticket.id).set(ticket).catch(console.error);
   }
 
   document.getElementById('detail-modal').classList.add('open');
   renderDetailContent(ticket);
 
-  // Polling do chat a cada 4s
+  // Listener em tempo real via Firestore — substitui o polling de localStorage
   clearInterval(detailPollInterval);
-  detailPollInterval = setInterval(() => {
-    const saved = localStorage.getItem('chamados-tickets');
-    if (saved) {
-      const fresh = JSON.parse(saved);
-      const idx   = fresh.findIndex(t => t.id === id);
-      if (idx !== -1) {
-        tickets[idx] = fresh[idx];
-        renderDetailMessages(fresh[idx]);
-      }
+  if (window._detailUnsubscribe) { window._detailUnsubscribe(); window._detailUnsubscribe = null; }
+
+  window._detailUnsubscribe = db.collection('tickets').doc(id).onSnapshot(docSnap => {
+    if (!docSnap.exists) return;
+    const fresh = docSnap.data();
+    const idx   = tickets.findIndex(t => t.id === id);
+    if (idx !== -1) tickets[idx] = fresh;
+    // Só atualiza mensagens se o modal ainda estiver aberto nesse ticket
+    if (activeDetailId === id) {
+      renderDetailMessages(fresh);
+      updateHistoryPanel(fresh);
+      markTicketSeen(fresh);
     }
-  }, 4000);
+  });
 }
 
 function closeTicketDetail() {
   clearInterval(detailPollInterval);
   detailPollInterval = null;
-  activeDetailId     = null;
+  if (window._detailUnsubscribe) { window._detailUnsubscribe(); window._detailUnsubscribe = null; }
+  activeDetailId = null;
   const overlay = document.getElementById('detail-modal');
   if (overlay) overlay.classList.remove('open');
 }
@@ -103,8 +125,6 @@ function renderDetailContent(ticket) {
   const status = ticket.status || 'available';
   const prio   = ticket.priority || 'medium';
   const num    = ticket.number ? `#${String(ticket.number).padStart(4, '0')}` : '';
-
-  const requesterUser = users.find(u => u.username === ticket.requester);
   const reqName = capitalizeName(ticket.requester || '—');
   const attName = ticket.attendant ? capitalizeName(ticket.attendant) : null;
 
@@ -185,8 +205,7 @@ function renderDetailContent(ticket) {
     </div>
   `;
 
-  const histBody = document.getElementById('hist-panel-body-content');
-  if (histBody) histBody.innerHTML = renderHistory(ticket);
+  updateHistoryPanel(ticket);
   scrollChatToBottom();
 }
 
@@ -201,10 +220,10 @@ function renderMessagesHTML(ticket) {
     if (isSystem) {
       return `<div class="chat-msg system"><span>${m.html || escapeHtml(m.text || '')}</span><span class="chat-time">${m.timestamp}</span></div>`;
     }
-    const roleLabel  = (m.role === 'superadmin' || m.role === 'attendant') ? 'Atendente' : 'Solicitante';
-    const content    = m.html || escapeHtml(m.text || '');
-    const canManage  = currentUser && (m.username === currentUser.username || currentUser.isSuperAdmin);
-    const ticketId   = activeDetailId;
+    const roleLabel = (m.role === 'superadmin' || m.role === 'attendant') ? 'Atendente' : 'Solicitante';
+    const content   = m.html || escapeHtml(m.text || '');
+    const canManage = currentUser && (m.username === currentUser.username || currentUser.isSuperAdmin);
+    const ticketId  = activeDetailId;
     return `
       <div class="trello-comment${isMine ? ' mine' : ''}" id="comment-${m.id}">
         <div class="tc-avatar ${m.role}">${(m.username || '?')[0].toUpperCase()}</div>
@@ -248,9 +267,18 @@ function sendChatMessage() {
   });
   logTicketEvent(tickets[idx], `Comentário adicionado por ${capitalizeName(currentUser.username)}`);
   editor.innerHTML = '';
-  saveTickets();
-  renderDetailMessages(tickets[idx]);
-  scrollChatToBottom();
+
+  // Salva direto no Firestore e renderiza imediatamente
+  db.collection('tickets').doc(tickets[idx].id).set(tickets[idx])
+    .then(() => {
+      renderDetailMessages(tickets[idx]);
+      updateHistoryPanel(tickets[idx]);
+      scrollChatToBottom();
+    })
+    .catch(err => {
+      console.error('[Chat] Erro ao salvar comentário:', err);
+      showNotification('Erro ao enviar comentário. Tente novamente.', 'error');
+    });
 }
 
 function deleteComment(ticketId, msgId) {
@@ -260,8 +288,13 @@ function deleteComment(ticketId, msgId) {
   const deletedMsg = (tickets[idx].messages || []).find(m => m.id === msgId);
   tickets[idx].messages = (tickets[idx].messages || []).filter(m => m.id !== msgId);
   logTicketEvent(tickets[idx], `Comentário excluído por ${capitalizeName(currentUser?.username)}`, deletedMsg?.html || '');
-  saveTickets();
-  renderDetailMessages(tickets[idx]);
+
+  db.collection('tickets').doc(ticketId).set(tickets[idx])
+    .then(() => {
+      renderDetailMessages(tickets[idx]);
+      updateHistoryPanel(tickets[idx]);
+    })
+    .catch(err => console.error('[Chat] Erro ao excluir comentário:', err));
 }
 
 function editComment(ticketId, msgId) {
@@ -320,8 +353,13 @@ function saveCommentEdit(ticketId, msgId) {
   contentEl.setAttribute('contenteditable', 'false');
   contentEl.classList.remove('tc-editing');
   contentEl.onkeydown = null;
-  saveTickets();
-  renderDetailMessages(tickets[idx]);
+
+  db.collection('tickets').doc(ticketId).set(tickets[idx])
+    .then(() => {
+      renderDetailMessages(tickets[idx]);
+      updateHistoryPanel(tickets[idx]);
+    })
+    .catch(err => console.error('[Chat] Erro ao editar comentário:', err));
 }
 
 function cancelCommentEdit(msgId) {
