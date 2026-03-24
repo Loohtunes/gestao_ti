@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#d32f2f">
+  <title>Gestão de T.I</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- ═══ CSS — Ordem de carregamento ═══ -->
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/tickets.css">
+  <link rel="stylesheet" href="assets/css/materials.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/users.css">
+  <link rel="stylesheet" href="assets/css/detail.css">
+  <link rel="stylesheet" href="assets/css/comments.css">
+  <link rel="stylesheet" href="assets/css/history.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+
+<body>
+
+  <nav>
+    <div class="nav-logo">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+    <div class="nav-right">
+      <button class="sync-fab-small" id="sync-fab-nav" onclick="openSyncModal()" title="Sincronizar com Dropbox">
+        <span id="sync-icon-nav">☁️</span>Dropbox
+      </button>
+    </div>
+  </nav>
+
+  <div class="tickets-container">
+
+    <!-- ══ TELA DE LOGIN ══ -->
+    <div class="login-screen" id="login-screen">
+      <div class="login-box">
+        <div class="login-icon"><img src="img/premovale (1).png" width="100px" height="100px"></div>
+        <h2 class="login-title">Sistema de Chamados</h2>
+        <p class="login-subtitle">Faça login para acessar os chamados</p>
+        <div class="login-form">
+          <div class="login-input-group">
+            <label class="login-label">👤 Nome de Usuário</label>
+            <input type="text" class="login-input" id="attendant-name" placeholder="Digite seu nome"
+              onkeydown="if(event.key==='Enter')document.getElementById('attendant-pass').focus()">
+          </div>
+          <div class="login-input-group">
+            <label class="login-label">🔑 Senha</label>
+            <input type="password" class="login-input" id="attendant-pass" placeholder="Digite sua senha"
+              onkeydown="if(event.key==='Enter')performLogin()">
+          </div>
+          <button class="login-btn" onclick="performLogin()">Entrar</button>
+          <div class="login-actions">
+            <button class="login-btn secondary" id="first-user-btn" style="display:none;"
+              onclick="openUserForm(true)">Criar Administrador Geral</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAINEL PRINCIPAL ══ -->
+    <div class="tickets-main" id="tickets-main" style="display:none;">
+      <div class="page-header">
+        <div class="header-left">
+          <p class="page-eyebrow">// Painel de Atendimento</p>
+          <h2 class="page-title">Visão geral de <em><u>Tickets</u></em></h2>
+        </div>
+        <div class="attendant-info">
+          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️
+            Configurações</button>
+          <span class="attendant-badge">👤 <span id="current-attendant">Usuário</span></span>
+          <button class="logout-btn" onclick="performLogout()">Sair</button>
+        </div>
+      </div>
+
+      <div class="tickets-stats">
+        <div class="stat-card">
+          <div class="stat-number" id="stat-available">0</div>
+          <div class="stat-label">Abertos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-in-progress">0</div>
+          <div class="stat-label">Em Atendimento</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat-completed">0</div>
+          <div class="stat-label">Concluídos</div>
+        </div>
+      </div>
+
+      <div class="tickets-header">
+        <div class="tickets-filter" id="tickets-filter">
+          <button class="filter-btn active" onclick="filterTickets('all', event)">Todos</button>
+          <button class="filter-btn" onclick="filterTickets('available', event)">Abertos</button>
+          <button class="filter-btn filter-btn-material" id="filter-btn-material"
+            onclick="filterTickets('material', event)">📦 Materiais</button>
+          <button class="filter-btn" onclick="filterTickets('in-progress', event)">Em Atendimento</button>
+          <button class="filter-btn" onclick="filterTickets('completed', event)">Concluídos</button>
+          <button class="filter-btn" onclick="filterTickets('archived', event)">Arquivados</button>
+        </div>
+        <div class="tickets-header-right">
+          <div class="search-widget" id="search-widget">
+            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()"
+              title="Pesquisar chamados">🔍</button>
+            <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
+              oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
+          </div>
+          <button class="new-ticket-btn" id="new-ticket-btn" onclick="openTicketModal()">+ Novo Chamado</button>
+        </div>
+      </div>
+
+      <div class="tickets-board" id="tickets-board"></div>
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-text">Nenhum chamado encontrado</div>
+        <div class="empty-state-hint">Clique em "+ Novo Chamado" para começar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: DETALHE DO TICKET ══ -->
+  <div class="modal-overlay detail-overlay" id="detail-modal" onclick="if(event.target===this)closeTicketDetail()">
+    <div class="detail-modal-wrapper">
+      <div class="detail-modal-content">
+        <div id="detail-modal-body"></div>
+      </div>
+      <div class="hist-panel" id="hist-panel">
+        <div class="hist-panel-header">
+          <span class="hist-panel-title">⏳ Histórico</span>
+          <button class="hist-panel-close" onclick="toggleHistoryPanel()">✕</button>
+        </div>
+        <div class="hist-panel-body">
+          <div class="hist-list" id="hist-panel-body-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: USUÁRIOS ══ -->
+  <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeUserModal()">
+    <div class="modal-content" style="max-width:580px;">
+      <div class="modal-header">
+        <div class="modal-title" id="user-modal-title">Gerenciamento de Usuários</div>
+        <button class="modal-close" onclick="closeUserModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="user-list-container" style="display:none;">
+          <h3
+            style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">
+            Usuários Cadastrados</h3>
+          <div id="users-list"
+            style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);">
+          </div>
+          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo
+            Usuário</button>
+        </div>
+        <div id="user-form-container">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Nome de Usuário</label>
+              <input type="text" class="form-input" id="user-name-input" placeholder="Login do usuário">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Senha</label>
+              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha"
+                autocomplete="new-password">
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group" id="user-role-group">
+              <label class="form-label">Papel do Usuário</label>
+              <select class="form-input" id="user-role-input" onchange="toggleAdminCheckbox()">
+                <option value="requester">Solicitante</option>
+                <option value="attendant">Atendente</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">🏢 Setor</label>
+              <select class="form-input" id="user-setor-input">
+                <option value="">Selecione o Setor</option>
+                <option value="Engenharia">Engenharia</option>
+                <option value="Comercial">Comercial</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="PCP">PCP</option>
+                <option value="Orçamento">Orçamento</option>
+                <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+                <option value="Almoxarifado">Almoxarifado</option>
+                <option value="Compras">Compras</option>
+                <option value="RH">RH</option>
+                <option value="TI">TI</option>
+                <option value="Contabilidade">Contabilidade</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group" id="user-admin-group"
+            style="display:none;flex-direction:row;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.7rem 1rem;">
+            <input type="checkbox" id="user-admin-input"
+              style="width:18px;height:18px;accent-color:var(--accent2);cursor:pointer;">
+            <div>
+              <label class="form-label" style="margin-bottom:0;cursor:pointer;" for="user-admin-input">É
+                Administrador?</label>
+              <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">Administradores gerenciam usuários e
+                chamados</div>
+            </div>
+          </div>
+          <div class="form-divider"><span>Informações de Contato <span class="form-optional">(opcional)</span></span>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">✉️ E-mail</label>
+              <input type="email" class="form-input" id="user-email-input" placeholder="email@empresa.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">📱 WhatsApp</label>
+              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🖥️ AnyDesk</label>
+            <div class="anydesk-toggle">
+              <label class="anydesk-option">
+                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked
+                  onchange="toggleAnydeskInput()">
+                <span>Não tenho AnyDesk</span>
+              </label>
+              <label class="anydesk-option">
+                <input type="radio" name="anydesk-opt" id="anydesk-yes" value="yes" onchange="toggleAnydeskInput()">
+                <span>Tenho AnyDesk</span>
+              </label>
+            </div>
+            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)"
+              style="display:none;margin-top:0.6rem;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeUserModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveUser()">Salvar Usuário</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: NOVO CHAMADO ══ -->
+  <div class="modal-overlay" id="ticket-modal" onclick="if(event.target===this)closeTicketModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title">Novo Chamado</div>
+        <button class="modal-close" onclick="closeTicketModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ticket-type-input" value="error">
+        <div class="ticket-type-selector">
+          <button type="button" class="ticket-type-btn active" id="type-btn-error"
+            onclick="setTicketType('error');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+            ❌ Erro / Problema
+          </button>
+          <button type="button" class="ticket-type-btn" id="type-btn-material"
+            onclick="setTicketType('material');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+            📦 Solicitação de Material
+          </button>
+        </div>
+        <div class="form-group" id="ticket-title-group">
+          <label class="form-label">Título</label>
+          <input type="text" class="form-input" id="ticket-title-input" placeholder="Ex: Problema no sistema de login">
+        </div>
+        <div class="form-group">
+          <label class="form-label">🏢 Setor</label>
+          <select class="form-input" id="ticket-setor-input">
+            <option value="">Selecione o Setor</option>
+            <option value="Engenharia">Engenharia</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="PCP">PCP</option>
+            <option value="Orçamento">Orçamento</option>
+            <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+            <option value="Almoxarifado">Almoxarifado</option>
+            <option value="Compras">Compras</option>
+            <option value="RH">RH</option>
+            <option value="TI">TI</option>
+            <option value="Contabilidade">Contabilidade</option>
+          </select>
+          <div id="setor-locked-hint"
+            style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+            🔒 Setor vinculado ao seu cadastro
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="ticket-desc-label">Descrição</label>
+          <textarea class="form-textarea" id="ticket-description-input"
+            placeholder="Descreva o chamado em detalhes..."></textarea>
+        </div>
+        <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">📦 Quantidade</label>
+              <div class="material-qty-row">
+                <input type="number" class="form-input" id="ticket-material-qty" placeholder="Ex: 10" min="1" step="1"
+                  style="flex:1;min-width:0;" oninput="updateMaterialUnit(this.value)">
+                <span class="material-unit-badge" id="material-unit-badge">un.</span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">📐 Unidade de Medida</label>
+              <select class="form-input" id="ticket-material-unit"
+                onchange="document.getElementById('material-unit-badge').textContent=this.options[this.selectedIndex].text.split(' ')[0]">
+                <option value="un">un. — Unidade</option>
+                <option value="cx">cx. — Caixa</option>
+                <option value="kg">kg — Quilograma</option>
+                <option value="g">g — Grama</option>
+                <option value="l">L — Litro</option>
+                <option value="ml">ml — Mililitro</option>
+                <option value="m">m — Metro</option>
+                <option value="cm">cm — Centímetro</option>
+                <option value="m2">m² — Metro quadrado</option>
+                <option value="pct">pct. — Pacote</option>
+                <option value="rolo">rolo — Rolo</option>
+                <option value="par">par — Par</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">📅 Data de Necessidade</label>
+            <input type="date" class="form-input" id="ticket-material-date" min="">
+            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
+              material é necessário?</div>
+          </div>
+        </div>
+        <div class="form-group" id="ticket-priority-group">
+          <label class="form-label">Prioridade</label>
+          <select class="form-input" id="ticket-priority-input">
+            <option value="low">🟢 Baixa</option>
+            <option value="medium" selected>🟡 Média</option>
+            <option value="high">🔴 Alta</option>
+            <option value="urgent">🚨 Urgente</option>
+          </select>
+        </div>
+        <div class="form-group" id="ticket-attach-group">
+          <label class="form-label">Anexos</label>
+          <label class="file-upload-btn">
+            <input type="file" id="ticket-files-input" multiple onchange="handleTicketFiles(this)">
+            <div>📎 Clique para anexar arquivos</div>
+          </label>
+          <div class="file-list" id="ticket-files-list"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeTicketModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveTicket()">Salvar Chamado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: SYNC DROPBOX ══ -->
+  <div class="modal-overlay" id="sync-modal" onclick="if(event.target===this)closeSyncModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">☁️ Sincronização Dropbox</div>
+        <button class="modal-close" onclick="closeSyncModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sync-info-box">
+          <strong>Como configurar:</strong><br>
+          1. Acesse <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox App Console</a><br>
+          2. Crie um novo app (Scoped Access, App folder)<br>
+          3. Em "Permissions", ative: <code>files.content.write</code> e <code>files.content.read</code><br>
+          4. Em "Settings", gere um Access Token<br>
+          5. Cole o token abaixo
+        </div>
+        <div class="sync-status" id="sync-status">
+          <div class="sync-status-icon">⚪</div>
+          <div class="sync-status-text">
+            <div style="font-weight:600;">Status: Não Configurado</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Configure o token para habilitar</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dropbox Access Token</label>
+          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..."
+            autocomplete="off">
+        </div>
+        <div class="sync-actions">
+          <button class="sync-btn secondary" onclick="testConnection()">🔍 Testar Conexão</button>
+          <button class="sync-btn" onclick="saveToken()">💾 Salvar Token</button>
+        </div>
+        <div class="sync-actions">
+          <button class="sync-btn" onclick="syncToCloud()" id="sync-upload-btn" disabled>⬆️ Enviar para Nuvem</button>
+          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da
+            Nuvem</button>
+        </div>
+        <div class="sync-actions">
+          <button class="sync-btn danger" onclick="disconnectDropbox()">🔌 Desconectar</button>
+        </div>
+        <div class="sync-last-sync" id="sync-last-sync"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ JS — Ordem de carregamento ═══ -->
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/history.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/materials.js"></script>
+  <script src="assets/js/tickets.js"></script>
+  <script src="assets/js/forms.js"></script>
+  <script src="assets/js/detail.js"></script>
+  <script src="assets/js/init.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,86 @@
+/* ===== NAV — Barra de navegação ===== */
+
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 249, 249, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border2);
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  box-shadow: 0 0.2px 20px rgb(88, 88, 88);
+  transition: box-shadow 0.25s;
+}
+
+.nav.scrolled { box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+.nav-logo {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+}
+
+.nav-logo img { width: 30px; height: 30px; }
+
+.nav-title {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  gap: 0.2rem !important;
+  font-family: var(--font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  font-size: 1.15rem !important;
+  line-height: 1 !important;
+}
+
+.nav-title-ti {
+  color: var(--accent) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.nav-title-sep {
+  color: var(--muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 1rem !important;
+  opacity: 0.5 !important;
+  margin: 0 0.1rem !important;
+}
+
+.nav-title-main {
+  color: var(--text) !important;
+  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sync-fab-small {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.4rem 1rem;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+
+.sync-fab-small:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
