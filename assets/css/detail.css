@@ -105,17 +105,17 @@
 .ddi { font-size: 0.8rem; }
 
 /* Chat full width */
-.detail-chat-full { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.detail-chat-full { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 /* History side panel */
 .hist-panel {
   position: fixed; top: 0; right: 0; bottom: 0;
-  width: 0; max-width: 220px; overflow: hidden;
+  width: 0; max-width: 222px; overflow: hidden;
   background: var(--surface); border-left: none; box-shadow: none;
   display: flex; flex-direction: column; z-index: 700;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
 }
-.hist-panel.open { width: 220px; border-left: 1px solid var(--border2); box-shadow: -4px 0 20px rgba(0,0,0,0.12); }
+.hist-panel.open { width: 222px; border-left: 1px solid var(--border2); box-shadow: -4px 0 20px rgba(0,0,0,0.12); }
 
 .hist-panel-header {
   display: flex; align-items: center; justify-content: space-between;

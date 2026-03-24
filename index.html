@@ -193,8 +193,7 @@
                 <option value="PCP">PCP</option>
                 <option value="Orçamento">Orçamento</option>
                 <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-                <option value="Almoxarifado">Almoxarifado</option>
-                <option value="Compras">Compras</option>
+                <option value="Compras/Almoxarifado">Compras/Almoxarifado</option>
                 <option value="RH">RH</option>
                 <option value="TI">TI</option>
                 <option value="Contabilidade">Contabilidade</option>
@@ -261,6 +260,15 @@
             📦 Solicitação de Material
           </button>
         </div>
+        <div class="form-group" id="ticket-onbehalf-group" style="display:none;">
+          <label class="form-label">👤 Abrir em nome de</label>
+          <select class="form-input" id="ticket-onbehalf-input">
+            <option value="">Abrir como eu mesmo</option>
+          </select>
+          <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+            🔑 Apenas administradores podem abrir chamados em nome de outros usuários
+          </div>
+        </div>
         <div class="form-group" id="ticket-title-group">
           <label class="form-label">Título</label>
           <input type="text" class="form-input" id="ticket-title-input" placeholder="Ex: Problema no sistema de login">
@@ -275,8 +283,7 @@
             <option value="PCP">PCP</option>
             <option value="Orçamento">Orçamento</option>
             <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-            <option value="Almoxarifado">Almoxarifado</option>
-            <option value="Compras">Compras</option>
+            <option value="Compras/Almoxarifado">Compras/Almoxarifado</option>
             <option value="RH">RH</option>
             <option value="TI">TI</option>
             <option value="Contabilidade">Contabilidade</option>

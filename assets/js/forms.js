@@ -5,6 +5,23 @@ function openTicketModal(ticketId = null) {
   ticketFiles = [];
   const prioGroup = document.getElementById('ticket-priority-group');
   if (prioGroup) prioGroup.style.display = (currentUser?.role === 'requester') ? 'none' : 'flex';
+  // Campo "Abrir em nome de" — só admins/superadmins
+  const onBehalfGroup = document.getElementById('ticket-onbehalf-group');
+  const onBehalfSelect = document.getElementById('ticket-onbehalf-input');
+  if (onBehalfGroup && onBehalfSelect) {
+    const canOpenForOthers = currentUser?.isAdmin || currentUser?.isSuperAdmin;
+    onBehalfGroup.style.display = canOpenForOthers ? 'flex' : 'none';
+    if (canOpenForOthers) {
+      // Popular com todos os usuários exceto o próprio admin
+      onBehalfSelect.innerHTML = `<option value="">Abrir como eu mesmo (${currentUser.username})</option>` +
+        users
+          .filter(u => u.id !== currentUser.id)
+          .map(u => `<option value="${u.username}">${u.username} — ${u.setor || 'Sem setor'}</option>`)
+          .join('');
+      onBehalfSelect.value = '';
+    }
+  }
+
   if (ticketId) {
     const t = tickets.find(t => t.id === ticketId);
     if (t) {
@@ -100,6 +117,16 @@ async function saveTicket() {
   if (!isMaterial && !title) { alert('Por favor, adicione um título ao chamado'); return; }
   if (isMaterial  && !desc)  { alert('Descreva os materiais a solicitar'); return; }
 
+  // Solicitante: admin pode abrir em nome de outro usuário
+  const onBehalfVal = document.getElementById('ticket-onbehalf-input')?.value?.trim();
+  const effectiveRequester = (onBehalfVal && (currentUser?.isAdmin || currentUser?.isSuperAdmin))
+    ? onBehalfVal
+    : currentUser?.username || 'Desconhecido';
+
+  // Setor do solicitante efetivo
+  const requesterUser = users.find(u => u.username === effectiveRequester);
+  const effectiveSetor = setor || requesterUser?.setor || '';
+
   const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   if (editingTicketId) {
@@ -111,13 +138,13 @@ async function saveTicket() {
     }
   } else {
     const number = await getNextTicketNumber(ticketType);
-    const finalTitle   = isMaterial ? ('Solicitação de material — ' + (currentUser?.setor || 'Geral')) : title;
+    const finalTitle   = isMaterial ? ('Solicitação de material — ' + (effectiveSetor || 'Geral')) : title;
     const materialData = isMaterial ? { qty: matQty, unit: matUnit, unitText: matUnitText, needByDate: matDate } : null;
     const newTicket = {
       id: Date.now().toString(), number, title: finalTitle, description: desc,
       priority: isMaterial ? 'low' : prio, setor, ticketType, materialData,
       attachments: isMaterial ? [] : ticketFiles, date: now, createdAt: now,
-      status: 'available', requester: currentUser?.username || 'Desconhecido',
+      status: 'available', requester: effectiveRequester,
       attendant: null, startedAt: null, completedAt: null, messages: [], history: []
     };
     logTicketEvent(newTicket, `Chamado aberto por ${capitalizeName(currentUser?.username)}`);

@@ -11,7 +11,8 @@
   /* Altura fixa garante o scroll independente da cadeia flex */
   height: 340px;
   max-height: 340px;
-  /* Scrollbar discreta */
+  /* Scrollbar sempre visível */
+  overflow-y: scroll;
   scrollbar-width: thin;
   scrollbar-color: #d0d0d8 transparent;
 }
