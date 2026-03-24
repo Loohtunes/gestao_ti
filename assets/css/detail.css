@@ -136,3 +136,12 @@
 .hist-panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
 .hist-card { display: none !important; }
+
+/* ── Modal body — necessário para o scroll do chat funcionar ── */
+#detail-modal-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

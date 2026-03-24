@@ -14,26 +14,21 @@ firebase.initializeApp(firebaseConfig);
 const db   = firebase.firestore();
 const auth = firebase.auth();
 
-// Login anônimo para satisfazer as regras do Firestore
-auth.signInAnonymously().catch(err => console.error('[Firebase] Erro no login anônimo:', err));
-
-// Status de conexão em tempo real
+// Persistência offline com sincronização entre abas
 db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
-firebase.firestore().collection('_ping').doc('status')
+// Monitor de conexão
+db.collection('_ping').doc('status')
   .onSnapshot(() => updateFirebaseStatus(true), () => updateFirebaseStatus(false));
 
 function updateFirebaseStatus(online) {
-  const btn = document.getElementById('sync-fab-nav');
+  const btn  = document.getElementById('sync-fab-nav');
   const icon = document.getElementById('sync-icon-nav');
   if (!btn || !icon) return;
-  if (online) {
-    icon.textContent = '🟢';
-    btn.title = 'Firebase: Conectado — dados em tempo real';
-  } else {
-    icon.textContent = '🔴';
-    btn.title = 'Firebase: Sem conexão — trabalhando offline';
-  }
+  icon.textContent = online ? '🟢' : '🔴';
+  btn.title = online
+    ? 'Firebase: Conectado — dados em tempo real'
+    : 'Firebase: Sem conexão — trabalhando offline';
 }
 
 // Hash de senha com SHA-256
