@@ -100,7 +100,14 @@ function closeTicketModal() {
   ticketFiles = [];
 }
 
+let _savingTicket = false;
+
 async function saveTicket() {
+  // Proteção contra duplo clique
+  if (_savingTicket) return;
+  _savingTicket = true;
+  const saveBtn = document.querySelector('#ticket-modal .btn-save');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
   const title      = document.getElementById('ticket-title-input').value.trim();
   const desc       = document.getElementById('ticket-description-input').value.trim();
   const setor      = document.getElementById('ticket-setor-input').value;
@@ -149,10 +156,28 @@ async function saveTicket() {
     };
     logTicketEvent(newTicket, `Chamado aberto por ${capitalizeName(currentUser?.username)}`);
     tickets.unshift(newTicket);
+    // Salva direto no Firestore — evita reescrever todos os tickets e disparar duplicatas
+    try {
+      await db.collection('tickets').doc(newTicket.id).set(newTicket);
+      closeTicketModal();
+      showNotification('Chamado salvo com sucesso! 📝', 'success');
+    } catch (err) {
+      console.error('[Forms] Erro ao salvar chamado:', err);
+      tickets.shift(); // reverte o unshift em caso de erro
+      showNotification('Erro ao salvar chamado. Tente novamente.', 'error');
+    } finally {
+      _savingTicket = false;
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar Chamado'; }
+    }
+    return;
   }
+
+  // Edição — salva via batch normalmente
   saveTickets();
   closeTicketModal();
   showNotification('Chamado salvo com sucesso! 📝', 'success');
+  _savingTicket = false;
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar Chamado'; }
 }
 
 function editTicket(id) { openTicketModal(id); }
