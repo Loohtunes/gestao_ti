@@ -183,20 +183,76 @@ async function saveTicket() {
 function editTicket(id) { openTicketModal(id); }
 
 function handleTicketFiles(input) {
+  const maxSizeKB = 500;
   Array.from(input.files).forEach(file => {
-    ticketFiles.push({ name: file.name, size: file.size, type: file.type, id: Date.now() + Math.random() });
+    if (file.size > maxSizeKB * 1024) {
+      showNotification(`"${file.name}" excede ${maxSizeKB}KB. Reduza o tamanho do arquivo.`, 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      ticketFiles.push({
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        data: e.target.result // base64 data URL
+      });
+      renderTicketFiles();
+    };
+    reader.readAsDataURL(file);
   });
-  renderTicketFiles();
   input.value = '';
 }
 
 function renderTicketFiles() {
   document.getElementById('ticket-files-list').innerHTML = ticketFiles.map(f =>
-    `<div class="file-item"><span>📄 ${f.name}</span><span class="file-remove" onclick="removeTicketFile(${f.id})">✕</span></div>`
+    `<div class="file-item">
+      <span style="cursor:pointer;" onclick="openAttachmentPreview('${f.id}')">📎 ${f.name} <span style="color:var(--muted);font-size:0.7rem;">(${(f.size/1024).toFixed(1)}KB)</span></span>
+      <span class="file-remove" onclick="removeTicketFile('${f.id}')">✕</span>
+    </div>`
   ).join('');
 }
 
 function removeTicketFile(fid) {
   ticketFiles = ticketFiles.filter(f => f.id !== fid);
   renderTicketFiles();
+}
+
+// Abre preview de arquivo ainda não salvo (na tela de criação)
+function openAttachmentPreview(fid) {
+  const f = ticketFiles.find(f => f.id === fid);
+  if (!f || !f.data) return;
+  openAttachmentData(f.data, f.name, f.type);
+}
+
+// Abre anexo já salvo no chamado
+function openAttachment(ticketId, fileId) {
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  const f = (ticket.attachments || []).find(a => String(a.id) === String(fileId));
+  if (!f || !f.data) { showNotification('Arquivo não disponível.', 'error'); return; }
+  openAttachmentData(f.data, f.name, f.type);
+}
+
+// Visualizador universal de anexos
+function openAttachmentData(dataUrl, name, type) {
+  const isImage = type && type.startsWith('image/');
+  const isPdf   = type === 'application/pdf';
+  if (isImage || isPdf) {
+    // Abre em nova aba para visualização direta
+    const win = window.open();
+    win.document.write(`<html><head><title>${name}</title></head><body style="margin:0;background:#111;">
+      ${isImage
+        ? `<img src="${dataUrl}" style="max-width:100%;display:block;margin:auto;">`
+        : `<embed src="${dataUrl}" type="application/pdf" width="100%" height="100%" style="height:100vh;">`
+      }
+    </body></html>`);
+  } else {
+    // Para outros tipos, força download
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = name;
+    a.click();
+  }
 }

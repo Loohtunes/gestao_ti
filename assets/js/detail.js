@@ -173,7 +173,7 @@ function renderDetailContent(ticket) {
           <div class="dip-section">
             <div class="dip-label">📎 Anexos (${ticket.attachments.length})</div>
             <div class="dip-attachments">
-              ${ticket.attachments.map(f => `<span class="dip-attach-chip">📄 ${f.name}</span>`).join('')}
+              ${ticket.attachments.map(f => `<span class="dip-attach-chip" onclick="openAttachment('${ticket.id}','${f.id}')" style="cursor:pointer;" title="Clique para visualizar">📄 ${f.name}</span>`).join('')}
             </div>
           </div>` : ''}
       </div>

@@ -188,24 +188,26 @@ function renderTicketsCards(board, list) {
       <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer;">
         <div class="ticket-prio-stripe" style="${isDone ? 'background:#22c55e;' : ''}"></div>
         <div class="ticket-card-inner">
-          <div class="ticket-badges-row">
-            <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
-            ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
-            <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
-            ${ticketNum}
+          <div class="ticket-content-area">
+            <div class="ticket-badges-row">
+              <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
+              ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
+              <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
+              ${ticketNum}
+            </div>
+            <div class="ticket-header">
+              <div class="ticket-title">${ticket.title}</div>
+              ${canEdit ? `<div class="ticket-actions"><button class="ticket-edit-btn" onclick="event.stopPropagation();editTicket('${ticket.id}')">✎</button><button class="ticket-delete-btn" onclick="event.stopPropagation();deleteTicket('${ticket.id}')">✕</button></div>` : ''}
+            </div>
+            ${setorBadge}${matBadge}
+            ${ticket.description ? `<div class="ticket-description">${ticket.description}</div>` : ''}
+            ${ticket.attachments?.length ? `<div class="ticket-attachments">${ticket.attachments.map(f => `<div class="ticket-attachment-chip" onclick="event.stopPropagation();openAttachment('${ticket.id}','${f.id}')" title="Clique para visualizar" style="cursor:pointer;">📎 ${f.name}</div>`).join('')}</div>` : ''}
+            <div class="ticket-meta">
+              ${ticket.requester ? `<span class="ticket-meta-row"><span class="ticket-meta-label">Solicitante:</span> ${capitalizeName(ticket.requester)}</span>` : ''}
+              ${ticket.attendant ? `<span class="ticket-meta-row"><span class="ticket-meta-label">Atendente:</span> ${capitalizeName(ticket.attendant)}</span>` : ''}
+            </div>
+            <div class="ticket-dates">${dates}</div>
           </div>
-          <div class="ticket-header">
-            <div class="ticket-title">${ticket.title}</div>
-            ${canEdit ? `<div class="ticket-actions"><button class="ticket-edit-btn" onclick="event.stopPropagation();editTicket('${ticket.id}')">✎</button><button class="ticket-delete-btn" onclick="event.stopPropagation();deleteTicket('${ticket.id}')">✕</button></div>` : ''}
-          </div>
-          ${setorBadge}${matBadge}
-          ${ticket.description ? `<div class="ticket-description">${ticket.description}</div>` : ''}
-          ${ticket.attachments?.length ? `<div class="ticket-attachments">${ticket.attachments.map(f => `<div class="ticket-attachment-chip">📎 ${f.name}</div>`).join('')}</div>` : ''}
-          <div class="ticket-meta">
-            ${ticket.requester ? `<span class="ticket-meta-row"><span class="ticket-meta-label">Solicitante:</span> ${capitalizeName(ticket.requester)}</span>` : ''}
-            ${ticket.attendant ? `<span class="ticket-meta-row"><span class="ticket-meta-label">Atendente:</span> ${capitalizeName(ticket.attendant)}</span>` : ''}
-          </div>
-          <div class="ticket-dates">${dates}</div>
           ${actions}
         </div>
       </div>

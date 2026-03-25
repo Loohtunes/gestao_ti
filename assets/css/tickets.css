@@ -69,13 +69,36 @@
   flex-direction: column;
   gap: 0.55rem;
   min-width: 0;
-  overflow-y: hidden;
   min-height: 260px;
-  max-height: 360px;
-  scrollbar-width: none;
+  max-height: 380px;
+  overflow: hidden;
 }
 
-.ticket-card-inner::-webkit-scrollbar { display: none; }
+/* Área de conteúdo scrollável — tudo exceto os botões de ação */
+.ticket-card-inner .ticket-content-area {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  scrollbar-width: thin;
+  scrollbar-color: #d0d0d8 transparent;
+  padding-right: 2px;
+}
+
+.ticket-card-inner .ticket-content-area::-webkit-scrollbar       { width: 3px; }
+.ticket-card-inner .ticket-content-area::-webkit-scrollbar-track  { background: transparent; }
+.ticket-card-inner .ticket-content-area::-webkit-scrollbar-thumb  { background: #d0d0d8; border-radius: 3px; }
+
+/* Botões de ação sempre fixos no rodapé do card */
+.ticket-actions-bottom {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
 
 /* Badges */
 .ticket-badges-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
@@ -245,7 +268,7 @@
 }
 
 /* Ações no fundo do card */
-.ticket-actions-bottom { display: flex; gap: 0.5rem; margin-top: 0.9rem; flex-wrap: wrap; }
+.ticket-actions-bottom { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 .ticket-pull-btn, .ticket-complete-btn, .ticket-release-btn {
   flex: 1;
