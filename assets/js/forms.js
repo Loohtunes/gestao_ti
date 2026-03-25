@@ -162,7 +162,7 @@ async function saveTicket() {
     const materialData = isMaterial ? { qty: matQty, unit: matUnit, unitText: matUnitText, needByDate: matDate } : null;
     const newTicket = {
       id: Date.now().toString(), number, title: finalTitle, description: desc,
-      priority: isMaterial ? 'low' : prio, setor, ticketType, materialData,
+      priority: isMaterial ? 'low' : 'none', setor, ticketType, materialData,
       attachments: isMaterial ? [] : ticketFiles, date: now, createdAt: now,
       status: 'available', requester: effectiveRequester,
       attendant: null, startedAt: null, completedAt: null, messages: [], history: []

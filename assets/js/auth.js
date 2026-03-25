@@ -247,6 +247,12 @@ function applyRoleUI() {
   const filtersWrapper = document.getElementById('tickets-filter');
   if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
 
+  // Botão de mesclar só para atendentes e admins
+  const mergeBtn = document.getElementById('merge-mode-btn');
+  if (mergeBtn) {
+    mergeBtn.style.display = (currentUser.role !== 'requester') ? 'inline-flex' : 'none';
+  }
+
   if (currentUser.role === 'requester') {
     // Solicitante: mostra filtros próprios, esconde os de atendente
     filtersWrapper.style.display = 'flex';

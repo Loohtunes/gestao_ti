@@ -20,11 +20,16 @@ let _pendingWrite = false;
 
 // Labels de prioridade
 const PRIORITY_LABEL = {
+  none:   '⚪ Sem Prioridade',
   low:    '🟢 Baixa',
   medium: '🟡 Média',
   high:   '🔴 Alta',
   urgent: '🚨 Urgente'
 };
+
+// Tickets selecionados para mesclagem
+let selectedForMerge = new Set();
+let mergeMode = false;
 
 // Labels de status
 const STATUS_LABEL = {

@@ -184,8 +184,19 @@ function renderTicketsCards(board, list) {
     const isMaterialCard = ticket.ticketType === 'material';
     const unseen = getUnseenCount(ticket);
     const badge = unseen > 0 ? `<span class="card-notif-badge">${unseen > 99 ? '99+' : unseen}</span>` : '';
-    return `<div class="ticket-card-wrapper" style="position:relative;" data-ticket-id="${ticket.id}">${badge}
-      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer;">
+    const isMergeSelected = mergeMode && selectedForMerge.has(ticket.id);
+    const mergeCheckbox = (mergeMode && !isDone && status !== 'archived') ? `
+      <div onclick="event.stopPropagation();toggleSelectForMerge('${ticket.id}', event)"
+        style="position:absolute;top:8px;left:8px;z-index:30;
+          width:22px;height:22px;border-radius:6px;cursor:pointer;
+          background:${isMergeSelected ? 'var(--accent)' : 'rgba(255,255,255,0.9)'};
+          border:2px solid ${isMergeSelected ? 'var(--accent)' : 'var(--border2)'};
+          display:flex;align-items:center;justify-content:center;
+          font-size:0.75rem;font-weight:800;color:#fff;transition:all 0.15s;">
+        ${isMergeSelected ? '✓' : ''}
+      </div>` : '';
+    return `<div class="ticket-card-wrapper" style="position:relative;${isMergeSelected ? 'outline:2px solid var(--accent);border-radius:15px;' : ''}" data-ticket-id="${ticket.id}">${badge}${mergeCheckbox}
+      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
         <div class="ticket-prio-stripe" style="${isDone ? 'background:#22c55e;' : ''}"></div>
         <div class="ticket-card-inner">
           <div class="ticket-content-area">
@@ -237,9 +248,83 @@ function setSubStatus(id, subStatus) {
 function pullTicket(id) {
   const t = tickets.find(t => t.id === id); if (!t) return;
   if (t.status !== 'available') { showNotification('Este chamado não está mais disponível', 'error'); return; }
-  t.status = 'in-progress'; t.attendant = currentUser.username; t.startedAt = new Date().toLocaleString('pt-BR');
-  logTicketEvent(t, `Chamado assumido por ${capitalizeName(currentUser.username)}`);
-  saveTickets(); if (activeDetailId === id) openTicketDetail(id);
+  // Abre modal de prioridade antes de assumir
+  openPriorityModal(id);
+}
+
+function openPriorityModal(ticketId) {
+  // Remove modal anterior se existir
+  const existing = document.getElementById('priority-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'priority-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:900;
+    background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:2rem;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+      padding:1.5rem;width:100%;max-width:360px;animation:slideUpDetail 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+      <div style="font-size:1rem;font-weight:800;margin-bottom:0.4rem;letter-spacing:-0.02em;">
+        🎯 Assumir Chamado
+      </div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1.2rem;">
+        Defina a prioridade antes de assumir
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.2rem;">
+        ${[
+          ['low',    '🟢', 'Baixa',   '#dcfce7','#16a34a'],
+          ['medium', '🟡', 'Média',   '#fef9c3','#d97706'],
+          ['high',   '🔴', 'Alta',    '#ffedd5','#c2410c'],
+          ['urgent', '🚨', 'Urgente', '#fee2e2','#b91c1c'],
+        ].map(([val, emoji, label, bg, tc]) => `
+          <label style="display:flex;align-items:center;gap:0.75rem;
+            background:${bg};border:1.5px solid ${tc}30;border-radius:10px;
+            padding:0.65rem 1rem;cursor:pointer;transition:all 0.15s;"
+            onmouseover="this.style.borderColor='${tc}'"
+            onmouseout="this.style.borderColor='${tc}30'">
+            <input type="radio" name="pull-prio" value="${val}"
+              style="accent-color:${tc};width:16px;height:16px;cursor:pointer;">
+            <span style="font-size:0.9rem;font-weight:700;color:${tc};">${emoji} ${label}</span>
+          </label>`).join('')}
+      </div>
+      <div style="display:flex;gap:0.6rem;">
+        <button onclick="document.getElementById('priority-modal').remove()"
+          style="flex:1;padding:0.65rem;background:var(--surface3);border:1px solid var(--border2);
+            border-radius:8px;font-family:var(--font-display);font-size:0.85rem;cursor:pointer;">
+          Cancelar
+        </button>
+        <button onclick="confirmPullTicket('${ticketId}')"
+          style="flex:2;padding:0.65rem;background:var(--accent);border:none;
+            border-radius:8px;color:#fff;font-family:var(--font-display);
+            font-size:0.85rem;font-weight:700;cursor:pointer;">
+          🎯 Assumir Chamado
+        </button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function confirmPullTicket(id) {
+  const selected = document.querySelector('input[name="pull-prio"]:checked');
+  if (!selected) { showNotification('Selecione uma prioridade para assumir.', 'error'); return; }
+  const prio = selected.value;
+  const modal = document.getElementById('priority-modal');
+  if (modal) modal.remove();
+
+  const t = tickets.find(t => t.id === id); if (!t) return;
+  if (t.status !== 'available') { showNotification('Este chamado não está mais disponível', 'error'); return; }
+  t.status    = 'in-progress';
+  t.attendant = currentUser.username;
+  t.startedAt = new Date().toLocaleString('pt-BR');
+  t.priority  = prio;
+  logTicketEvent(t, `Chamado assumido por ${capitalizeName(currentUser.username)} com prioridade ${PRIORITY_LABEL[prio]}`);
+  saveTickets();
+  if (activeDetailId === id) openTicketDetail(id);
   showNotification(`Chamado "${t.title}" assumido! 🎯`, 'success');
 }
 
@@ -281,4 +366,163 @@ function deleteTicket(id) {
   if (activeDetailId === id) closeTicketDetail();
   db.collection('tickets').doc(id).delete().catch(console.error);
   saveTickets();
+}
+
+// ════════════════════════════════════════════
+// MESCLAR CHAMADOS
+// ════════════════════════════════════════════
+
+function toggleMergeMode() {
+  mergeMode = !mergeMode;
+  selectedForMerge.clear();
+  renderTickets();
+  const btn = document.getElementById('merge-mode-btn');
+  if (btn) {
+    btn.style.background   = mergeMode ? 'var(--accent)' : '';
+    btn.style.color        = mergeMode ? '#fff' : '';
+    btn.style.borderColor  = mergeMode ? 'var(--accent)' : '';
+    btn.textContent        = mergeMode ? '✕ Cancelar Mesclagem' : '🔗 Mesclar Chamados';
+  }
+  const mergeBanner = document.getElementById('merge-banner');
+  if (mergeBanner) mergeBanner.style.display = mergeMode ? 'flex' : 'none';
+}
+
+function toggleSelectForMerge(id, e) {
+  e.stopPropagation();
+  if (selectedForMerge.has(id)) { selectedForMerge.delete(id); }
+  else { selectedForMerge.add(id); }
+  // Atualiza contador no banner
+  const count = document.getElementById('merge-count');
+  if (count) count.textContent = selectedForMerge.size;
+  const confirmBtn = document.getElementById('merge-confirm-btn');
+  if (confirmBtn) confirmBtn.disabled = selectedForMerge.size < 2;
+  renderTickets();
+}
+
+function openMergeConfirmModal() {
+  if (selectedForMerge.size < 2) {
+    showNotification('Selecione pelo menos 2 chamados para mesclar.', 'error');
+    return;
+  }
+  const selected = tickets.filter(t => selectedForMerge.has(t.id));
+  const existing = document.getElementById('merge-confirm-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'merge-confirm-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:900;
+    background:rgba(0,0,0,0.5);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:2rem;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+      padding:1.5rem;width:100%;max-width:480px;animation:slideUpDetail 0.3s cubic-bezier(0.34,1.56,0.64,1);">
+      <div style="font-size:1rem;font-weight:800;margin-bottom:0.3rem;">🔗 Mesclar Chamados</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem;">
+        Escolha o chamado principal. Os demais serão arquivados e vinculados ao novo.
+      </div>
+
+      <div style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;
+        letter-spacing:0.1em;color:var(--muted);margin-bottom:0.5rem;">
+        Chamado Principal
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1rem;">
+        ${selected.map((t, i) => {
+          const num = t.number ? (typeof t.number === 'string' ? t.number : '#' + String(t.number).padStart(4,'0')) : '—';
+          return `<label style="display:flex;align-items:center;gap:0.75rem;
+            background:var(--surface2);border:1.5px solid var(--border2);border-radius:10px;
+            padding:0.65rem 1rem;cursor:pointer;"
+            onmouseover="this.style.borderColor='var(--accent)'"
+            onmouseout="this.querySelector('input').checked ? null : (this.style.borderColor='var(--border2)')">
+            <input type="radio" name="merge-main" value="${t.id}" ${i===0?'checked':''}
+              style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;">
+            <div style="min-width:0;">
+              <div style="font-size:0.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <span style="font-family:var(--font-mono);color:var(--muted);font-size:0.7rem;margin-right:0.4rem;">${num}</span>
+                ${t.title}
+              </div>
+              <div style="font-size:0.72rem;color:var(--muted);font-family:var(--font-mono);">
+                ${t.requester || '—'} · ${t.setor || 'Sem setor'}
+              </div>
+            </div>
+          </label>`;
+        }).join('')}
+      </div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+        padding:0.75rem;font-size:0.78rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;">
+        ⚠️ Os chamados não selecionados como principal serão <strong>arquivados</strong> 
+        automaticamente com uma nota no histórico indicando a mesclagem.
+      </div>
+
+      <div style="display:flex;gap:0.6rem;">
+        <button onclick="document.getElementById('merge-confirm-modal').remove()"
+          style="flex:1;padding:0.65rem;background:var(--surface3);border:1px solid var(--border2);
+            border-radius:8px;font-family:var(--font-display);font-size:0.85rem;cursor:pointer;">
+          Cancelar
+        </button>
+        <button onclick="executeMerge()"
+          style="flex:2;padding:0.65rem;background:var(--accent);border:none;border-radius:8px;
+            color:#fff;font-family:var(--font-display);font-size:0.85rem;font-weight:700;cursor:pointer;">
+          🔗 Confirmar Mesclagem
+        </button>
+      </div>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function executeMerge() {
+  const mainId   = document.querySelector('input[name="merge-main"]:checked')?.value;
+  const modal    = document.getElementById('merge-confirm-modal');
+  if (!mainId) return;
+  if (modal) modal.remove();
+
+  const mainTicket   = tickets.find(t => t.id === mainId);
+  const otherTickets = tickets.filter(t => selectedForMerge.has(t.id) && t.id !== mainId);
+  if (!mainTicket || !otherTickets.length) return;
+
+  const mergedNums = otherTickets.map(t =>
+    t.number ? (typeof t.number === 'string' ? t.number : '#' + String(t.number).padStart(4,'0')) : t.id
+  ).join(', ');
+
+  const mainNum = mainTicket.number
+    ? (typeof mainTicket.number === 'string' ? mainTicket.number : '#' + String(mainTicket.number).padStart(4,'0'))
+    : mainTicket.id;
+
+  // Mescla anexos dos outros chamados no principal
+  const allAttachments = [...(mainTicket.attachments || [])];
+  otherTickets.forEach(t => {
+    (t.attachments || []).forEach(att => {
+      if (!allAttachments.find(a => a.id === att.id)) allAttachments.push(att);
+    });
+  });
+  mainTicket.attachments = allAttachments;
+
+  // Registra no histórico do chamado principal
+  logTicketEvent(mainTicket,
+    `Chamados mesclados por ${capitalizeName(currentUser.username)}: ${mergedNums} foram incorporados a este chamado`);
+
+  // Arquiva os chamados secundários
+  otherTickets.forEach(t => {
+    t.status     = 'archived';
+    t.archivedAt = new Date().toLocaleString('pt-BR');
+    logTicketEvent(t,
+      `Chamado arquivado por mesclagem — incorporado ao chamado ${mainNum} por ${capitalizeName(currentUser.username)}`);
+  });
+
+  // Sai do modo de mesclagem
+  mergeMode = false;
+  selectedForMerge.clear();
+
+  saveTickets();
+  showNotification(`${otherTickets.length + 1} chamados mesclados com sucesso! 🔗`, 'success');
+
+  // Atualiza botão
+  const btn = document.getElementById('merge-mode-btn');
+  if (btn) { btn.textContent = '🔗 Mesclar Chamados'; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+  const banner = document.getElementById('merge-banner');
+  if (banner) banner.style.display = 'none';
 }

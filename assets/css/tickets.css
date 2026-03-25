@@ -424,3 +424,31 @@
 .tl-btn.arc-unarchive:hover { background: #f0fdf4; border-color: #22c55e; }
 .tl-btn.arc-delete { border-color: var(--border2); color: var(--muted); }
 .tl-btn.arc-delete:hover { border-color: var(--accent3); color: var(--accent3); background: var(--surface); }
+
+/* ── Prioridade "Sem Prioridade" ── */
+.ticket-card.prio-none:not(.done-card) {
+  background: var(--surface);
+  border-color: var(--border2);
+}
+.ticket-card.prio-none:not(.done-card) .ticket-prio-stripe {
+  background: var(--muted);
+  opacity: 0.3;
+}
+.ticket-priority-badge.prio-none {
+  background: var(--surface3);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+}
+.tl-prio-tag.none {
+  background: var(--surface3);
+  color: var(--muted);
+}
+
+/* ── Merge confirm button enabled ── */
+#merge-confirm-btn:not(:disabled) {
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+#merge-confirm-btn:not(:disabled):hover {
+  background: var(--surface2) !important;
+}

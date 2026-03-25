@@ -124,7 +124,30 @@
               oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
           </div>
           <button class="new-ticket-btn" id="new-ticket-btn" onclick="openTicketModal()">+ Novo Chamado</button>
+          <button id="merge-mode-btn" onclick="toggleMergeMode()"
+            style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+              color:var(--muted);padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+              cursor:pointer;transition:all 0.2s;display:none;white-space:nowrap;">
+            🔗 Mesclar Chamados
+          </button>
         </div>
+      </div>
+
+      <!-- Banner de mesclagem -->
+      <div id="merge-banner" style="display:none;align-items:center;justify-content:space-between;
+        background:var(--accent);color:#fff;border-radius:10px;padding:0.75rem 1.2rem;
+        margin-bottom:1rem;gap:1rem;flex-wrap:wrap;">
+        <div style="font-size:0.85rem;font-weight:700;font-family:var(--font-display);">
+          🔗 Modo de Mesclagem — <span id="merge-count">0</span> chamado(s) selecionado(s)
+        </div>
+        <div style="font-size:0.78rem;opacity:0.85;">Clique nos cards para selecionar (mínimo 2)</div>
+        <button id="merge-confirm-btn" onclick="openMergeConfirmModal()" disabled
+          style="background:#fff;color:var(--accent);border:none;border-radius:8px;
+            padding:0.5rem 1.2rem;font-size:0.82rem;font-weight:700;
+            font-family:var(--font-display);cursor:pointer;transition:all 0.2s;
+            opacity:0.5;">
+          Mesclar Selecionados
+        </button>
       </div>
 
       <div class="tickets-board" id="tickets-board"></div>
