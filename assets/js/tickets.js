@@ -57,7 +57,8 @@ function updateStats() {
   const src = currentUser.role === 'requester' ? tickets.filter(t => t.requester === currentUser.username) : tickets;
   document.getElementById('stat-available').textContent   = src.filter(t => t.status === 'available').length;
   document.getElementById('stat-in-progress').textContent = src.filter(t => t.status === 'in-progress' || SUB_STATUS.has(t.status)).length;
-  document.getElementById('stat-completed').textContent   = src.filter(t => t.status === 'completed').length;
+  // Arquivados também contam como concluídos — todo arquivado já passou pelo estado concluído
+  document.getElementById('stat-completed').textContent   = src.filter(t => t.status === 'completed' || t.status === 'archived').length;
 }
 
 function renderTickets() {
