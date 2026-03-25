@@ -65,8 +65,18 @@ function renderTickets() {
   const empty = document.getElementById('empty-state');
   if (!currentUser) return;
   let list = tickets;
-  if (currentUser.role === 'requester' || currentFilter === 'my-requests') { list = tickets.filter(t => t.requester === currentUser.username && t.status !== 'archived'); }
-  else if (currentFilter === 'available')   { list = tickets.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
+  const isRequester = currentUser.role === 'requester';
+
+  if (currentFilter === 'my-requests') {
+    // Meus chamados abertos e em atendimento
+    list = tickets.filter(t => t.requester === currentUser.username && t.status !== 'archived' && t.status !== 'completed');
+  } else if (isRequester && currentFilter === 'completed') {
+    // Solicitante vendo seus concluídos
+    list = tickets.filter(t => t.requester === currentUser.username && t.status === 'completed');
+  } else if (isRequester && currentFilter === 'archived') {
+    // Solicitante vendo seus arquivados
+    list = tickets.filter(t => t.requester === currentUser.username && t.status === 'archived');
+  } else if (currentFilter === 'available')   { list = tickets.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
   else if (currentFilter === 'material')    { list = tickets.filter(t => t.ticketType === 'material' && t.status !== 'archived'); }
   else if (currentFilter === 'in-progress') { list = tickets.filter(t => (t.status === 'in-progress' || SUB_STATUS.has(t.status)) && t.ticketType !== 'material'); }
   else if (currentFilter === 'completed')   { list = tickets.filter(t => t.status === 'completed' && t.ticketType !== 'material'); }

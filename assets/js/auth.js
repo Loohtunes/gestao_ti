@@ -242,18 +242,29 @@ function applyRoleUI() {
   if (currentUser.isSuperAdmin) { adminBtn.style.display = 'inline-flex'; adminBtn.textContent = '★ Super Admin'; adminBtn.classList.add('super-admin-btn'); }
   else if (currentUser.isAdmin) { adminBtn.style.display = 'inline-flex'; adminBtn.textContent = '⚙️ Configurações'; adminBtn.classList.remove('super-admin-btn'); }
   else { adminBtn.style.display = 'none'; }
-  const newTicketBtn = document.getElementById('new-ticket-btn');
+
+  const newTicketBtn   = document.getElementById('new-ticket-btn');
   const filtersWrapper = document.getElementById('tickets-filter');
+  if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
+
   if (currentUser.role === 'requester') {
-    filtersWrapper.style.display = 'none';
-    if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
+    // Solicitante: mostra filtros próprios, esconde os de atendente
+    filtersWrapper.style.display = 'flex';
+    document.querySelectorAll('[data-attendant-only]').forEach(b => b.style.display = 'none');
+    document.querySelectorAll('[data-requester-filter]').forEach(b => b.style.display = 'inline-flex');
+    // Ativa "Meus Chamados" como padrão
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const myBtn = document.querySelector('[data-requester-filter]');
+    if (myBtn) myBtn.classList.add('active');
     currentFilter = 'my-requests';
   } else {
+    // Atendente/Admin: mostra todos os filtros de atendente, esconde os de solicitante
     filtersWrapper.style.display = 'flex';
-    if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
-    currentFilter = 'all';
+    document.querySelectorAll('[data-attendant-only]').forEach(b => b.style.display = 'inline-flex');
+    document.querySelectorAll('[data-requester-filter]').forEach(b => b.style.display = 'none');
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.filter-btn')[0]?.classList.add('active');
+    document.querySelectorAll('[data-attendant-only]')[0]?.classList.add('active');
+    currentFilter = 'all';
   }
 }
 
