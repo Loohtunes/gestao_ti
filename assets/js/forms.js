@@ -35,6 +35,11 @@ function openTicketModal(ticketId = null) {
       if (hint) hint.style.display = 'none';
       ticketFiles = [...(t.attachments || [])];
       renderTicketFiles();
+      // Pré-selecionar o solicitante atual no campo onBehalf
+      if (onBehalfSelect && (currentUser?.isAdmin || currentUser?.isSuperAdmin)) {
+        const isOwnTicket = t.requester === currentUser.username;
+        onBehalfSelect.value = isOwnTicket ? '' : (t.requester || '');
+      }
     }
   } else {
     document.getElementById('modal-title').textContent = 'Novo Chamado';
@@ -140,7 +145,15 @@ async function saveTicket() {
     const idx = tickets.findIndex(t => t.id === editingTicketId);
     if (idx !== -1) {
       const finalPrio = isRequester ? tickets[idx].priority : prio;
-      tickets[idx] = { ...tickets[idx], title, description: desc, priority: finalPrio, setor, attachments: ticketFiles, updatedAt: now };
+      // Se admin selecionou um solicitante diferente, atualiza; senão mantém o original
+      const finalRequester = (onBehalfVal && (currentUser?.isAdmin || currentUser?.isSuperAdmin))
+        ? onBehalfVal
+        : tickets[idx].requester;
+      const prevRequester = tickets[idx].requester;
+      tickets[idx] = { ...tickets[idx], title, description: desc, priority: finalPrio, setor, attachments: ticketFiles, requester: finalRequester, updatedAt: now };
+      if (finalRequester !== prevRequester) {
+        logTicketEvent(tickets[idx], `Solicitante alterado de "${capitalizeName(prevRequester)}" para "${capitalizeName(finalRequester)}" por ${capitalizeName(currentUser?.username)}`);
+      }
       logTicketEvent(tickets[idx], 'Chamado editado por ' + capitalizeName(currentUser?.username));
     }
   } else {
