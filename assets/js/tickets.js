@@ -48,6 +48,7 @@ async function saveTicket(ticketId) {
 
 function filterTickets(filter, event) {
   currentFilter = filter;
+  currentPage   = 1; // reset paginação ao mudar filtro
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   if (event && event.target) event.target.classList.add('active');
   if (filter === 'material') markMaterialTabSeen();
@@ -63,6 +64,35 @@ function updateStats() {
   document.getElementById('stat-completed').textContent   = src.filter(t => t.status === 'completed' || t.status === 'archived').length;
 }
 
+
+// Ordem de prioridade para ordenação
+const PRIO_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+
+function sortByPriority(list) {
+  return [...list].sort((a, b) => {
+    // VIP sempre no topo
+    const aVip = !!(users.find(u => u.username === a.requester)?.isVip);
+    const bVip = !!(users.find(u => u.username === b.requester)?.isVip);
+    if (aVip !== bVip) return aVip ? -1 : 1;
+    // Depois por prioridade
+    const ap = PRIO_ORDER[a.priority] ?? 4;
+    const bp = PRIO_ORDER[b.priority] ?? 4;
+    if (ap !== bp) return ap - bp;
+    // Dentro da mesma prioridade, mais recente primeiro
+    return (b.createdAt || b.date || '').localeCompare(a.createdAt || a.date || '');
+  });
+}
+
+function changePage(dir) {
+  const totalPages = Math.ceil(window._lastCardListLength / CARDS_PER_PAGE);
+  currentPage = Math.max(1, Math.min(currentPage + dir, totalPages));
+  renderTickets();
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderTickets();
+}
 function renderTickets() {
   const board = document.getElementById('tickets-board');
   const empty = document.getElementById('empty-state');
@@ -98,8 +128,79 @@ function renderTickets() {
   if (!list.length) { board.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed';
-  useList ? renderTicketsList(board, list) : renderTicketsCards(board, list);
+
+  if (useList) {
+    renderTicketsList(board, list);
+  } else {
+    // Ordenar por prioridade com VIP no topo
+    const sorted = sortByPriority(list);
+    const total  = sorted.length;
+    const totalPages = Math.ceil(total / CARDS_PER_PAGE);
+    if (currentPage > totalPages) currentPage = Math.max(1, totalPages);
+    const start  = (currentPage - 1) * CARDS_PER_PAGE;
+    const paged  = sorted.slice(start, start + CARDS_PER_PAGE);
+    window._lastCardListLength = total;
+    renderTicketsCards(board, paged);
+    renderPagination(total, totalPages);
+  }
   updateMaterialTabBadge();
+}
+
+function renderPagination(total, totalPages) {
+  // Remove paginação anterior
+  const old = document.getElementById('tickets-pagination');
+  if (old) old.remove();
+  if (totalPages <= 1) return;
+
+  const nav = document.createElement('div');
+  nav.id = 'tickets-pagination';
+  nav.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-top:1.5rem;flex-wrap:wrap;';
+
+  // Botão anterior
+  const prev = document.createElement('button');
+  prev.textContent = '← Anterior';
+  prev.disabled    = currentPage === 1;
+  prev.onclick     = () => changePage(-1);
+  prev.style.cssText = `padding:0.45rem 0.9rem;border-radius:8px;font-size:0.8rem;font-family:var(--font-display);
+    cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--muted);
+    transition:all 0.15s;${currentPage === 1 ? 'opacity:0.4;cursor:not-allowed;' : ''}`;
+  nav.appendChild(prev);
+
+  // Números de página
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement('button');
+    btn.textContent = i;
+    const isActive = i === currentPage;
+    btn.style.cssText = `width:32px;height:32px;border-radius:8px;font-size:0.82rem;font-family:var(--font-mono);
+      font-weight:700;cursor:pointer;transition:all 0.15s;
+      ${isActive
+        ? 'background:var(--accent);color:#fff;border:1px solid var(--accent);'
+        : 'background:var(--surface);color:var(--muted);border:1px solid var(--border2);'}`;
+    btn.onclick = () => goToPage(i);
+    nav.appendChild(btn);
+  }
+
+  // Botão próximo
+  const next = document.createElement('button');
+  next.textContent = 'Próxima →';
+  next.disabled    = currentPage === totalPages;
+  next.onclick     = () => changePage(1);
+  next.style.cssText = `padding:0.45rem 0.9rem;border-radius:8px;font-size:0.8rem;font-family:var(--font-display);
+    cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--muted);
+    transition:all 0.15s;${currentPage === totalPages ? 'opacity:0.4;cursor:not-allowed;' : ''}`;
+  nav.appendChild(next);
+
+  // Indicador
+  const info = document.createElement('div');
+  const start = (currentPage - 1) * CARDS_PER_PAGE + 1;
+  const end   = Math.min(currentPage * CARDS_PER_PAGE, total);
+  info.style.cssText = 'width:100%;text-align:center;font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);margin-top:0.25rem;';
+  info.textContent   = `Página ${currentPage} de ${totalPages} — exibindo ${start}–${end} de ${total} chamados`;
+  nav.appendChild(info);
+
+  // Inserir após o board
+  const board = document.getElementById('tickets-board');
+  board.insertAdjacentElement('afterend', nav);
 }
 
 function buildArchivedRow(ticket) {
@@ -133,12 +234,12 @@ function renderTicketsList(board, list) {
     const num = ticket.number ? (typeof ticket.number === 'string' ? ticket.number : '#' + String(ticket.number).padStart(4, '0')) : '—';
     const canEdit = ticket.requester === currentUser.username && status === 'available';
     const dateBlock = [ticket.date ? `<span class="tl-date-text">📅 ${ticket.date}</span>` : '', ticket.startedAt ? `<span class="tl-date-sub">▶️ ${ticket.startedAt}</span>` : '', ticket.completedAt ? `<span class="tl-date-done">✅ ${ticket.completedAt}</span>` : ''].filter(Boolean).join('');
-    return `<div class="tl-row ${SUB_STATUS.has(status) ? 'in-progress' : status} prio-${ticket.priority || 'medium'}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
+    return `<div class="tl-row ${status} prio-${ticket.priority || 'medium'}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
       <span class="tl-col tl-num"><span class="tl-num-badge">${num}</span></span>
       <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach">📎 ${ticket.attachments.length} anexo(s)</span>` : ''}</span>
       <span class="tl-col tl-setor">${ticket.setor ? `<span class="tl-setor-tag">${ticket.setor}</span>` : '<span class="tl-empty">—</span>'}</span>
       <span class="tl-col tl-prio"><span class="tl-prio-tag ${ticket.priority || 'medium'}">${PRIORITY_LABEL[ticket.priority] || '—'}</span></span>
-      <span class="tl-col tl-status"><span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
+      <span class="tl-col tl-status"><span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
       <span class="tl-col tl-date">${dateBlock}</span>
       <span class="tl-col tl-actions" onclick="event.stopPropagation()">${canEdit ? `<button class="tl-btn edit" onclick="editTicket('${ticket.id}')">✎</button><button class="tl-btn del" onclick="deleteTicket('${ticket.id}')">✕</button>` : ''}</span>
     </div>`;
@@ -166,10 +267,8 @@ function renderTicketsCards(board, list) {
       actions = `<div class="ticket-actions-bottom">
         <select class="ticket-substatus-select" onchange="event.stopPropagation();setSubStatus('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
           <option value="in-progress" ${status==='in-progress'?'selected':''}>⚙️ Em Atendimento</option>
-          <option value="in-analysis" ${status==='in-analysis'?'selected':''}>🔍 Em Análise</option>
           <option value="waiting-info" ${status==='waiting-info'?'selected':''}>💬 Aguard. Informações</option>
           <option value="waiting" ${status==='waiting'?'selected':''}>⏸️ Em Espera</option>
-          <option value="requested" ${status==='requested'?'selected':''}>📋 Solicitado</option>
         </select>
         <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
         <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
@@ -211,7 +310,7 @@ function renderTicketsCards(board, list) {
         <div class="ticket-card-inner">
           <div class="ticket-content-area">
             <div class="ticket-badges-row">
-              <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
+              <span class="ticket-status-badge ${status}">${STATUS_LABEL[status] || status}</span>
               ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
               ${vipBadge}
               ${testBadge}
@@ -418,6 +517,7 @@ function clearTestTickets() {
 function toggleMergeMode() {
   mergeMode = !mergeMode;
   selectedForMerge.clear();
+  closeActionsDropdown();
   renderTickets();
   const btn = document.getElementById('merge-mode-btn');
   if (btn) {

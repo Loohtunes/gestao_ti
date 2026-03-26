@@ -43,3 +43,27 @@ function collapseSearchIfEmpty() {
     }, 200);
   }
 }
+
+// ── Dropdown de Ações ──
+function toggleActionsDropdown() {
+  const menu = document.getElementById('actions-dropdown-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  // Fechar ao clicar fora
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', closeActionsDropdownOutside, { once: true });
+    }, 10);
+  }
+}
+
+function closeActionsDropdown() {
+  const menu = document.getElementById('actions-dropdown-menu');
+  if (menu) menu.style.display = 'none';
+}
+
+function closeActionsDropdownOutside(e) {
+  const wrapper = document.getElementById('actions-dropdown-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) closeActionsDropdown();
+}

@@ -262,17 +262,19 @@ function applyRoleUI() {
   const filtersWrapper = document.getElementById('tickets-filter');
   if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
 
-  // Botão de mesclar só para atendentes e admins
-  const mergeBtn = document.getElementById('merge-mode-btn');
-  if (mergeBtn) mergeBtn.style.display = (currentUser.role !== 'requester') ? 'inline-flex' : 'none';
+  const isAdmin = !!(currentUser.isAdmin || currentUser.isSuperAdmin);
+  const isAttendant = currentUser.role !== 'requester';
 
-  // Botões de teste só para admins e superadmin
-  const isAdmin = currentUser.isAdmin || currentUser.isSuperAdmin;
-  const newTestBtn   = document.getElementById('new-test-btn');
-  const clearTestBtn = document.getElementById('clear-test-btn');
+  // Dropdown de Ações — visível para atendentes e admins
+  const actionsWrapper = document.getElementById('actions-dropdown-wrapper');
+  if (actionsWrapper) actionsWrapper.style.display = isAttendant ? 'block' : 'none';
+
+  // Grupo de testes dentro do dropdown — só para admins
+  const testGroup = document.getElementById('test-actions-group');
+  if (testGroup) testGroup.style.display = isAdmin ? 'block' : 'none';
+
+  // Aba Testes nos filtros — só para admins
   const testFilterBtn = document.getElementById('filter-btn-test');
-  if (newTestBtn)    newTestBtn.style.display    = isAdmin ? 'inline-flex' : 'none';
-  if (clearTestBtn)  clearTestBtn.style.display  = isAdmin ? 'inline-flex' : 'none';
   if (testFilterBtn) testFilterBtn.style.display = isAdmin ? 'inline-flex' : 'none';
 
   if (currentUser.role === 'requester') {

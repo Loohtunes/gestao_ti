@@ -34,6 +34,10 @@ let mergeMode = false;
 // Modo teste
 let _isTestTicket = false;
 
+// Paginação
+let currentPage   = 1;
+const CARDS_PER_PAGE = 6;
+
 // Labels de status
 const STATUS_LABEL = {
   available:      'Aberto',
@@ -49,7 +53,7 @@ const STATUS_LABEL = {
 };
 
 // Sub-statuses que contam como "em atendimento"
-const SUB_STATUS = new Set(['waiting', 'waiting-info', 'in-analysis', 'requested']);
+const SUB_STATUS = new Set(['waiting', 'waiting-info', 'requested']);
 
 // Statuses de material
 const MAT_STATUS = new Set(['available', 'mat-seen', 'mat-ordered', 'archived']);
