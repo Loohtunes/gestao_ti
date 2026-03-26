@@ -112,6 +112,7 @@
             onclick="filterTickets('material', event)">📦 Materiais</button>
           <button class="filter-btn" data-attendant-only onclick="filterTickets('in-progress', event)">Em Atendimento</button>
           <button class="filter-btn" data-attendant-only onclick="filterTickets('completed', event)">✅ Concluídos</button>
+          <button class="filter-btn" id="filter-btn-test" data-admin-only onclick="filterTickets('test', event)" style="display:none;">🧪 Testes</button>
           <button class="filter-btn" data-requester-filter onclick="filterTickets('my-requests', event)">Meus Chamados</button>
           <button class="filter-btn" data-requester-filter onclick="filterTickets('completed', event)">✅ Concluídos</button>
         </div>
@@ -127,6 +128,18 @@
               color:var(--muted);padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
               cursor:pointer;transition:all 0.2s;display:none;white-space:nowrap;">
             🔗 Mesclar Chamados
+          </button>
+          <button id="new-test-btn" onclick="openTicketModal(null, true)"
+            style="background:var(--surface);border:1px dashed #a855f7;border-radius:10px;
+              color:#a855f7;padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+              cursor:pointer;transition:all 0.2s;display:none;white-space:nowrap;">
+            🧪 Chamado de Teste
+          </button>
+          <button id="clear-test-btn" onclick="clearTestTickets()"
+            style="background:var(--surface);border:1px solid #ef4444;border-radius:10px;
+              color:#ef4444;padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+              cursor:pointer;transition:all 0.2s;display:none;white-space:nowrap;">
+            🗑️ Limpar Testes
           </button>
         </div>
       </div>
@@ -289,6 +302,11 @@
           <button type="button" class="ticket-type-btn" id="type-btn-material"
             onclick="setTicketType('material');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
             📦 Solicitação de Material
+          </button>
+          <button type="button" class="ticket-type-btn" id="type-btn-test"
+            style="display:none;border-color:#a855f7;color:#a855f7;"
+            onclick="setTicketType('test');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+            🧪 Teste
           </button>
         </div>
         <div class="form-group" id="ticket-onbehalf-group" style="display:none;">

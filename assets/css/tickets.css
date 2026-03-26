@@ -528,3 +528,26 @@
 #merge-confirm-btn:not(:disabled):hover {
   background: var(--surface2) !important;
 }
+
+/* ── Cards de Teste ── */
+.ticket-card.test-card {
+  background: repeating-linear-gradient(
+    45deg,
+    #faf5ff,
+    #faf5ff 8px,
+    #f3e8ff 8px,
+    #f3e8ff 16px
+  ) !important;
+  border-color: #a855f7 !important;
+  opacity: 0.92;
+}
+.ticket-card.test-card .ticket-prio-stripe { background: #a855f7 !important; }
+.ticket-card.test-card .ticket-number      { color: #a855f7 !important; background: #f3e8ff !important; }
+
+.test-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  font-size: 0.65rem; font-family: var(--font-mono); font-weight: 700;
+  background: #f3e8ff; color: #7c3aed;
+  border: 1px solid #a855f755; border-radius: 4px;
+  padding: 0.1rem 0.45rem; letter-spacing: 0.08em;
+}

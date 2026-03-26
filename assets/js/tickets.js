@@ -4,11 +4,13 @@ async function getNextTicketNumber(type) {
   const counterRef = db.collection('meta').doc('counters');
   return db.runTransaction(async (transaction) => {
     const doc = await transaction.get(counterRef);
-    const field = type === 'material' ? 'material' : 'ticket';
+    const field = type === 'material' ? 'material' : type === 'test' ? 'test' : 'ticket';
     const current = (doc.exists ? (doc.data()[field] || 0) : 0);
     const next = current + 1;
     transaction.set(counterRef, { [field]: next }, { merge: true });
-    return type === 'material' ? 'M' + String(next).padStart(4, '0') : next;
+    if (type === 'material') return 'M' + String(next).padStart(4, '0');
+    if (type === 'test')     return 'T' + String(next).padStart(3, '0');
+    return next;
   });
 }
 
@@ -80,9 +82,10 @@ function renderTickets() {
   } else if (currentFilter === 'available')   { list = tickets.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
   else if (currentFilter === 'material')    { list = tickets.filter(t => t.ticketType === 'material' && t.status !== 'archived'); }
   else if (currentFilter === 'in-progress') { list = tickets.filter(t => (t.status === 'in-progress' || SUB_STATUS.has(t.status)) && t.ticketType !== 'material'); }
-  else if (currentFilter === 'completed')   { list = tickets.filter(t => (t.status === 'completed' || t.status === 'archived') && t.ticketType !== 'material'); }
-  else if (currentFilter === 'archived')    { list = tickets.filter(t => t.status === 'archived'); }  // fallback, não usado mais
-  else { list = tickets.filter(t => t.status !== 'archived' && t.ticketType !== 'material'); }
+  else if (currentFilter === 'completed')   { list = tickets.filter(t => (t.status === 'completed' || t.status === 'archived') && t.ticketType !== 'material' && t.ticketType !== 'test'); }
+  else if (currentFilter === 'test')        { list = tickets.filter(t => t.ticketType === 'test'); }
+  else if (currentFilter === 'archived')    { list = tickets.filter(t => t.status === 'archived'); }  // fallback
+  else { list = tickets.filter(t => t.status !== 'archived' && t.ticketType !== 'material' && t.ticketType !== 'test'); }
 
   const searchVal = (document.getElementById('ticket-search')?.value || '').toLowerCase().trim();
   if (searchVal) {
@@ -135,7 +138,7 @@ function renderTicketsList(board, list) {
       <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach">📎 ${ticket.attachments.length} anexo(s)</span>` : ''}</span>
       <span class="tl-col tl-setor">${ticket.setor ? `<span class="tl-setor-tag">${ticket.setor}</span>` : '<span class="tl-empty">—</span>'}</span>
       <span class="tl-col tl-prio"><span class="tl-prio-tag ${ticket.priority || 'medium'}">${PRIORITY_LABEL[ticket.priority] || '—'}</span></span>
-      <span class="tl-col tl-status"><span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
+      <span class="tl-col tl-status"><span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
       <span class="tl-col tl-date">${dateBlock}</span>
       <span class="tl-col tl-actions" onclick="event.stopPropagation()">${canEdit ? `<button class="tl-btn edit" onclick="editTicket('${ticket.id}')">✎</button><button class="tl-btn del" onclick="deleteTicket('${ticket.id}')">✕</button>` : ''}</span>
     </div>`;
@@ -189,6 +192,8 @@ function renderTicketsCards(board, list) {
     const requesterData = users.find(u => u.username === ticket.requester);
     const isVipTicket   = !isDone && !!requesterData?.isVip;
     const vipBadge      = isVipTicket ? `<span class="vip-badge">⭐ VIP</span>` : '';
+    const isTestTicket  = ticket.ticketType === 'test';
+    const testBadge     = isTestTicket ? `<span class="test-badge">🧪 TESTE</span>` : '';
     const isMergeSelected = mergeMode && selectedForMerge.has(ticket.id);
     const mergeCheckbox = (mergeMode && !isDone && status !== 'archived') ? `
       <div onclick="event.stopPropagation();toggleSelectForMerge('${ticket.id}', event)"
@@ -201,7 +206,7 @@ function renderTicketsCards(board, list) {
         ${isMergeSelected ? '✓' : ''}
       </div>` : '';
     return `<div class="ticket-card-wrapper" style="position:relative;${isMergeSelected ? 'outline:2px solid var(--accent);border-radius:15px;' : ''}" data-ticket-id="${ticket.id}">${badge}${mergeCheckbox}
-      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}${isVipTicket ? ' vip-card' : ''}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
+      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}${isVipTicket ? ' vip-card' : ''}${isTestTicket ? ' test-card' : ''}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
         <div class="ticket-prio-stripe" style="${isDone ? 'background:#22c55e;' : ''}"></div>
         <div class="ticket-card-inner">
           <div class="ticket-content-area">
@@ -209,6 +214,7 @@ function renderTicketsCards(board, list) {
               <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
               ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
               ${vipBadge}
+              ${testBadge}
               <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
               ${ticketNum}
             </div>
@@ -382,6 +388,27 @@ function deleteTicket(id) {
   if (activeDetailId === id) closeTicketDetail();
   db.collection('tickets').doc(id).delete().catch(console.error);
   saveTickets();
+}
+
+// ════════════════════════════════════════════
+// CHAMADOS DE TESTE
+// ════════════════════════════════════════════
+
+function clearTestTickets() {
+  const testList = tickets.filter(t => t.ticketType === 'test');
+  if (!testList.length) { showNotification('Nenhum chamado de teste para limpar.', 'error'); return; }
+  if (!confirm(`Excluir ${testList.length} chamado(s) de teste? Esta ação não pode ser desfeita.`)) return;
+  const batch = db.batch();
+  testList.forEach(t => batch.delete(db.collection('tickets').doc(t.id)));
+  batch.commit()
+    .then(() => {
+      tickets = tickets.filter(t => t.ticketType !== 'test');
+      showNotification(`${testList.length} chamado(s) de teste removidos! 🗑️`, 'success');
+      if (currentFilter === 'test') filterTickets('all', null);
+      else renderTickets();
+      updateStats();
+    })
+    .catch(err => { console.error('[Test] Erro ao limpar:', err); showNotification('Erro ao limpar testes.', 'error'); });
 }
 
 // ════════════════════════════════════════════

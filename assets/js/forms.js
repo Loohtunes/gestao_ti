@@ -1,8 +1,14 @@
 // ===== FORMS — Modal de criação e edição de chamados =====
 
-function openTicketModal(ticketId = null) {
+function openTicketModal(ticketId = null, isTest = false) {
   editingTicketId = ticketId;
   ticketFiles = [];
+  _isTestTicket = isTest;
+
+  // Mostrar/esconder botão de tipo teste
+  const testTypeBtn = document.getElementById('type-btn-test');
+  if (testTypeBtn) testTypeBtn.style.display = (currentUser?.isAdmin || currentUser?.isSuperAdmin) ? 'flex' : 'none';
+
   const prioGroup = document.getElementById('ticket-priority-group');
   if (prioGroup) prioGroup.style.display = (currentUser?.role === 'requester') ? 'none' : 'flex';
   // Campo "Abrir em nome de" — só admins/superadmins
@@ -42,12 +48,15 @@ function openTicketModal(ticketId = null) {
       }
     }
   } else {
-    document.getElementById('modal-title').textContent = 'Novo Chamado';
+    document.getElementById('modal-title').textContent = isTest ? '🧪 Chamado de Teste' : 'Novo Chamado';
     document.getElementById('ticket-title-input').value = '';
     document.getElementById('ticket-description-input').value = '';
     document.getElementById('ticket-priority-input').value = 'medium';
     document.getElementById('ticket-files-list').innerHTML = '';
-    setTicketType('error');
+    setTicketType(isTest ? 'test' : 'error');
+    // Ativa botão de tipo correspondente
+    document.querySelectorAll('.ticket-type-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(isTest ? 'type-btn-test' : 'type-btn-error')?.classList.add('active');
     const qtyInput = document.getElementById('ticket-material-qty');
     const unitInput = document.getElementById('ticket-material-unit');
     const dateInput = document.getElementById('ticket-material-date');
@@ -68,7 +77,7 @@ function openTicketModal(ticketId = null) {
 }
 
 function setTicketType(type) {
-  const isError    = type === 'error';
+  const isError    = type === 'error' || type === 'test';
   const isMaterial = type === 'material';
   const titleGroup    = document.getElementById('ticket-title-group');
   const prioGroup     = document.getElementById('ticket-priority-group');
@@ -118,7 +127,8 @@ async function saveTicket() {
   const setor      = document.getElementById('ticket-setor-input').value;
   const isRequester = currentUser?.role === 'requester';
   const prio       = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
-  const ticketType = document.getElementById('ticket-type-input')?.value || 'error';
+  const rawType    = document.getElementById('ticket-type-input')?.value || 'error';
+  const ticketType = (rawType === 'test' || _isTestTicket) ? 'test' : rawType;
   const isMaterial = ticketType === 'material';
   const matQty     = isMaterial ? (document.getElementById('ticket-material-qty')?.value  || '') : '';
   const matUnit    = isMaterial ? (document.getElementById('ticket-material-unit')?.value || 'un') : '';

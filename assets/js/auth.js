@@ -264,9 +264,16 @@ function applyRoleUI() {
 
   // Botão de mesclar só para atendentes e admins
   const mergeBtn = document.getElementById('merge-mode-btn');
-  if (mergeBtn) {
-    mergeBtn.style.display = (currentUser.role !== 'requester') ? 'inline-flex' : 'none';
-  }
+  if (mergeBtn) mergeBtn.style.display = (currentUser.role !== 'requester') ? 'inline-flex' : 'none';
+
+  // Botões de teste só para admins e superadmin
+  const isAdmin = currentUser.isAdmin || currentUser.isSuperAdmin;
+  const newTestBtn   = document.getElementById('new-test-btn');
+  const clearTestBtn = document.getElementById('clear-test-btn');
+  const testFilterBtn = document.getElementById('filter-btn-test');
+  if (newTestBtn)    newTestBtn.style.display    = isAdmin ? 'inline-flex' : 'none';
+  if (clearTestBtn)  clearTestBtn.style.display  = isAdmin ? 'inline-flex' : 'none';
+  if (testFilterBtn) testFilterBtn.style.display = isAdmin ? 'inline-flex' : 'none';
 
   if (currentUser.role === 'requester') {
     // Solicitante: mostra filtros próprios, esconde os de atendente

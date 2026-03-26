@@ -31,6 +31,9 @@ const PRIORITY_LABEL = {
 let selectedForMerge = new Set();
 let mergeMode = false;
 
+// Modo teste
+let _isTestTicket = false;
+
 // Labels de status
 const STATUS_LABEL = {
   available:      'Aberto',
