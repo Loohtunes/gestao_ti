@@ -67,15 +67,15 @@ function resetUserForm() {
 }
 
 function toggleAdminCheckbox() {
-  const role    = document.getElementById('user-role-input').value;
-  const row     = document.getElementById('user-admin-vip-row');
+  const role     = document.getElementById('user-role-input').value;
+  const row      = document.getElementById('user-admin-vip-row');
   const adminGrp = document.getElementById('user-admin-group');
   if (!isSuperAdmin()) {
-    if (row) row.style.display = 'none';
+    if (row) { row.style.display = 'none'; row.style.marginTop = '-0.75rem'; }
     return;
   }
-  // Mostrar linha completa para superadmin
-  if (row) row.style.display = 'grid';
+  // Mostrar linha — remove margem negativa que cancela o espaço fantasma
+  if (row) { row.style.display = 'grid'; row.style.marginTop = '0.5rem'; }
   // Admin só visível para atendentes
   if (adminGrp) {
     adminGrp.style.display = (role === 'attendant') ? 'flex' : 'none';

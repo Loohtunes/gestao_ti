@@ -134,7 +134,10 @@
             </button>
             <div id="actions-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;
               background:var(--surface);border:1px solid var(--border2);border-radius:12px;
-              box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;z-index:200;overflow:hidden;">
+              box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;z-index:200;overflow:hidden;
+              transform-origin:top right;
+              transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s ease;
+              transform:scaleY(0.7) scaleX(0.95);opacity:0;pointer-events:none;">
               <button id="merge-mode-btn" onclick="toggleMergeMode()"
                 style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
                   font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:var(--text);
@@ -263,7 +266,7 @@
           </div>
 
           <!-- Admin + VIP lado a lado -->
-          <div id="user-admin-vip-row" style="display:none;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div id="user-admin-vip-row" style="display:none;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:-0.75rem;">
 
             <div id="user-admin-group" style="display:flex;flex-direction:row;align-items:center;gap:8px;background:#f0f0f3;border:1px solid #e0e0e8;border-radius:8px;padding:0.55rem 0.8rem;">
               <input type="checkbox" id="user-admin-input" style="width:14px;height:14px;accent-color:#b71c1c;cursor:pointer;flex-shrink:0;margin:0;">
