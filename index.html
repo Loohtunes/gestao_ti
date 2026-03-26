@@ -41,6 +41,18 @@
       </span>
     </div>
     <div class="nav-right">
+      <div style="position:relative;display:inline-block;">
+        <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()"
+          title="Notas de Atualização" style="gap:0.4rem;">
+          📋 Novidades
+        </button>
+        <span id="changelog-badge" style="display:none;position:absolute;top:-6px;right:-6px;
+          width:16px;height:16px;background:var(--accent);color:#fff;border-radius:50%;
+          font-size:0.6rem;font-family:'Space Mono',monospace;font-weight:700;
+          display:none;align-items:center;justify-content:center;border:2px solid var(--bg);">
+          N
+        </span>
+      </div>
       <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão...">
         <span id="sync-icon-nav">🟡</span>Firebase
       </button>
@@ -117,6 +129,13 @@
           <button class="filter-btn" data-requester-filter onclick="filterTickets('completed', event)">✅ Concluídos</button>
         </div>
         <div class="tickets-header-right">
+          <button id="view-toggle-btn" onclick="toggleViewMode()"
+            title="Alternar visualização"
+            style="width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
+              background:var(--surface);color:var(--muted);cursor:pointer;font-size:1rem;
+              display:none;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">
+            ⊞
+          </button>
           <div class="search-widget" id="search-widget">
             <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Pesquisar chamados">🔍</button>
             <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
@@ -301,7 +320,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱 WhatsApp</label>
-              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
+              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 9 0000-0000" oninput="formatWhatsApp(this)" maxlength="16">
             </div>
           </div>
 
@@ -318,7 +337,7 @@
                 <span>Tenho AnyDesk</span>
               </label>
             </div>
-            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
+            <input type="text" class="form-input" id="user-anydesk-input" placeholder="Ex: 123 456 789" oninput="formatAnyDesk(this)" maxlength="11" style="display:none;margin-top:0.4rem;">
           </div>
 
         </div>
@@ -489,6 +508,68 @@
           <button class="sync-btn danger" onclick="disconnectDropbox()">🔌 Desconectar</button>
         </div>
         <div class="sync-last-sync" id="sync-last-sync"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAINEL: NOTAS DE ATUALIZAÇÃO ══ -->
+  <div id="changelog-panel" style="display:none;position:fixed;top:56px;right:1rem;
+    width:340px;max-height:70vh;background:var(--surface);border:1px solid var(--border2);
+    border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.15);z-index:400;
+    overflow:hidden;flex-direction:column;
+    transform-origin:top right;
+    transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.18s ease;
+    transform:scaleY(0.8) scaleX(0.95);opacity:0;pointer-events:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding:1rem 1.2rem;border-bottom:1px solid var(--border2);background:var(--surface2);flex-shrink:0;">
+      <div style="font-size:0.9rem;font-weight:800;letter-spacing:-0.01em;">📋 Notas de Atualização</div>
+      <div style="display:flex;gap:0.4rem;">
+        <button id="changelog-manage-btn" onclick="openChangelogManager()"
+          style="display:none;font-size:0.7rem;font-family:var(--font-mono);
+            background:var(--surface3);border:1px solid var(--border2);border-radius:6px;
+            padding:0.2rem 0.6rem;cursor:pointer;color:var(--muted);transition:all 0.15s;"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+          ✎ Gerenciar
+        </button>
+        <button onclick="toggleChangelog()"
+          style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
+            background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.85rem;
+            display:flex;align-items:center;justify-content:center;">✕</button>
+      </div>
+    </div>
+    <div id="changelog-list" style="overflow-y:auto;flex:1;padding:0.75rem;
+      scrollbar-width:thin;scrollbar-color:#d0d0d8 transparent;">
+      <div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:2rem;">
+        Carregando...
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: GERENCIAR CHANGELOG ══ -->
+  <div class="modal-overlay" id="changelog-modal" onclick="if(event.target===this)closeChangelogManager()">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <div class="modal-title">📋 Gerenciar Notas de Atualização</div>
+        <button class="modal-close" onclick="closeChangelogManager()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Versão</label>
+          <input type="text" class="form-input" id="cl-version-input" placeholder="Ex: v1.2.0">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Data</label>
+          <input type="date" class="form-input" id="cl-date-input">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Notas (uma por linha)</label>
+          <textarea class="form-textarea" id="cl-notes-input" placeholder="🆕 Nova funcionalidade X&#10;🐛 Corrigido bug Y&#10;⚡ Melhorado Z" rows="6"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeChangelogManager()">Cancelar</button>
+        <button class="btn-save" onclick="saveChangelog()">Publicar</button>
       </div>
     </div>
   </div>

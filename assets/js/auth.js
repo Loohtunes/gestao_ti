@@ -269,6 +269,14 @@ function applyRoleUI() {
   const isAttendant = currentUser.role !== 'requester';
 
   // Dropdown de Ações — visível para atendentes e admins
+  // Botao alternar visualizacao
+  const viewToggleBtn = document.getElementById('view-toggle-btn');
+  if (viewToggleBtn) viewToggleBtn.style.display = isAttendant ? 'flex' : 'none';
+
+  // Botao gerenciar changelog — so super admin
+  const changelogManageBtn = document.getElementById('changelog-manage-btn');
+  if (changelogManageBtn) changelogManageBtn.style.display = currentUser.isSuperAdmin ? 'flex' : 'none';
+
   const actionsWrapper = document.getElementById('actions-dropdown-wrapper');
   if (actionsWrapper) actionsWrapper.style.display = isAttendant ? 'block' : 'none';
 

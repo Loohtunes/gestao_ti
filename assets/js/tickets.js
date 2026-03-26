@@ -127,9 +127,13 @@ function renderTickets() {
 
   if (!list.length) { board.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
+  // Forçar lista se viewMode = list (exceto filtros que já são lista)
+  const forceList = (typeof viewMode !== 'undefined') && viewMode === 'list';
   const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed';
 
   if (useList) {
+    renderTicketsList(board, list);
+  } else if (forceList) {
     renderTicketsList(board, list);
   } else {
     // Ordenar por prioridade com VIP no topo
