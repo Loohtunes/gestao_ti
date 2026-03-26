@@ -133,12 +133,12 @@ function renderTicketsList(board, list) {
     const num = ticket.number ? (typeof ticket.number === 'string' ? ticket.number : '#' + String(ticket.number).padStart(4, '0')) : '—';
     const canEdit = ticket.requester === currentUser.username && status === 'available';
     const dateBlock = [ticket.date ? `<span class="tl-date-text">📅 ${ticket.date}</span>` : '', ticket.startedAt ? `<span class="tl-date-sub">▶️ ${ticket.startedAt}</span>` : '', ticket.completedAt ? `<span class="tl-date-done">✅ ${ticket.completedAt}</span>` : ''].filter(Boolean).join('');
-    return `<div class="tl-row ${SUB_STATUS.has(status) ? 'in-progress' : status} prio-${ticket.priority || 'medium'}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
+    return `<div class="tl-row ${status} prio-${ticket.priority || 'medium'}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
       <span class="tl-col tl-num"><span class="tl-num-badge">${num}</span></span>
       <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach">📎 ${ticket.attachments.length} anexo(s)</span>` : ''}</span>
       <span class="tl-col tl-setor">${ticket.setor ? `<span class="tl-setor-tag">${ticket.setor}</span>` : '<span class="tl-empty">—</span>'}</span>
       <span class="tl-col tl-prio"><span class="tl-prio-tag ${ticket.priority || 'medium'}">${PRIORITY_LABEL[ticket.priority] || '—'}</span></span>
-      <span class="tl-col tl-status"><span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
+      <span class="tl-col tl-status"><span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
       <span class="tl-col tl-date">${dateBlock}</span>
       <span class="tl-col tl-actions" onclick="event.stopPropagation()">${canEdit ? `<button class="tl-btn edit" onclick="editTicket('${ticket.id}')">✎</button><button class="tl-btn del" onclick="deleteTicket('${ticket.id}')">✕</button>` : ''}</span>
     </div>`;
@@ -166,10 +166,8 @@ function renderTicketsCards(board, list) {
       actions = `<div class="ticket-actions-bottom">
         <select class="ticket-substatus-select" onchange="event.stopPropagation();setSubStatus('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
           <option value="in-progress" ${status==='in-progress'?'selected':''}>⚙️ Em Atendimento</option>
-          <option value="in-analysis" ${status==='in-analysis'?'selected':''}>🔍 Em Análise</option>
           <option value="waiting-info" ${status==='waiting-info'?'selected':''}>💬 Aguard. Informações</option>
           <option value="waiting" ${status==='waiting'?'selected':''}>⏸️ Em Espera</option>
-          <option value="requested" ${status==='requested'?'selected':''}>📋 Solicitado</option>
         </select>
         <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
         <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
@@ -211,7 +209,7 @@ function renderTicketsCards(board, list) {
         <div class="ticket-card-inner">
           <div class="ticket-content-area">
             <div class="ticket-badges-row">
-              <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
+              <span class="ticket-status-badge ${status}">${STATUS_LABEL[status] || status}</span>
               ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
               ${vipBadge}
               ${testBadge}

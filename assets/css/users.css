@@ -35,3 +35,24 @@
 .uli-extras { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .uli-extras span { font-size: 0.73rem; font-family: var(--font-mono); background: var(--surface); border: 1px solid var(--border2); border-radius: 5px; padding: 0.2rem 0.55rem; color: var(--muted); }
 .uli-no-extras { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); font-style: italic; }
+
+/* ── Alinhamento do formulário de usuário ── */
+#user-form-container .form-group { margin-bottom: 0; }
+#user-form-container .form-label {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+#user-form-container .form-row-2 { gap: 0.9rem; }
+#user-form-container .modal-body { gap: 0.9rem; }
+
+/* Grupos de checkbox (admin e VIP) — mesma altura e alinhamento */
+#user-admin-group,
+#user-vip-group {
+  min-height: 52px;
+  box-sizing: border-box;
+}
