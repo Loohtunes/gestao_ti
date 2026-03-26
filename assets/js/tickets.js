@@ -72,16 +72,16 @@ function renderTickets() {
     // Meus chamados abertos e em atendimento
     list = tickets.filter(t => t.requester === currentUser.username && t.status !== 'archived' && t.status !== 'completed');
   } else if (isRequester && currentFilter === 'completed') {
-    // Solicitante vendo seus concluídos
-    list = tickets.filter(t => t.requester === currentUser.username && t.status === 'completed');
+    // Solicitante vendo seus concluídos — inclui archived (auto-arquivados)
+    list = tickets.filter(t => t.requester === currentUser.username && (t.status === 'completed' || t.status === 'archived'));
   } else if (isRequester && currentFilter === 'archived') {
-    // Solicitante vendo seus arquivados
+    // fallback — não usado mais, absorbed pelo completed
     list = tickets.filter(t => t.requester === currentUser.username && t.status === 'archived');
   } else if (currentFilter === 'available')   { list = tickets.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
   else if (currentFilter === 'material')    { list = tickets.filter(t => t.ticketType === 'material' && t.status !== 'archived'); }
   else if (currentFilter === 'in-progress') { list = tickets.filter(t => (t.status === 'in-progress' || SUB_STATUS.has(t.status)) && t.ticketType !== 'material'); }
-  else if (currentFilter === 'completed')   { list = tickets.filter(t => t.status === 'completed' && t.ticketType !== 'material'); }
-  else if (currentFilter === 'archived')    { list = tickets.filter(t => t.status === 'archived'); }
+  else if (currentFilter === 'completed')   { list = tickets.filter(t => (t.status === 'completed' || t.status === 'archived') && t.ticketType !== 'material'); }
+  else if (currentFilter === 'archived')    { list = tickets.filter(t => t.status === 'archived'); }  // fallback, não usado mais
   else { list = tickets.filter(t => t.status !== 'archived' && t.ticketType !== 'material'); }
 
   const searchVal = (document.getElementById('ticket-search')?.value || '').toLowerCase().trim();
@@ -117,7 +117,7 @@ function buildArchivedRow(ticket) {
 }
 
 function renderTicketsList(board, list) {
-  const isArchived = currentFilter === 'archived';
+  const isArchived = currentFilter === 'archived' || currentFilter === 'completed';
   board.style.display = 'block';
   board.className = isArchived ? 'tickets-board list-view archived-list' : 'tickets-board list-view';
   if (isArchived) {
@@ -171,9 +171,9 @@ function renderTicketsCards(board, list) {
         <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
         <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
       </div>`;
-    } else if (status === 'completed' && (currentUser.isAdmin || currentUser.isSuperAdmin || ticket.attendant === currentUser.username)) {
-      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button><button class="ticket-archive-btn" onclick="event.stopPropagation();archiveTicket('${ticket.id}')">📦 Arquivar</button></div>`;
-    } else if (status === 'archived' && (currentUser.isAdmin || currentUser.isSuperAdmin)) {
+    } else if ((status === 'completed' || status === 'archived') && (currentUser.isAdmin || currentUser.isSuperAdmin || ticket.attendant === currentUser.username)) {
+      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button></div>`;
+    } else if (false && status === 'archived') {  // nunca cai aqui — bloco unificado acima
       actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button></div>`;
     }
     const numDisplay = ticket.number ? (typeof ticket.number === 'string' ? ticket.number : '#' + String(ticket.number).padStart(4, '0')) : '';
@@ -331,10 +331,16 @@ function confirmPullTicket(id) {
 
 function completeTicket(id) {
   const t = tickets.find(t => t.id === id); if (!t || !confirm(`Concluir o chamado "${t.title}"?`)) return;
-  t.status = 'completed'; t.completedAt = new Date().toLocaleString('pt-BR'); t.subStatus = null;
-  logTicketEvent(t, `Chamado concluído por ${capitalizeName(currentUser.username)}`);
-  saveTickets(); if (activeDetailId === id) openTicketDetail(id);
-  showNotification(`Chamado "${t.title}" concluído! ✅`, 'success');
+  // Auto-arquiva ao concluir — etapa única
+  const now = new Date().toLocaleString('pt-BR');
+  t.status      = 'archived';
+  t.completedAt = now;
+  t.archivedAt  = now;
+  t.subStatus   = null;
+  logTicketEvent(t, `Chamado concluido e arquivado por ${capitalizeName(currentUser.username)}`);
+  saveTickets();
+  closeTicketDetail();
+  showNotification(`Chamado "${t.title}" concluido! ✅`, 'success');
 }
 
 function releaseTicket(id) {
@@ -347,7 +353,11 @@ function releaseTicket(id) {
 
 function reopenTicket(id) {
   const t = tickets.find(t => t.id === id); if (!t || !confirm(`Reabrir o chamado "${t.title}"?`)) return;
-  t.status = 'available'; t.attendant = null; t.startedAt = null; t.completedAt = null;
+  t.status      = 'available';
+  t.attendant   = null;
+  t.startedAt   = null;
+  t.completedAt = null;
+  t.archivedAt  = null;
   logTicketEvent(t, `Chamado reaberto por ${capitalizeName(currentUser.username)}`);
   saveTickets(); if (activeDetailId === id) openTicketDetail(id);
   showNotification(`Chamado "${t.title}" reaberto! 🔄`, 'success');

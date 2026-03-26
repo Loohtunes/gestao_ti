@@ -269,7 +269,8 @@ function applyRoleUI() {
     document.querySelectorAll('[data-attendant-only]').forEach(b => b.style.display = 'inline-flex');
     document.querySelectorAll('[data-requester-filter]').forEach(b => b.style.display = 'none');
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('[data-attendant-only]')[0]?.classList.add('active');
+    const firstAttendantBtn = document.querySelector('[data-attendant-only]');
+    if (firstAttendantBtn) firstAttendantBtn.classList.add('active');
     currentFilter = 'all';
   }
 }

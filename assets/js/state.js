@@ -36,7 +36,7 @@ const STATUS_LABEL = {
   available:      'Aberto',
   'in-progress':  'Em Atendimento',
   completed:      'Concluído',
-  archived:       'Arquivado',
+  archived:       'Concluído',
   'waiting':      'Em Espera',
   'waiting-info': 'Aguardando Informações',
   'in-analysis':  'Em Análise',
