@@ -42,13 +42,14 @@ const STATUS_LABEL = {
   archived:       'Concluído',
   'waiting':      'Em Espera',
   'waiting-info': 'Aguardando Informações',
+  'in-analysis':  'Em Análise',
   'requested':    'Solicitado',
   'mat-seen':     'Visto',
   'mat-ordered':  'Solicitado',
 };
 
 // Sub-statuses que contam como "em atendimento"
-const SUB_STATUS = new Set(['waiting', 'waiting-info', 'requested']);
+const SUB_STATUS = new Set(['waiting', 'waiting-info', 'in-analysis', 'requested']);
 
 // Statuses de material
 const MAT_STATUS = new Set(['available', 'mat-seen', 'mat-ordered', 'archived']);

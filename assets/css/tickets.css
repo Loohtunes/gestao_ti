@@ -422,8 +422,6 @@
 .tl-row.prio-medium { border-left-color: var(--prio-medium-stripe); }
 .tl-row.prio-high   { border-left-color: var(--prio-high-stripe); }
 .tl-row.prio-urgent { border-left-color: var(--prio-urgent-stripe); }
-/* Sub-status na lista */
-.tl-row.in-progress, .tl-row.waiting, .tl-row.waiting-info { border-left-color: var(--accent); }
 
 .tl-col { display: flex; flex-direction: column; gap: 0.25rem; }
 .tl-num { align-items: center; justify-content: center; }
