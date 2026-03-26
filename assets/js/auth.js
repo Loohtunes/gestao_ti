@@ -94,6 +94,7 @@ function showUserForm() {
   document.getElementById('user-modal-title').textContent = 'Novo Usuário';
   resetUserForm();
   document.getElementById('user-pass-input').placeholder = 'Senha (obrigatória)';
+  toggleAdminCheckbox(); // garante que VIP apareça para superadmin desde o início
 }
 
 function openUserForm(isFirstUser = false) {
@@ -109,6 +110,10 @@ function openUserForm(isFirstUser = false) {
     document.getElementById('user-admin-input').checked = true;
     document.getElementById('user-role-group').style.display = 'none';
     document.getElementById('user-admin-group').style.display = 'none';
+    const vipGroup = document.getElementById('user-vip-group');
+    if (vipGroup) vipGroup.style.display = 'none'; // não mostra VIP na criação do primeiro usuário
+  } else {
+    toggleAdminCheckbox(); // garante VIP visível para superadmin
   }
 }
 
