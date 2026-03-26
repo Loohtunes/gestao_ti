@@ -94,7 +94,7 @@ function renderTickets() {
 
   if (!list.length) { board.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-  const useList = currentUser.role === 'requester' || currentFilter === 'archived';
+  const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed';
   useList ? renderTicketsList(board, list) : renderTicketsCards(board, list);
   updateMaterialTabBadge();
 }
