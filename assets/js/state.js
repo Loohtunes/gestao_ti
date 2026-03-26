@@ -46,7 +46,6 @@ const STATUS_LABEL = {
   archived:       'Concluído',
   'waiting':      'Em Espera',
   'waiting-info': 'Aguardando Informações',
-  'in-analysis':  'Em Análise',
   'requested':    'Solicitado',
   'mat-seen':     'Visto',
   'mat-ordered':  'Solicitado',

@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#d32f2f">
-  <title>Gestão de T.I</title>
+  <title>Gestão T.I - Chamados</title>
   <link rel="icon" href="img/premovale (1).png">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -112,7 +112,7 @@
             onclick="filterTickets('material', event)">📦 Materiais</button>
           <button class="filter-btn" data-attendant-only onclick="filterTickets('in-progress', event)">Em Atendimento</button>
           <button class="filter-btn" data-attendant-only onclick="filterTickets('completed', event)">✅ Concluídos</button>
-          <button class="filter-btn" id="filter-btn-test" data-admin-only onclick="filterTickets('test', event)" style="display:none;text-align:center;">🧪 Testes</button>
+          <button class="filter-btn" id="filter-btn-test" data-admin-only onclick="filterTickets('test', event)" style="display:none;justify-content:center;align-items:center;">🧪 Testes</button>
           <button class="filter-btn" data-requester-filter onclick="filterTickets('my-requests', event)">Meus Chamados</button>
           <button class="filter-btn" data-requester-filter onclick="filterTickets('completed', event)">✅ Concluídos</button>
         </div>
@@ -215,22 +215,22 @@
         <div class="modal-title" id="user-modal-title">Gerenciamento de Usuários</div>
         <button class="modal-close" onclick="closeUserModal()">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" style="gap:0;padding:1.25rem;">
         <div id="user-list-container" style="display:none;">
           <h3 style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">Usuários Cadastrados</h3>
           <div id="users-list" style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);"></div>
           <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo Usuário</button>
         </div>
-        <div id="user-form-container" style="display:flex;flex-direction:column;gap:0.75rem;">
+        <div id="user-form-container" style="display:flex;flex-direction:column;gap:0.8rem;width:100%;">
 
           <!-- Linha 1: Nome + Senha -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label class="form-label">Nome de Usuário</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Nome de Usuário</label>
               <input type="text" class="form-input" id="user-name-input" placeholder="Login do usuário">
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label class="form-label">Senha</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Senha</label>
               <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha" autocomplete="new-password">
             </div>
           </div>
@@ -238,14 +238,14 @@
           <!-- Linha 2: Papel + Setor -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;" id="user-role-group">
-              <label class="form-label">Papel do Usuário</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Papel do Usuário</label>
               <select class="form-input" id="user-role-input" onchange="toggleAdminCheckbox()">
                 <option value="requester">Solicitante</option>
                 <option value="attendant">Atendente</option>
               </select>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label class="form-label">🏢 Setor</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🏢 Setor</label>
               <select class="form-input" id="user-setor-input">
                 <option value="">Selecione o Setor</option>
                 <option value="Engenharia">Engenharia</option>
@@ -262,41 +262,46 @@
             </div>
           </div>
 
-          <!-- Admin e VIP — mesma altura, padding e espaçamento -->
-          <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-            <input type="checkbox" id="user-admin-input" style="width:16px;height:16px;accent-color:var(--accent2);cursor:pointer;flex-shrink:0;">
+          <!-- Admin -->
+          <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;background:#f0f0f3;border:1px solid #e0e0e8;border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="user-admin-input" style="width:16px;height:16px;accent-color:#b71c1c;cursor:pointer;flex-shrink:0;margin:0;">
             <div style="display:flex;flex-direction:column;gap:3px;">
-              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-admin-input">É Administrador?</label>
-              <span style="font-size:0.68rem;color:var(--muted);line-height:1.3;">Administradores gerenciam usuários e chamados</span>
+              <label style="font-size:0.78rem;font-weight:600;color:#1a1a2e;cursor:pointer;margin:0;line-height:1;" for="user-admin-input">É Administrador?</label>
+              <span style="font-size:0.68rem;color:#6b6b80;line-height:1.4;margin:0;">Administradores gerenciam usuários e chamados</span>
             </div>
           </div>
 
-          <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-            <input type="checkbox" id="user-vip-input" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+          <!-- VIP -->
+          <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;background:#f0f0f3;border:1px solid #e0e0e8;border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="user-vip-input" style="width:16px;height:16px;accent-color:#d32f2f;cursor:pointer;flex-shrink:0;margin:0;">
             <div style="display:flex;flex-direction:column;gap:3px;">
-              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-vip-input">Usuário VIP</label>
-              <span style="font-size:0.68rem;color:var(--muted);line-height:1.3;">Chamados deste usuário terão destaque especial</span>
+              <label style="font-size:0.78rem;font-weight:600;color:#1a1a2e;cursor:pointer;margin:0;line-height:1;" for="user-vip-input">Usuário VIP</label>
+              <span style="font-size:0.68rem;color:#6b6b80;line-height:1.4;margin:0;">Chamados deste usuário terão destaque especial</span>
             </div>
           </div>
 
           <!-- Divisor -->
-          <div class="form-divider"><span>Informações de Contato <span class="form-optional">(opcional)</span></span></div>
+          <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
+            <span style="flex:1;height:1px;background:#e0e0e8;"></span>
+            <span>Informações de Contato <span style="font-size:0.6rem;text-transform:none;letter-spacing:0;opacity:0.7;">(opcional)</span></span>
+            <span style="flex:1;height:1px;background:#e0e0e8;"></span>
+          </div>
 
           <!-- Linha: E-mail + WhatsApp -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label class="form-label">✉️ E-mail</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">✉️ E-mail</label>
               <input type="email" class="form-input" id="user-email-input" placeholder="email@empresa.com">
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label class="form-label">📱 WhatsApp</label>
+              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱 WhatsApp</label>
               <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
             </div>
           </div>
 
           <!-- AnyDesk -->
           <div style="display:flex;flex-direction:column;gap:6px;">
-            <label class="form-label">🖥️ AnyDesk</label>
+            <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🖥️ AnyDesk</label>
             <div class="anydesk-toggle">
               <label class="anydesk-option">
                 <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked onchange="toggleAnydeskInput()">
