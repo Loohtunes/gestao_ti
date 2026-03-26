@@ -185,6 +185,10 @@ function renderTicketsCards(board, list) {
     const isMaterialCard = ticket.ticketType === 'material';
     const unseen = getUnseenCount(ticket);
     const badge = unseen > 0 ? `<span class="card-notif-badge">${unseen > 99 ? '99+' : unseen}</span>` : '';
+    // VIP — verifica se o solicitante tem flag isVip
+    const requesterData = users.find(u => u.username === ticket.requester);
+    const isVipTicket   = !isDone && !!requesterData?.isVip;
+    const vipBadge      = isVipTicket ? `<span class="vip-badge">⭐ VIP</span>` : '';
     const isMergeSelected = mergeMode && selectedForMerge.has(ticket.id);
     const mergeCheckbox = (mergeMode && !isDone && status !== 'archived') ? `
       <div onclick="event.stopPropagation();toggleSelectForMerge('${ticket.id}', event)"
@@ -197,13 +201,14 @@ function renderTicketsCards(board, list) {
         ${isMergeSelected ? '✓' : ''}
       </div>` : '';
     return `<div class="ticket-card-wrapper" style="position:relative;${isMergeSelected ? 'outline:2px solid var(--accent);border-radius:15px;' : ''}" data-ticket-id="${ticket.id}">${badge}${mergeCheckbox}
-      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
+      <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}${isVipTicket ? ' vip-card' : ''}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
         <div class="ticket-prio-stripe" style="${isDone ? 'background:#22c55e;' : ''}"></div>
         <div class="ticket-card-inner">
           <div class="ticket-content-area">
             <div class="ticket-badges-row">
               <span class="ticket-status-badge ${SUB_STATUS.has(status) ? 'in-progress' : status}">${STATUS_LABEL[status] || status}</span>
               ${ticket.ticketType === 'material' ? '<span class="ticket-type-badge">📦 Material</span>' : ''}
+              ${vipBadge}
               <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
               ${ticketNum}
             </div>

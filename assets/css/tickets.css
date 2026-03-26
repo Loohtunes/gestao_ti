@@ -114,21 +114,20 @@
   border: 1px solid transparent;
 }
 
-.ticket-status-badge.available  { background: #4caf5020; color: #2e7d32; border-color: #4caf5030; }
-.ticket-status-badge.completed  { background: #22c55e20; color: #15803d; border-color: #22c55e30; }
-.ticket-status-badge.archived   { background: #6b6b8020; color: var(--muted); border-color: #6b6b8030; }
-.ticket-status-badge.waiting    { background: #fef3c7; color: #92400e; border-color: #fde68a; }
-.ticket-status-badge.waiting-info { background: #ede9fe; color: #5b21b6; border-color: #ddd6fe; }
-.ticket-status-badge.in-analysis  { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
-.ticket-status-badge.requested    { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+/* ── Aberto — verde mais escuro ── */
+.ticket-status-badge.available {
+  background: #14532d;
+  color: #bbf7d0;
+  border-color: #166534;
+}
 
+/* ── Em Atendimento — vermelho com bolinha pulsante rápida ── */
 .ticket-status-badge.in-progress {
   background: var(--accent) !important;
   color: #fff !important;
   border-color: var(--accent2) !important;
   gap: 0.35rem;
 }
-
 .ticket-status-badge.in-progress::before {
   content: '';
   display: inline-block;
@@ -138,6 +137,53 @@
   animation: livePulse 1.2s ease-in-out infinite;
   flex-shrink: 0;
 }
+
+/* ── Aguardando Informações — roxo com bolinha pulsante lenta ── */
+.ticket-status-badge.waiting-info {
+  background: #581c87;
+  color: #e9d5ff;
+  border-color: #6b21a8;
+  gap: 0.35rem;
+}
+.ticket-status-badge.waiting-info::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #e9d5ff;
+  animation: slowPulse 2.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── Em Espera — amarelo com bolinha estática ── */
+.ticket-status-badge.waiting {
+  background: #713f12;
+  color: #fef08a;
+  border-color: #854d0e;
+  gap: 0.35rem;
+}
+.ticket-status-badge.waiting::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #fef08a;
+  flex-shrink: 0;
+}
+
+/* ── Concluído / Arquivado — verde ── */
+.ticket-status-badge.completed,
+.ticket-status-badge.archived {
+  background: #22c55e20;
+  color: #15803d;
+  border-color: #22c55e30;
+}
+
+/* ── Legados / Materiais ── */
+.ticket-status-badge.in-analysis  { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+.ticket-status-badge.requested    { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+.ticket-status-badge.mat-seen     { background: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+.ticket-status-badge.mat-ordered  { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
 
 .ticket-priority-badge {
   display: inline-block;
@@ -424,6 +470,36 @@
 .tl-btn.arc-unarchive:hover { background: #f0fdf4; border-color: #22c55e; }
 .tl-btn.arc-delete { border-color: var(--border2); color: var(--muted); }
 .tl-btn.arc-delete:hover { border-color: var(--accent3); color: var(--accent3); background: var(--surface); }
+
+/* ── Card VIP — fundo preto, pulsação amarela ── */
+.ticket-card.vip-card {
+  background: #0f0f0f !important;
+  border-color: #fde68a55 !important;
+}
+.ticket-card.vip-card .ticket-prio-stripe {
+  background: #fde68a !important;
+  animation: vipStripe 1.8s ease-in-out infinite !important;
+}
+.ticket-card.vip-card .ticket-title,
+.ticket-card.vip-card .ticket-number,
+.ticket-card.vip-card .ticket-meta-label { color: #f5f5f5 !important; }
+.ticket-card.vip-card .ticket-description,
+.ticket-card.vip-card .ticket-meta-row,
+.ticket-card.vip-card .ticket-setor-badge,
+.ticket-card.vip-card .ticket-date-row { color: #a3a3a3 !important; background: #1a1a1a !important; }
+.ticket-card.vip-card .ticket-meta { border-color: #2a2a2a !important; }
+.ticket-card.vip-card .ticket-dates { border-color: #2a2a2a !important; }
+.ticket-card.vip-card .ticket-actions-bottom { border-color: #2a2a2a !important; }
+
+/* Badge VIP no card */
+.vip-badge {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  font-size: 0.65rem; font-family: var(--font-mono); font-weight: 700;
+  background: #fde68a22; color: #fde68a;
+  border: 1px solid #fde68a55; border-radius: 4px;
+  padding: 0.1rem 0.45rem; letter-spacing: 0.08em;
+  animation: vipPulse 1.8s ease-in-out infinite;
+}
 
 /* ── Prioridade "Sem Prioridade" ── */
 .ticket-card.prio-none:not(.done-card) {

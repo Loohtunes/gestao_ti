@@ -62,14 +62,22 @@ function resetUserForm() {
   document.getElementById('anydesk-no').checked = true;
   document.getElementById('user-anydesk-input').value = '';
   document.getElementById('user-anydesk-input').style.display = 'none';
+  document.getElementById('user-vip-input').checked = false;
   document.getElementById('user-pass-input').placeholder = 'Nova senha';
 }
 
 function toggleAdminCheckbox() {
   const role = document.getElementById('user-role-input').value;
   const adminGroup = document.getElementById('user-admin-group');
-  if (role === 'attendant' && isSuperAdmin()) { adminGroup.style.display = 'flex'; }
-  else { adminGroup.style.display = 'none'; document.getElementById('user-admin-input').checked = false; }
+  const vipGroup   = document.getElementById('user-vip-group');
+  if (isSuperAdmin()) {
+    if (role === 'attendant') { adminGroup.style.display = 'flex'; }
+    else { adminGroup.style.display = 'none'; document.getElementById('user-admin-input').checked = false; }
+    if (vipGroup) vipGroup.style.display = 'flex';
+  } else {
+    adminGroup.style.display = 'none';
+    if (vipGroup) vipGroup.style.display = 'none';
+  }
 }
 
 function toggleAnydeskInput() {
@@ -124,6 +132,7 @@ function openEditUser(userId) {
   document.getElementById(hasAnydesk ? 'anydesk-yes' : 'anydesk-no').checked = true;
   document.getElementById('user-anydesk-input').value = user.anydesk || '';
   document.getElementById('user-anydesk-input').style.display = hasAnydesk ? 'block' : 'none';
+  document.getElementById('user-vip-input').checked = !!user.isVip;
   toggleAdminCheckbox();
 }
 
@@ -136,6 +145,7 @@ async function saveUser() {
   const setor = document.getElementById('user-setor-input').value;
   const hasAnydesk = document.getElementById('anydesk-yes').checked;
   const anydesk = hasAnydesk ? document.getElementById('user-anydesk-input').value.trim() : '';
+  const isVip = isSuperAdmin() ? (document.getElementById('user-vip-input')?.checked || false) : false;
   const isAdmin = isSuperAdmin()
     ? (document.getElementById('user-admin-input').checked || document.getElementById('user-role-group').style.display === 'none')
     : (editingUserId ? (users.find(u => u.id === editingUserId)?.isAdmin || false) : false);
@@ -151,7 +161,7 @@ async function saveUser() {
     if (idx !== -1) {
       const wasSuperAdmin = users[idx].isSuperAdmin;
       const finalPass = passRaw ? await hashPassword(passRaw) : users[idx].password;
-      users[idx] = { ...users[idx], username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor };
+      users[idx] = { ...users[idx], username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor, isVip };
     }
     saveUsers();
     if (currentUser && currentUser.id === editingUserId) {
@@ -164,7 +174,7 @@ async function saveUser() {
     if (users.find(u => u.username === name)) { alert('Esse nome de usuário já existe!'); return; }
     const isFirst = users.length === 0;
     const hashedPass = await hashPassword(passRaw);
-    users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin: isFirst ? true : isAdmin, isSuperAdmin: isFirst, email, whatsapp, anydesk, setor });
+    users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin: isFirst ? true : isAdmin, isSuperAdmin: isFirst, email, whatsapp, anydesk, setor, isVip: isFirst ? false : isVip });
     saveUsers();
     if (!currentUser) { closeUserModal(); showNotification('Administrador Geral criado! Faça login para continuar.', 'success'); }
     else { openUserManagerModal(); showNotification('Usuário adicionado com sucesso.', 'success'); }

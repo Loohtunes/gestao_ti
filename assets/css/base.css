@@ -81,6 +81,24 @@ body::before {
   50%       { opacity: 0.4; }
 }
 
+/* Pulsação lenta — Aguardando Informações */
+@keyframes slowPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.2; transform: scale(0.5); }
+}
+
+/* Pulsação VIP — amarelo sobre preto */
+@keyframes vipPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px 2px #fde68a88; }
+  50%       { opacity: 0.35; box-shadow: 0 0 2px 0px #fde68a22; }
+}
+
+/* Stripe VIP pulsando */
+@keyframes vipStripe {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
 @keyframes badgePop {
   from { transform: scale(0); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }
