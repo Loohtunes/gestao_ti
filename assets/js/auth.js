@@ -67,16 +67,19 @@ function resetUserForm() {
 }
 
 function toggleAdminCheckbox() {
-  const role = document.getElementById('user-role-input').value;
-  const adminGroup = document.getElementById('user-admin-group');
-  const vipGroup   = document.getElementById('user-vip-group');
-  if (isSuperAdmin()) {
-    if (role === 'attendant') { adminGroup.style.display = 'flex'; }
-    else { adminGroup.style.display = 'none'; document.getElementById('user-admin-input').checked = false; }
-    if (vipGroup) vipGroup.style.display = 'flex';
-  } else {
-    adminGroup.style.display = 'none';
-    if (vipGroup) vipGroup.style.display = 'none';
+  const role    = document.getElementById('user-role-input').value;
+  const row     = document.getElementById('user-admin-vip-row');
+  const adminGrp = document.getElementById('user-admin-group');
+  if (!isSuperAdmin()) {
+    if (row) row.style.display = 'none';
+    return;
+  }
+  // Mostrar linha completa para superadmin
+  if (row) row.style.display = 'grid';
+  // Admin só visível para atendentes
+  if (adminGrp) {
+    adminGrp.style.display = (role === 'attendant') ? 'flex' : 'none';
+    if (role !== 'attendant') document.getElementById('user-admin-input').checked = false;
   }
 }
 
@@ -110,8 +113,8 @@ function openUserForm(isFirstUser = false) {
     document.getElementById('user-admin-input').checked = true;
     document.getElementById('user-role-group').style.display = 'none';
     document.getElementById('user-admin-group').style.display = 'none';
-    const vipGroup = document.getElementById('user-vip-group');
-    if (vipGroup) vipGroup.style.display = 'none'; // não mostra VIP na criação do primeiro usuário
+    const row = document.getElementById('user-admin-vip-row');
+    if (row) row.style.display = 'none'; // não mostra na criação do primeiro usuário
   } else {
     toggleAdminCheckbox(); // garante VIP visível para superadmin
   }
