@@ -1,0 +1,61 @@
+/* ===== USERS — Badges e lista de usuários ===== */
+
+.ubadge { font-size: 0.65rem; border-radius: 4px; padding: 0.1rem 0.4rem; font-family: var(--font-mono); margin-left: 4px; }
+.ubadge.super { background: #7c3aed20; color: #7c3aed; border: 1px solid #7c3aed40; }
+.ubadge.admin { background: var(--accent)22; color: var(--accent); border: 1px solid var(--accent)40; }
+
+.user-list-item { border-bottom: 1px solid var(--border); }
+.user-list-item:last-child { border-bottom: none; }
+
+.uli-summary {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 6px; cursor: pointer; transition: background 0.12s; border-radius: 6px;
+}
+.uli-summary:hover { background: var(--surface3); }
+
+.uli-main { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; min-width: 0; }
+.uli-name { font-size: 0.88rem; }
+.uli-role { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); }
+.uli-setor-tag { font-size: 0.65rem; background: var(--surface3); border-radius: 4px; padding: 0.1rem 0.4rem; color: var(--muted); font-family: var(--font-mono); }
+
+.uli-actions { display: flex; align-items: center; gap: 0.35rem; flex-shrink: 0; }
+
+.uli-edit-btn {
+  background: none; border: 1px solid var(--border2); border-radius: 6px;
+  color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 0.2rem 0.55rem; transition: all 0.15s;
+}
+.uli-edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.uli-del-btn { background: none; border: none; color: var(--accent3); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 0.1rem; }
+
+.uli-chevron { font-size: 1rem; color: var(--muted); margin-left: 0.25rem; transition: transform 0.2s; display: inline-block; }
+.uli-chevron.open { transform: rotate(90deg); }
+
+.uli-details { padding: 0.6rem 0.9rem 0.9rem; background: var(--surface2); border-radius: 0 0 8px 8px; margin: 0 2px 4px; }
+.uli-extras { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.uli-extras span { font-size: 0.73rem; font-family: var(--font-mono); background: var(--surface); border: 1px solid var(--border2); border-radius: 5px; padding: 0.2rem 0.55rem; color: var(--muted); }
+.uli-no-extras { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); font-style: italic; }
+
+/* ── Alinhamento do formulário de usuário ── */
+#user-form-container .form-group { margin-bottom: 0; }
+#user-form-container .form-label {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: block;
+}
+#user-form-container .form-row-2 { gap: 0.9rem; }
+#user-form-container .modal-body { gap: 0.9rem; }
+
+/* Grupos de checkbox (admin e VIP) — mesma altura e alinhamento */
+#user-admin-group,
+#user-vip-group {
+  min-height: 52px;
+  box-sizing: border-box;
+}
+
+/* ===== TEMA ESCURO — users.css ===== */
+body.dark-mode .ubadge.super { background: #3b0764; color: #c084fc; border-color: #7c3aed40; }

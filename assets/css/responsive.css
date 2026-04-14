@@ -1,0 +1,40 @@
+/* ===== RESPONSIVE — Media queries ===== */
+
+@media (max-width: 960px) {
+  .detail-modal-content { max-height: 94vh; }
+}
+
+@media (max-width: 900px) {
+  .tl-header, .tl-row { grid-template-columns: 60px 1fr 90px 100px 120px 64px; }
+  .tl-col.tl-date, .tl-header > .tl-date { display: none; }
+}
+
+@media (max-width: 720px) {
+  .hist-panel {
+    position: fixed; top: auto; bottom: 0; right: 0; left: 0;
+    width: 100% !important; height: 0;
+    border-top: 1px solid var(--border2); border-left: none;
+  }
+  .hist-panel.open { height: 280px; width: 100% !important; }
+}
+
+@media (max-width: 640px) {
+  .tickets-container { padding: 1rem; }
+  .page-header       { flex-direction: column; align-items: flex-start; }
+  .tickets-stats     { grid-template-columns: repeat(3, 1fr); }
+  .tickets-header    { flex-direction: column; align-items: stretch; }
+  .tickets-board     { grid-template-columns: 1fr; }
+  .form-row-2        { grid-template-columns: 1fr; }
+  .anydesk-toggle    { flex-direction: column; }
+  .detail-modal-content { border-radius: 12px; }
+
+  .tl-header, .tl-row { grid-template-columns: 52px 1fr 100px 60px; }
+  .tl-col.tl-setor,
+  .tl-col.tl-prio,
+  .tl-col.tl-date,
+  .tl-header > .tl-setor,
+  .tl-header > .tl-prio,
+  .tl-header > .tl-date { display: none; }
+
+  .detail-chat-send { padding: 0.65rem 0.7rem; font-size: 0.75rem; }
+}

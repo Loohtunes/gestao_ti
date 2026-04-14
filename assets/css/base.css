@@ -1,0 +1,208 @@
+/* ===== BASE — Variáveis, reset e animações ===== */
+
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface2: #f0f0f3;
+  --surface3: #e8e8ec;
+  --border: #0000000a;
+  --border2: #00000012;
+  --text: #1a1a2e;
+  --muted: #6b6b80;
+  --accent: #d32f2f;
+  --accent2: #b71c1c;
+  --accent3: #c62828;
+  --accent4: #e53935;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+
+  --prio-low-bg: #f0fdf4;
+  --prio-low-border: #86efac;
+  --prio-low-stripe: #22c55e;
+  --prio-low-text: #15803d;
+  --prio-medium-bg: #fefce8;
+  --prio-medium-border: #fde047;
+  --prio-medium-stripe: #eab308;
+  --prio-medium-text: #a16207;
+  --prio-high-bg: #fff7ed;
+  --prio-high-border: #fdba74;
+  --prio-high-stripe: #f97316;
+  --prio-high-text: #c2410c;
+  --prio-urgent-bg: #fef2f2;
+  --prio-urgent-border: #fca5a5;
+  --prio-urgent-stripe: #ef4444;
+  --prio-urgent-text: #b91c1c;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-display);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(#d32f2f08 1px, transparent 1px),
+    linear-gradient(90deg, #d32f2f08 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Animações globais ── */
+@keyframes slideInRight {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpDetail {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes livePulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
+}
+
+@keyframes urgentPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Pulsação lenta — Aguardando Informações */
+@keyframes slowPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.2;
+    transform: scale(0.5);
+  }
+}
+
+/* Pulsação VIP — amarelo sobre preto */
+@keyframes vipPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px 2px #fde68a88;
+  }
+
+  50% {
+    opacity: 0.35;
+    box-shadow: 0 0 2px 0px #fde68a22;
+  }
+}
+
+/* Stripe VIP pulsando */
+@keyframes vipStripe {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes badgePop {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ===== TEMA ESCURO ===== */
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --surface2: #22222e;
+  --surface3: #2a2a38;
+  --border: #ffffff08;
+  --border2: #ffffff12;
+  --text: #e8e8f0;
+  --muted: #8888a0;
+
+  --prio-low-bg: #0d2818;
+  --prio-low-border: #166534;
+  --prio-low-stripe: #22c55e;
+  --prio-low-text: #86efac;
+  --prio-medium-bg: #2a1f00;
+  --prio-medium-border: #854d0e;
+  --prio-medium-stripe: #eab308;
+  --prio-medium-text: #fde68a;
+  --prio-high-bg: #2a1500;
+  --prio-high-border: #9a3412;
+  --prio-high-stripe: #f97316;
+  --prio-high-text: #fed7aa;
+  --prio-urgent-bg: #2a0808;
+  --prio-urgent-border: #991b1b;
+  --prio-urgent-stripe: #ef4444;
+  --prio-urgent-text: #fecaca;
+}
+
+/* Grade de fundo no tema escuro */
+body.dark-mode::before {
+  background-image:
+    linear-gradient(#ef444408 1px, transparent 1px),
+    linear-gradient(90deg, #ef444408 1px, transparent 1px);
+}
