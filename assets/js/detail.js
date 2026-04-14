@@ -38,6 +38,68 @@ function getUnseenCount(ticket) {
   return Math.max(0, countNotifiableEvents(ticket) - getSeenCount(ticket.id));
 }
 
+
+// ── @ Menções ──
+
+// Extrai @nomes de um HTML de comentário
+function extractMentions(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const text = div.textContent || '';
+  // Regex permissiva: captura qualquer caractere não-espaço após @
+  const matches = text.match(/@([^\s@<]+)/g) || [];
+  return [...new Set(matches.map(m => m.slice(1).toLowerCase()))];
+}
+
+// Formata @nome em azul no HTML do comentário
+function formatMentions(html) {
+  return html.replace(/@([^\s@<"']+)/g, (match, name) => {
+    const exists = users.some(u => u.username.toLowerCase() === name.toLowerCase());
+    return exists
+      ? `<span class="mention-tag">@${name}</span>`
+      : match;
+  });
+}
+
+// Verifica se o usuário atual tem menção pendente (ack=false)
+function getMentionKey(ticketId) {
+  return 'mentionAck:' + ticketId + ':' + (currentUser?.username || '');
+}
+
+// Reconhece a menção — chamado pelo banner "Ciente"
+function ackMention(ticketId) {
+  const idx = tickets.findIndex(t => t.id === ticketId);
+  if (idx === -1) return;
+  const username = currentUser?.username;
+  if (!username) return;
+
+  // Marca todas as menções para este usuário como lidas (case-insensitive)
+  const usernameLower = username.toLowerCase();
+  (tickets[idx].mentions || []).forEach(m => {
+    if (m.to && m.to.toLowerCase() === usernameLower) m.ack = true;
+  });
+
+  db.collection('tickets').doc(ticketId).set(tickets[idx])
+    .then(() => {
+      // Remove banner e faixa azul
+      const banner = document.getElementById('mention-banner');
+      if (banner) banner.remove();
+      renderTickets();
+    });
+}
+
+// Scroll até a primeira menção não lida
+function scrollToMention(ticketId) {
+  const ticket = tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+  const username = currentUser?.username;
+  const pending = (ticket.mentions || []).filter(m => m.to === username && !m.ack);
+  if (!pending.length) return;
+  const msgId = pending[0].messageId;
+  const el = document.getElementById('comment-' + msgId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 // ── Helper para atualizar painel de histórico ──
 function updateHistoryPanel(ticket) {
   const histBody = document.getElementById('hist-panel-body-content');
@@ -128,8 +190,9 @@ function renderDetailContent(ticket) {
   const reqName = capitalizeName(ticket.requester || '—');
   const attName = ticket.attendant ? capitalizeName(ticket.attendant) : null;
 
+  const isTestTicket = ticket.ticketType === 'test';
   document.getElementById('detail-modal-body').innerHTML = `
-    <div class="detail-header-strip prio-${prio}">
+    <div class="detail-header-strip ${isTestTicket ? 'test-strip' : 'prio-' + prio}">
       <div class="detail-header-left">
         <div class="detail-num-badge">${num}</div>
         <div>
@@ -207,6 +270,26 @@ function renderDetailContent(ticket) {
 
   updateHistoryPanel(ticket);
   scrollChatToBottom();
+  setupMentionListener();
+
+  // Banner de menção pendente
+  const existingBanner = document.getElementById('mention-banner');
+  if (existingBanner) existingBanner.remove();
+  if (hasPendingMention(ticket)) {
+    const chatFull = document.querySelector('.detail-chat-full');
+    if (chatFull) {
+      const banner = document.createElement('div');
+      banner.id = 'mention-banner';
+      banner.className = 'mention-banner';
+      banner.innerHTML = `
+        <span class="mention-banner-text">💬 Você foi mencionado neste chamado</span>
+        <div class="mention-banner-btns">
+          <button class="mention-banner-see" onclick="scrollToMention('${ticket.id}')">↓ Ver</button>
+          <button class="mention-banner-ack" onclick="ackMention('${ticket.id}')">✅ Ciente</button>
+        </div>`;
+      chatFull.insertBefore(banner, chatFull.firstChild);
+    }
+  }
 }
 
 function renderMessagesHTML(ticket) {
@@ -221,7 +304,7 @@ function renderMessagesHTML(ticket) {
       return `<div class="chat-msg system"><span>${m.html || escapeHtml(m.text || '')}</span><span class="chat-time">${m.timestamp}</span></div>`;
     }
     const roleLabel = (m.role === 'superadmin' || m.role === 'attendant') ? 'Atendente' : 'Solicitante';
-    const content   = m.html || escapeHtml(m.text || '');
+    const content   = m.html || escapeHtml(m.text || '');  // já formatado com <span class="mention-tag">
     const canManage = currentUser && (m.username === currentUser.username || currentUser.isSuperAdmin);
     const ticketId  = activeDetailId;
     return `
@@ -244,6 +327,109 @@ function renderMessagesHTML(ticket) {
   }).join('');
 }
 
+
+// ── Dropdown de @ menção no editor ──
+function removeMentionDropdown() {
+  const d = document.getElementById('mention-dropdown');
+  if (d) d.remove();
+}
+
+function setupMentionListener() {
+  const editor = document.getElementById('detail-chat-editor');
+  if (!editor) return;
+
+  editor.addEventListener('input', function() {
+    const sel   = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const text  = range.startContainer.textContent || '';
+    const caret = range.startOffset;
+
+    // Encontrar @ antes do cursor
+    const before = text.slice(0, caret);
+    const atMatch = before.match(/@(\w*)$/);
+
+    removeMentionDropdown();
+    if (!atMatch) return;
+
+    const query = atMatch[1].toLowerCase();
+    const filtered = users.filter(u =>
+      u.username.toLowerCase() !== currentUser?.username.toLowerCase() &&
+      (query === '' || u.username.toLowerCase().startsWith(query))
+    ).slice(0, 6);
+
+    if (!filtered.length) return;
+
+    // Posicionar dropdown com fixed — independente do container pai
+    const rect = range.getBoundingClientRect();
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'mention-dropdown';
+    dropdown.className = 'mention-dropdown';
+    dropdown.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${rect.left}px;z-index:9999;`;
+
+    filtered.forEach(u => {
+      const item = document.createElement('div');
+      item.className = 'mention-dropdown-item';
+      item.innerHTML = `<span class="mention-dd-user">@${u.username}</span><span class="mention-dd-setor">${u.setor || ''}</span>`;
+      item.onmousedown = function(e) {
+        e.preventDefault();
+        // Substituir @query pelo @nome formatado
+        const newRange = sel.getRangeAt(0);
+        const node = newRange.startContainer;
+        const txt  = node.textContent;
+        const caretPos = newRange.startOffset;
+        const start = txt.lastIndexOf('@', caretPos - 1);
+        node.textContent = txt.slice(0, start) + '@' + u.username + ' ' + txt.slice(caretPos);
+        // Mover cursor para após o nome inserido
+        const newPos = start + u.username.length + 2;
+        const r = document.createRange();
+        r.setStart(node, Math.min(newPos, node.textContent.length));
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+        removeMentionDropdown();
+      };
+      dropdown.appendChild(item);
+    });
+
+    // Fechar ao clicar fora
+    setTimeout(() => document.addEventListener('click', removeMentionDropdown, { once: true }), 0);
+
+    document.body.appendChild(dropdown);
+  });
+
+  editor.addEventListener('keydown', function(e) {
+    const dd = document.getElementById('mention-dropdown');
+    if (!dd) return;
+    if (e.key === 'Escape') { removeMentionDropdown(); e.preventDefault(); }
+    if (e.key === 'ArrowDown') {
+      const items = dd.querySelectorAll('.mention-dropdown-item');
+      const active = dd.querySelector('.mention-dropdown-item.active');
+      if (!active) items[0]?.classList.add('active');
+      else {
+        active.classList.remove('active');
+        (active.nextElementSibling || items[0])?.classList.add('active');
+      }
+      e.preventDefault();
+    }
+    if (e.key === 'ArrowUp') {
+      const items = dd.querySelectorAll('.mention-dropdown-item');
+      const active = dd.querySelector('.mention-dropdown-item.active');
+      if (!active) items[items.length - 1]?.classList.add('active');
+      else {
+        active.classList.remove('active');
+        (active.previousElementSibling || items[items.length - 1])?.classList.add('active');
+      }
+      e.preventDefault();
+    }
+    if (e.key === 'Enter') {
+      const active = dd.querySelector('.mention-dropdown-item.active');
+      if (active) { active.dispatchEvent(new MouseEvent('mousedown')); e.preventDefault(); }
+    }
+  });
+}
+
 // ── Comentários ──
 function sendChatMessage() {
   const editor = document.getElementById('detail-chat-editor');
@@ -256,17 +442,39 @@ function sendChatMessage() {
   if (idx === -1) return;
   if (!tickets[idx].messages) tickets[idx].messages = [];
 
+  const msgId = Date.now().toString();
+  const formattedHtml = formatMentions(html);
   tickets[idx].messages.push({
-    id: Date.now().toString(),
+    id: msgId,
     username: currentUser.username,
     role: currentUser.isSuperAdmin ? 'superadmin' : currentUser.role,
-    html,
+    html: formattedHtml,
     timestamp: new Date().toLocaleString('pt-BR', {
       hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
     })
   });
+
+  // Salvar menções no ticket
+  const mentionedNames = extractMentions(html);
+  if (mentionedNames.length) {
+    if (!tickets[idx].mentions) tickets[idx].mentions = [];
+    mentionedNames.forEach(name => {
+      const mentioned = users.find(u => u.username.toLowerCase() === name.toLowerCase());
+      if (mentioned && mentioned.username !== currentUser.username) {
+        tickets[idx].mentions.push({
+          to: mentioned.username,
+          from: currentUser.username,
+          messageId: msgId,
+          ack: false,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+  }
+
   logTicketEvent(tickets[idx], `Comentário adicionado por ${capitalizeName(currentUser.username)}`);
   editor.innerHTML = '';
+  removeMentionDropdown();
 
   // Salva direto no Firestore e renderiza imediatamente
   db.collection('tickets').doc(tickets[idx].id).set(tickets[idx])
@@ -274,6 +482,7 @@ function sendChatMessage() {
       renderDetailMessages(tickets[idx]);
       updateHistoryPanel(tickets[idx]);
       scrollChatToBottom();
+      renderTickets(); // atualiza badges de menção nos cards
     })
     .catch(err => {
       console.error('[Chat] Erro ao salvar comentário:', err);

@@ -33,6 +33,22 @@
 .detail-header-strip.prio-medium { background: var(--prio-medium-bg); border-left: 5px solid var(--prio-medium-stripe); }
 .detail-header-strip.prio-high   { background: var(--prio-high-bg);   border-left: 5px solid var(--prio-high-stripe); }
 .detail-header-strip.prio-urgent { background: var(--prio-urgent-bg); border-left: 5px solid var(--prio-urgent-stripe); }
+.detail-header-strip.test-strip {
+  background: repeating-linear-gradient(
+    45deg,
+    #faf5ff, #faf5ff 8px,
+    #f3e8ff 8px, #f3e8ff 16px
+  );
+  border-left: 5px solid #a855f7;
+}
+body.dark-mode .detail-header-strip.test-strip {
+  background: repeating-linear-gradient(
+    45deg,
+    #1a1025, #1a1025 8px,
+    #200d35 8px, #200d35 16px
+  );
+  border-left: 5px solid #a855f7;
+}
 
 .detail-header-left { display: flex; align-items: flex-start; gap: 0.9rem; }
 .detail-header-btns { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
@@ -147,3 +163,101 @@
   min-height: 0;
   overflow: hidden;
 }
+
+/* ===== TEMA ESCURO — detail.css ===== */
+body.dark-mode .detail-people-pill.attendant { background: #0f1f3d; color: #93c5fd; }
+body.dark-mode .dip-date-row.started { color: #f59e0b; }
+body.dark-mode .dip-date-row.done    { color: #86efac; }
+
+/* ── Banner de menção pendente ── */
+.mention-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  margin: 0.75rem 1rem 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.mention-banner-text {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: #1e40af;
+  font-weight: 600;
+}
+.mention-banner-btns {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.mention-banner-see {
+  font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700;
+  padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer;
+  background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;
+  transition: background 0.15s;
+}
+.mention-banner-see:hover { background: #bfdbfe; }
+.mention-banner-ack {
+  font-size: 0.72rem; font-family: var(--font-mono); font-weight: 700;
+  padding: 0.3rem 0.7rem; border-radius: 6px; cursor: pointer;
+  background: #2563eb; color: #fff; border: 1px solid #1d4ed8;
+  transition: background 0.15s;
+}
+.mention-banner-ack:hover { background: #1d4ed8; }
+
+/* ── Dropdown de @ menção ── */
+.mention-dropdown {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 9999;
+  min-width: 200px;
+  max-width: 280px;
+  overflow: hidden;
+  animation: slideUpDetail 0.12s ease;
+}
+.mention-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  gap: 0.5rem;
+  transition: background 0.1s;
+}
+.mention-dropdown-item:hover,
+.mention-dropdown-item.active { background: var(--surface2); }
+.mention-dd-user {
+  font-size: 0.78rem; font-family: var(--font-mono);
+  font-weight: 700; color: #2563eb;
+}
+.mention-dd-setor {
+  font-size: 0.68rem; font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+body.dark-mode .mention-banner {
+  background: #0f1f3d; border-color: #1e3a5f;
+}
+body.dark-mode .mention-banner-text { color: #93c5fd; }
+body.dark-mode .mention-banner-see  { background: #1e3a5f; color: #93c5fd; border-color: #2563eb; }
+body.dark-mode .mention-banner-ack  { background: #2563eb; color: #fff; }
+.mention-dropdown {
+  position: fixed;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 9999;
+  min-width: 200px;
+  max-width: 280px;
+  overflow: hidden;
+  animation: slideUpDetail 0.12s ease;
+}
+body.dark-mode .mention-dropdown    { box-shadow: 0 8px 24px rgba(0,0,0,0.4); }

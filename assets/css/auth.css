@@ -82,3 +82,15 @@
 .login-btn.secondary:hover { background: var(--accent2); color: #fff; }
 
 .login-actions { text-align: center; }
+
+/* ===== TEMA ESCURO — auth.css ===== */
+body.dark-mode .login-card {
+  background: var(--surface);
+  border-color: var(--border2);
+}
+body.dark-mode .login-input {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border2);
+  color-scheme: dark;
+}

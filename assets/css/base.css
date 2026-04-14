@@ -62,50 +62,147 @@ body::before {
 
 /* ── Animações globais ── */
 @keyframes slideInRight {
-  from { transform: translateX(400px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slideUpDetail {
-  from { transform: translateY(24px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes livePulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.3; transform: scale(0.6); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.3;
+    transform: scale(0.6);
+  }
 }
 
 @keyframes urgentPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* Pulsação lenta — Aguardando Informações */
 @keyframes slowPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.2; transform: scale(0.5); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.2;
+    transform: scale(0.5);
+  }
 }
 
-/* Pulsação VIP — somente bordas pulsantes */
+/* Pulsação VIP — amarelo sobre preto */
 @keyframes vipPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 2px #fde68a, 0 0 10px 2px #fde68a66;
-    border-color: #fde68a;
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px 2px #fde68a88;
   }
+
   50% {
-    box-shadow: 0 0 0 1px #fde68a44, 0 0 4px 0px #fde68a22;
-    border-color: #fde68a44;
+    opacity: 0.35;
+    box-shadow: 0 0 2px 0px #fde68a22;
   }
 }
 
 /* Stripe VIP pulsando */
 @keyframes vipStripe {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @keyframes badgePop {
-  from { transform: scale(0); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ===== TEMA ESCURO ===== */
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark-mode {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --surface2: #22222e;
+  --surface3: #2a2a38;
+  --border: #ffffff08;
+  --border2: #ffffff12;
+  --text: #e8e8f0;
+  --muted: #8888a0;
+
+  --prio-low-bg: #0d2818;
+  --prio-low-border: #166534;
+  --prio-low-stripe: #22c55e;
+  --prio-low-text: #86efac;
+  --prio-medium-bg: #2a1f00;
+  --prio-medium-border: #854d0e;
+  --prio-medium-stripe: #eab308;
+  --prio-medium-text: #fde68a;
+  --prio-high-bg: #2a1500;
+  --prio-high-border: #9a3412;
+  --prio-high-stripe: #f97316;
+  --prio-high-text: #fed7aa;
+  --prio-urgent-bg: #2a0808;
+  --prio-urgent-border: #991b1b;
+  --prio-urgent-stripe: #ef4444;
+  --prio-urgent-text: #fecaca;
+}
+
+/* Grade de fundo no tema escuro */
+body.dark-mode::before {
+  background-image:
+    linear-gradient(#ef444408 1px, transparent 1px),
+    linear-gradient(90deg, #ef444408 1px, transparent 1px);
 }

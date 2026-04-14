@@ -67,19 +67,16 @@ function resetUserForm() {
 }
 
 function toggleAdminCheckbox() {
-  const role     = document.getElementById('user-role-input').value;
-  const row      = document.getElementById('user-admin-vip-row');
-  const adminGrp = document.getElementById('user-admin-group');
-  if (!isSuperAdmin()) {
-    if (row) { row.style.display = 'none'; row.style.marginTop = '-0.75rem'; }
-    return;
-  }
-  // Mostrar linha — remove margem negativa que cancela o espaço fantasma
-  if (row) { row.style.display = 'grid'; row.style.marginTop = '0.5rem'; }
-  // Admin só visível para atendentes
-  if (adminGrp) {
-    adminGrp.style.display = (role === 'attendant') ? 'flex' : 'none';
-    if (role !== 'attendant') document.getElementById('user-admin-input').checked = false;
+  const role = document.getElementById('user-role-input').value;
+  const adminGroup = document.getElementById('user-admin-group');
+  const vipGroup = document.getElementById('user-vip-group');
+  if (isSuperAdmin()) {
+    if (role === 'attendant') { adminGroup.style.display = 'flex'; }
+    else { adminGroup.style.display = 'none'; document.getElementById('user-admin-input').checked = false; }
+    if (vipGroup) vipGroup.style.display = 'flex';
+  } else {
+    adminGroup.style.display = 'none';
+    if (vipGroup) vipGroup.style.display = 'none';
   }
 }
 
@@ -113,8 +110,8 @@ function openUserForm(isFirstUser = false) {
     document.getElementById('user-admin-input').checked = true;
     document.getElementById('user-role-group').style.display = 'none';
     document.getElementById('user-admin-group').style.display = 'none';
-    const row = document.getElementById('user-admin-vip-row');
-    if (row) row.style.display = 'none'; // não mostra na criação do primeiro usuário
+    const vipGroup = document.getElementById('user-vip-group');
+    if (vipGroup) vipGroup.style.display = 'none'; // não mostra VIP na criação do primeiro usuário
   } else {
     toggleAdminCheckbox(); // garante VIP visível para superadmin
   }
@@ -244,10 +241,11 @@ async function performLogin() {
   const user = users.find(u => u.username.toLowerCase() === name && u.password === hashedPass);
   if (!user) { alert('Usuário ou senha incorretos.'); return; }
   currentUser = user;
+  if (typeof initAfkTimer === 'function') initAfkTimer(user.role);
   localStorage.setItem('chamados-current-user-id', user.id);
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('tickets-main').style.display = 'block';
-  document.getElementById('current-attendant').textContent = user.username;
+  document.getElementById('current-attendant').textContent = capitalizeName(user.username);
   document.getElementById('attendant-pass').value = '';
   applyRoleUI();
   loadTickets();
@@ -261,7 +259,7 @@ function applyRoleUI() {
   else if (currentUser.isAdmin) { adminBtn.style.display = 'inline-flex'; adminBtn.textContent = '⚙️ Configurações'; adminBtn.classList.remove('super-admin-btn'); }
   else { adminBtn.style.display = 'none'; }
 
-  const newTicketBtn   = document.getElementById('new-ticket-btn');
+  const newTicketBtn = document.getElementById('new-ticket-btn');
   const filtersWrapper = document.getElementById('tickets-filter');
   if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
 
@@ -310,10 +308,27 @@ function applyRoleUI() {
   }
 }
 
+function performAutoLogout() {
+  closeTicketDetail();
+  if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
+  currentUser = null;
+  localStorage.removeItem('chamados-current-user-id');
+  localStorage.setItem('premovale-logout-reason', 'inatividade');
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('tickets-main').style.display = 'none';
+  document.getElementById('attendant-name').value = '';
+  showLoginMessage('⏰ Sua sessão foi encerrada por inatividade.', 'warn');
+  loadUsers().then(() => {
+    const hasSA = users.some(u => u.isSuperAdmin);
+    document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
+  });
+}
+
 function performLogout() {
   if (!confirm('Deseja realmente sair do sistema?')) return;
   closeTicketDetail();
   if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
+  if (typeof stopAfkTimer === 'function') stopAfkTimer();
   currentUser = null;
   localStorage.removeItem('chamados-current-user-id');
   document.getElementById('login-screen').style.display = 'flex';
@@ -336,9 +351,11 @@ async function checkLoginStatus() {
       currentUser = fresh;
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('tickets-main').style.display = 'block';
-      document.getElementById('current-attendant').textContent = currentUser.username;
+      document.getElementById('current-attendant').textContent = capitalizeName(currentUser.username);
       applyRoleUI();
       loadTickets();
+      if (typeof initAfkTimer === 'function') initAfkTimer(currentUser.role);
+      if (typeof restoreSessionState === 'function') setTimeout(restoreSessionState, 800);
     } else {
       localStorage.removeItem('chamados-current-user-id');
     }

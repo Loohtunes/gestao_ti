@@ -160,3 +160,33 @@
 
 /* Hide old comment-entry */
 .comment-entry { display: none !important; }
+
+/* ===== TEMA ESCURO — comments.css ===== */
+body.dark-mode .detail-chat-messages::-webkit-scrollbar-thumb { background: #44445a; }
+body.dark-mode .detail-chat-messages:hover::-webkit-scrollbar-thumb { background: #5a5a7a; }
+body.dark-mode .detail-chat-editor::-webkit-scrollbar-thumb { background: #44445a; }
+body.dark-mode .tc-avatar.attendant,
+body.dark-mode .tc-avatar.superadmin { background: #1d4ed8; }
+body.dark-mode .tc-role.attendant,
+body.dark-mode .tc-role.superadmin   { background: #0f1f3d; color: #93c5fd; }
+body.dark-mode .tc-action-btn.save:hover { border-color: #22c55e; color: #86efac; }
+body.dark-mode .trello-comment:not(.mine) .tc-content { background: var(--surface2); color: var(--text); }
+body.dark-mode .trello-comment.mine .tc-content       { background: #1e293b; color: var(--text); border-left-color: var(--accent); }
+body.dark-mode .trello-comment:hover .tc-content      { border-left-color: var(--accent); }
+body.dark-mode .tc-author  { color: var(--text); }
+body.dark-mode .tc-ts      { color: var(--muted); }
+body.dark-mode .chat-msg.system { background: var(--surface2); color: var(--muted); }
+body.dark-mode .detail-chat-editor {
+  background: var(--surface2); color: var(--text); border-color: var(--border2);
+}
+body.dark-mode .detail-chat-editor:focus { border-color: var(--accent); }
+.mention-tag {
+  color: #2563eb;
+  font-weight: 700;
+  background: #eff6ff;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+body.dark-mode .mention-tag { background: #0f1f3d; color: #93c5fd; }

@@ -11,6 +11,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 1rem;
   height: 48px;
   box-shadow: 0 0.2px 20px rgb(88, 88, 88);
   transition: box-shadow 0.25s;
@@ -84,3 +85,34 @@ nav {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ── Tema escuro — navbar ── */
+body.dark-mode nav {
+  background: rgba(15, 15, 20, 0.88);
+  box-shadow: 0 0.2px 20px rgba(0,0,0,0.5);
+}
+body.dark-mode .nav.scrolled { box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+/* ── Switch de tema — bolinha deslizante ── */
+#theme-switch-track:hover { border-color: var(--accent); }
+body.dark-mode #theme-switch-track {
+  background: var(--surface3);
+  border-color: var(--border2);
+}
+body.dark-mode #theme-switch-thumb {
+  transform: translateX(12px);
+  background: #fde68a;
+}
+#theme-switch-track[data-dark="1"] #theme-switch-thumb {
+  transform: translateX(12px);
+  background: #fde68a;
+}
+
+/* ── Timer de sessão ── */
+#session-timer { flex: 0 0 auto; }
+
+/* Cores por estado */
+#session-countdown.warn   { color: #f59e0b !important; }
+#session-countdown.danger { color: var(--accent) !important; }
+#session-bar-fill.warn    { background: #f59e0b !important; }
+#session-bar-fill.danger  { background: var(--accent) !important; }

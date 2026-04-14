@@ -1,9 +1,9 @@
 /* ===== LAYOUT — Estrutura geral da página ===== */
 
 .tickets-container {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 2rem 3rem;
   position: relative;
   z-index: 1;
 }
@@ -209,3 +209,13 @@
 .search-widget.open .search-expand-input { opacity: 1; }
 .search-expand-input::placeholder { color: var(--muted); }
 .tickets-search-bar { display: none !important; }
+
+/* ===== TEMA ESCURO — layout.css ===== */
+body.dark-mode .admin-btn.super-admin-btn {
+  border-color: #7c3aed; color: #c084fc; background: #3b076420;
+}
+body.dark-mode .admin-btn.super-admin-btn:hover {
+  background: #7c3aed; color: #fff;
+}
+body.dark-mode .btn-primary { background: var(--accent); color: #fff; }
+body.dark-mode .empty-state-text { color: var(--muted); }

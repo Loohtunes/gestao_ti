@@ -56,3 +56,6 @@
   min-height: 52px;
   box-sizing: border-box;
 }
+
+/* ===== TEMA ESCURO — users.css ===== */
+body.dark-mode .ubadge.super { background: #3b0764; color: #c084fc; border-color: #7c3aed40; }

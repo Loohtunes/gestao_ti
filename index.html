@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#d32f2f">
-  <title>Gestão T.I - Chamados</title>
+  <title>Gestão de T.I</title>
   <link rel="icon" href="img/premovale (1).png">
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 
@@ -27,6 +27,53 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* ── Modal AFK ── */
+    #afk-warning-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      animation: slideUpDetail 0.25s ease;
+    }
+    .afk-warning-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 18px;
+      padding: 2rem 2.5rem;
+      max-width: 380px; width: 90%;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 1rem;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    .afk-warning-icon  { font-size: 2.5rem; }
+    .afk-warning-title {
+      font-size: 1.1rem; font-weight: 800;
+      color: var(--text); letter-spacing: -0.02em;
+    }
+    .afk-warning-text {
+      font-size: 0.82rem; color: var(--muted);
+      line-height: 1.6;
+    }
+    .afk-warning-countdown {
+      font-size: 2rem; font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    .afk-warning-btn {
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 10px;
+      padding: 0.7rem 1.8rem;
+      font-size: 0.85rem; font-weight: 700;
+      font-family: var(--font-display);
+      cursor: pointer; transition: background 0.2s;
+      width: 100%;
+    }
+    .afk-warning-btn:hover { background: var(--accent2); }
+  </style>
 </head>
 
 <body>
@@ -40,7 +87,23 @@
         <span class="nav-title-main">Gestão</span>
       </span>
     </div>
+    <!-- Timer de sessão — entre logo e botões -->
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);
+          text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown" style="font-size:0.75rem;font-family:'Space Mono',monospace;
+          font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track" style="width:110px;height:3px;background:var(--surface3);
+        border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill" style="height:100%;width:100%;border-radius:2px;
+          background:var(--accent);transition:width 1s linear,background 0.3s;"></div>
+      </div>
+    </div>
+
     <div class="nav-right">
+      <!-- Novidades -->
       <div style="position:relative;display:inline-block;">
         <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()"
           title="Notas de Atualização" style="gap:0.4rem;">
@@ -49,10 +112,26 @@
         <span id="changelog-badge" style="display:none;position:absolute;top:-6px;right:-6px;
           width:16px;height:16px;background:var(--accent);color:#fff;border-radius:50%;
           font-size:0.6rem;font-family:'Space Mono',monospace;font-weight:700;
-          display:none;align-items:center;justify-content:center;border:2px solid var(--bg);">
-          N
-        </span>
+          align-items:center;justify-content:center;border:2px solid var(--bg);">N</span>
       </div>
+
+      <!-- Switch Tema Claro/Escuro -->
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()"
+        title="Alternar tema"
+        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
+          background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
+          padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;">☀️</span>
+        <div style="position:relative;width:28px;height:16px;background:var(--surface3);
+          border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb"
+            style="position:absolute;top:1px;left:1px;width:12px;height:12px;
+              background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
+          </div>
+        </div>
+        <span style="font-size:0.8rem;">🌙</span>
+      </div>
+
       <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão...">
         <span id="sync-icon-nav">🟡</span>Firebase
       </button>
@@ -67,6 +146,10 @@
         <div class="login-icon"><img src="img/premovale (1).png" width="100px" height="100px"></div>
         <h2 class="login-title">Sistema de Chamados</h2>
         <p class="login-subtitle">Faça login para acessar os chamados</p>
+        <div id="login-msg" style="display:none;margin-top:0.75rem;padding:0.6rem 1rem;
+          border-radius:8px;font-size:0.78rem;font-family:'Space Mono',monospace;
+          font-weight:600;text-align:center;animation:slideUpDetail 0.3s ease;">
+        </div>
         <div class="login-form">
           <div class="login-input-group">
             <label class="login-label">👤 Nome de Usuário</label>
@@ -129,13 +212,10 @@
           <button class="filter-btn" data-requester-filter onclick="filterTickets('completed', event)">✅ Concluídos</button>
         </div>
         <div class="tickets-header-right">
-          <button id="view-toggle-btn" onclick="toggleViewMode()"
-            title="Alternar visualização"
-            style="width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
+          <button id="view-toggle-btn" onclick="toggleViewMode()" title="Alternar visualização"
+            style="display:none;width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
               background:var(--surface);color:var(--muted);cursor:pointer;font-size:1rem;
-              display:none;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">
-            ⊞
-          </button>
+              align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">☰</button>
           <div class="search-widget" id="search-widget">
             <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Pesquisar chamados">🔍</button>
             <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
@@ -153,15 +233,14 @@
             </button>
             <div id="actions-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;
               background:var(--surface);border:1px solid var(--border2);border-radius:12px;
-              box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:200px;z-index:200;overflow:hidden;
-              transform-origin:top right;
-              transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s ease;
-              transform:scaleY(0.7) scaleX(0.95);opacity:0;pointer-events:none;">
+              box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:200;overflow:hidden;
+              color:var(--text);">
               <button id="merge-mode-btn" onclick="toggleMergeMode()"
                 style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
                   font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:var(--text);
                   display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
-                onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+                onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'"
+                onmouseout="this.style.background='none';this.style.color='var(--text)'">
                 🔗 Mesclar Chamados
               </button>
               <div id="test-actions-group" style="display:none;">
@@ -284,25 +363,24 @@
             </div>
           </div>
 
-          <!-- Admin + VIP lado a lado -->
-          <div id="user-admin-vip-row" style="display:none;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:-0.75rem;">
-
-            <div id="user-admin-group" style="display:flex;flex-direction:row;align-items:center;gap:8px;background:#f0f0f3;border:1px solid #e0e0e8;border-radius:8px;padding:0.55rem 0.8rem;">
-              <input type="checkbox" id="user-admin-input" style="width:14px;height:14px;accent-color:#b71c1c;cursor:pointer;flex-shrink:0;margin:0;">
-              <div style="display:flex;flex-direction:column;gap:2px;">
-                <label style="font-size:0.75rem;font-weight:600;color:#1a1a2e;cursor:pointer;margin:0;line-height:1;" for="user-admin-input">É Administrador?</label>
-                <span style="font-size:0.65rem;color:#6b6b80;line-height:1.3;margin:0;">Gerencia usuários e chamados</span>
+          <!-- Admin + VIP lado a lado — wrapper só para layout, sem estilo visual -->
+          <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+            <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+              <input type="checkbox" id="user-admin-input" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-admin-input">É Administrador?</label>
+                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Gerencia usuários e chamados</span>
               </div>
             </div>
-
-            <div id="user-vip-group" style="display:flex;flex-direction:row;align-items:center;gap:8px;background:#f0f0f3;border:1px solid #e0e0e8;border-radius:8px;padding:0.55rem 0.8rem;">
-              <input type="checkbox" id="user-vip-input" style="width:14px;height:14px;accent-color:#d32f2f;cursor:pointer;flex-shrink:0;margin:0;">
-              <div style="display:flex;flex-direction:column;gap:2px;">
-                <label style="font-size:0.75rem;font-weight:600;color:#1a1a2e;cursor:pointer;margin:0;line-height:1;" for="user-vip-input">Usuário VIP</label>
-                <span style="font-size:0.65rem;color:#6b6b80;line-height:1.3;margin:0;">Chamados com destaque especial</span>
+            <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+              <input type="checkbox" id="user-vip-input" style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
+              <div style="display:flex;flex-direction:column;gap:3px;">
+                <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-vip-input">⭐ Usuário VIP</label>
+                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Card terá destaque especial</span>
               </div>
             </div>
-
           </div>
 
           <!-- Divisor -->
@@ -320,7 +398,7 @@
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱 WhatsApp</label>
-              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 9 0000-0000" oninput="formatWhatsApp(this)" maxlength="16">
+              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
             </div>
           </div>
 
@@ -337,7 +415,7 @@
                 <span>Tenho AnyDesk</span>
               </label>
             </div>
-            <input type="text" class="form-input" id="user-anydesk-input" placeholder="Ex: 123 456 789" oninput="formatAnyDesk(this)" maxlength="11" style="display:none;margin-top:0.4rem;">
+            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
           </div>
 
         </div>
@@ -512,69 +590,85 @@
     </div>
   </div>
 
-  <!-- ══ PAINEL: NOTAS DE ATUALIZAÇÃO ══ -->
+  <!-- ══ PAINEL: NOVIDADES ══ -->
   <div id="changelog-panel" style="display:none;position:fixed;top:56px;right:1rem;
-    width:340px;max-height:70vh;background:var(--surface);border:1px solid var(--border2);
-    border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,0.15);z-index:400;
-    overflow:hidden;flex-direction:column;
-    transform-origin:top right;
-    transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.18s ease;
-    transform:scaleY(0.8) scaleX(0.95);opacity:0;pointer-events:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;
-      padding:1rem 1.2rem;border-bottom:1px solid var(--border2);background:var(--surface2);flex-shrink:0;">
-      <div style="font-size:0.9rem;font-weight:800;letter-spacing:-0.01em;">📋 Notas de Atualização</div>
-      <div style="display:flex;gap:0.4rem;">
-        <button id="changelog-manage-btn" onclick="openChangelogManager()"
-          style="display:none;font-size:0.7rem;font-family:var(--font-mono);
-            background:var(--surface3);border:1px solid var(--border2);border-radius:6px;
-            padding:0.2rem 0.6rem;cursor:pointer;color:var(--muted);transition:all 0.15s;"
-          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
-          ✎ Gerenciar
+    width:320px;max-height:70vh;background:var(--surface);border:1px solid var(--border2);
+    border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.15);z-index:300;
+    flex-direction:column;overflow:hidden;
+    transform:scaleY(0.8) scaleX(0.95);transform-origin:top right;
+    opacity:0;pointer-events:none;transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;">
+    <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
+      <span style="font-size:0.88rem;font-weight:700;">📋 Novidades</span>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades"
+          style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
+            padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;
+            background:var(--accent);color:#fff;border:none;transition:all 0.15s;">
+          ✏️ Publicar
         </button>
         <button onclick="toggleChangelog()"
           style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
-            background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.85rem;
+            background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.8rem;
             display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
     </div>
-    <div id="changelog-list" style="overflow-y:auto;flex:1;padding:0.75rem;
-      scrollbar-width:thin;scrollbar-color:#d0d0d8 transparent;">
+    <div id="changelog-list" style="overflow-y:auto;padding:1rem 1.2rem;flex:1;
+      font-family:'Space Mono',monospace;">
       <div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:2rem;">
         Carregando...
       </div>
     </div>
   </div>
 
-  <!-- ══ MODAL: GERENCIAR CHANGELOG ══ -->
+  <!-- ══ MODAL: PUBLICAR NOVIDADES (super admin) ══ -->
   <div class="modal-overlay" id="changelog-modal" onclick="if(event.target===this)closeChangelogManager()">
-    <div class="modal-content" style="max-width:500px;">
+    <div class="modal-content" style="max-width:480px;">
       <div class="modal-header">
-        <div class="modal-title">📋 Gerenciar Notas de Atualização</div>
+        <div class="modal-title">📋 Publicar Novidades</div>
         <button class="modal-close" onclick="closeChangelogManager()">✕</button>
       </div>
       <div class="modal-body">
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Versão</label>
-          <input type="text" class="form-input" id="cl-version-input" placeholder="Ex: v1.2.0">
+        <div class="form-group">
+          <label class="form-label">Versão</label>
+          <input type="text" class="form-input" id="cl-version-input" placeholder="Ex: v1.4.0">
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Data</label>
+        <div class="form-group">
+          <label class="form-label">Data</label>
           <input type="date" class="form-input" id="cl-date-input">
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <label style="font-size:0.7rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);">Notas (uma por linha)</label>
-          <textarea class="form-textarea" id="cl-notes-input" placeholder="🆕 Nova funcionalidade X&#10;🐛 Corrigido bug Y&#10;⚡ Melhorado Z" rows="6"></textarea>
+        <div class="form-group">
+          <label class="form-label">Notas (uma por linha)</label>
+          <textarea class="form-textarea" id="cl-notes-input"
+            placeholder="Nova funcionalidade X&#10;Correção do bug Y&#10;Melhoria no Z"
+            style="min-height:140px;"></textarea>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeChangelogManager()">Cancelar</button>
-        <button class="btn-save" onclick="saveChangelog()">Publicar</button>
+        <button class="btn-save" onclick="saveChangelog()">📋 Publicar</button>
       </div>
     </div>
   </div>
 
   <!-- ═══ JS — Ordem de carregamento ═══ -->
+  <script>
+    function showLoginMessage(msg, type) {
+      const el = document.getElementById('login-msg');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = 'block';
+      el.style.background = type === 'warn' ? '#fef3c7' : '#f0fdf4';
+      el.style.color       = type === 'warn' ? '#92400e' : '#166534';
+      el.style.border      = type === 'warn' ? '1px solid #fde68a' : '1px solid #bbf7d0';
+      // Dark mode
+      if (document.body.classList.contains('dark-mode')) {
+        el.style.background = type === 'warn' ? '#2a1f00' : '#0d2818';
+        el.style.color       = type === 'warn' ? '#fde68a' : '#86efac';
+        el.style.border      = type === 'warn' ? '1px solid #854d0e' : '1px solid #166534';
+      }
+    }
+  </script>
   <script src="assets/js/firebase.js"></script>
   <script src="assets/js/state.js"></script>
   <script src="assets/js/ui.js"></script>

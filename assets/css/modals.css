@@ -132,7 +132,8 @@ select.form-input    { cursor: pointer; }
 .ticket-type-btn {
   flex: 1; padding: 0.65rem 0.75rem; border: 1px solid var(--border2); border-radius: 10px;
   background: var(--surface2); color: var(--muted); font-family: var(--font-display);
-  font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: all 0.18s; text-align: center;
+  font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; text-align: center;
 }
 .ticket-type-btn:hover  { border-color: var(--accent); color: var(--accent); background: var(--surface); }
 .ticket-type-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -164,3 +165,9 @@ select.form-input    { cursor: pointer; }
 .sync-btn.danger:hover { background: var(--accent3); color: #fff; }
 
 .sync-last-sync { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); text-align: center; padding-top: 0.5rem; }
+
+/* ===== TEMA ESCURO — modals.css ===== */
+body.dark-mode .modal-overlay { background: rgba(0,0,0,0.65); }
+body.dark-mode .form-input,
+body.dark-mode .form-textarea { color-scheme: dark; }
+body.dark-mode .ticket-type-btn.active { background: var(--accent); color: #fff; }

@@ -36,7 +36,7 @@ let _isTestTicket = false;
 
 // Paginação
 let currentPage   = 1;
-const CARDS_PER_PAGE = 6;
+const CARDS_PER_PAGE = 8;
 
 // Labels de status
 const STATUS_LABEL = {
