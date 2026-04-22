@@ -1,9 +1,9 @@
 // ===== COMUNICADOS — Linha do tempo =====
 
 const COMUNICADOS_EXPIRY_DAYS = 15;
-const COMUNICADOS_STALE_DAYS  = 5;
+const COMUNICADOS_STALE_DAYS = 5;
 
-const PRIO_ICON  = { normal: '🔵', importante: '🟡', urgente: '🔴' };
+const PRIO_ICON = { normal: '🔵', importante: '🟡', urgente: '🔴' };
 const PRIO_LABEL = { normal: 'Normal', importante: 'Importante', urgente: 'Urgente' };
 
 let _comunicadosHistoryOpen = false;
@@ -31,16 +31,16 @@ function initComunicados() {
 
 // ── Renderizar feed ──
 function renderComunicados(docs) {
-  const feed    = document.getElementById('comunicados-feed');
+  const feed = document.getElementById('comunicados-feed');
   const history = document.getElementById('comunicados-history');
   if (!feed) return;
 
-  const now     = Date.now();
+  const now = Date.now();
   const canAdmin = menuCurrentUser?.isAdmin || menuCurrentUser?.isSuperAdmin;
 
   // Separar fixados, ativos e arquivados
-  const fixados   = docs.filter(d => d.fixado && !d.arquivado);
-  const ativos    = docs.filter(d => !d.fixado && !d.arquivado);
+  const fixados = docs.filter(d => d.fixado && !d.arquivado);
+  const ativos = docs.filter(d => !d.fixado && !d.arquivado);
   const arquivados = docs.filter(d => d.arquivado);
 
   // Arquivar automaticamente expirados
@@ -106,15 +106,15 @@ function renderComunicados(docs) {
 // ── Agrupar por data ──
 function groupByDate(docs) {
   const groups = {};
-  const today     = new Date(); today.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
 
   docs.forEach(d => {
     const ts = d.criadoEm?.toDate ? d.criadoEm.toDate() : new Date(d.criadoEm || Date.now());
-    const day = new Date(ts); day.setHours(0,0,0,0);
+    const day = new Date(ts); day.setHours(0, 0, 0, 0);
 
     let label;
-    if (day.getTime() === today.getTime())     label = 'Hoje';
+    if (day.getTime() === today.getTime()) label = 'Hoje';
     else if (day.getTime() === yesterday.getTime()) label = 'Ontem';
     else label = day.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -128,7 +128,7 @@ function groupByDate(docs) {
 // ── Construir card ──
 function buildComunicadoCard(d, canAdmin, archived = false) {
   const ts = d.criadoEm?.toDate ? d.criadoEm.toDate() : new Date(d.criadoEm || Date.now());
-  const time = ts.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const time = ts.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const prio = d.prioridade || 'normal';
   const icon = PRIO_ICON[prio] || '🔵';
 
@@ -137,10 +137,12 @@ function buildComunicadoCard(d, canAdmin, archived = false) {
   const adminActions = canAdmin && !archived ? `
     <div class="comunicado-actions">
       ${!d.fixado
-        ? `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', true)">📌 Fixar</button>`
-        : `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', false)">📌 Desafixar</button>`
-      }
+      ? `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', true)">📌 Fixar</button>`
+      : `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', false)">📌 Desafixar</button>`
+    }
+      <button class="comunicado-action-btn" onclick="editarComunicado('${d.id}')">✎ Editar</button>
       <button class="comunicado-action-btn danger" onclick="arquivarComunicado('${d.id}')">🗑️ Arquivar</button>
+      <button class="comunicado-action-btn danger" onclick="excluirComunicado('${d.id}')">❌ Excluir</button>
     </div>` : '';
 
   return `
@@ -154,7 +156,7 @@ function buildComunicadoCard(d, canAdmin, archived = false) {
         </div>
       </div>
       <div class="comunicado-title">${d.titulo || ''}</div>
-      <div class="comunicado-message">${(d.mensagem || '').replace(/</g,'&lt;')}</div>
+      <div class="comunicado-message">${(d.mensagem || '').replace(/</g, '&lt;')}</div>
       ${adminActions}
     </div>`;
 }
@@ -162,7 +164,7 @@ function buildComunicadoCard(d, canAdmin, archived = false) {
 // ── Abrir modal de nova publicação ──
 function openNovaComunicado() {
   _selectedPrio = 'normal';
-  document.getElementById('com-titulo-input').value   = '';
+  document.getElementById('com-titulo-input').value = '';
   document.getElementById('com-mensagem-input').value = '';
   document.getElementById('com-fixado-input').checked = false;
   updatePrioSelect('normal');
@@ -170,7 +172,8 @@ function openNovaComunicado() {
 }
 
 function closeComunicadoModal() {
-  document.getElementById('comunicado-modal').classList.remove('open');
+  const modal = document.getElementById('comunicado-modal');
+  if (modal) { modal.classList.remove('open'); delete modal.dataset.editId; }
 }
 
 function selectPrio(prio) {
@@ -182,15 +185,17 @@ function updatePrioSelect(prio) {
   document.querySelectorAll('.comunicado-prio-option').forEach(btn => {
     btn.classList.toggle('selected', btn.dataset.prio === prio);
     if (btn.dataset.prio === prio) btn.classList.add(prio);
-    else ['normal','importante','urgente'].forEach(p => btn.classList.remove(p));
+    else['normal', 'importante', 'urgente'].forEach(p => btn.classList.remove(p));
   });
 }
 
 // ── Salvar comunicado ──
 async function salvarComunicado() {
-  const titulo   = document.getElementById('com-titulo-input').value.trim();
+  const titulo = document.getElementById('com-titulo-input').value.trim();
   const mensagem = document.getElementById('com-mensagem-input').value.trim();
-  const fixado   = document.getElementById('com-fixado-input').checked;
+  const fixado = document.getElementById('com-fixado-input').checked;
+  const modal = document.getElementById('comunicado-modal');
+  const editId = modal?.dataset?.editId || '';
 
   if (!titulo || !mensagem) {
     showMenuNotification('Preencha o título e a mensagem!', 'error');
@@ -201,21 +206,32 @@ async function salvarComunicado() {
     : menuCurrentUser.isAdmin ? 'Admin' : 'Atendente';
 
   try {
-    await db.collection('comunicados').add({
-      titulo,
-      mensagem,
-      prioridade: _selectedPrio,
-      autor:      menuCurrentUser.username,
-      autorRole:  roleLabel,
-      criadoEm:   new Date(),
-      fixado,
-      arquivado:  false,
-      arquivadoEm: null,
-    });
+    if (editId) {
+      // Editar publicação existente
+      await db.collection('comunicados').doc(editId).update({
+        titulo, mensagem, prioridade: _selectedPrio, fixado,
+        editadoEm: new Date(),
+        editadoPor: menuCurrentUser.username,
+      });
+      delete modal.dataset.editId;
+      showMenuNotification('Publicação atualizada! ✅', 'success');
+    } else {
+      // Nova publicação
+      await db.collection('comunicados').add({
+        titulo, mensagem,
+        prioridade: _selectedPrio,
+        autor: menuCurrentUser.username,
+        autorRole: roleLabel,
+        criadoEm: new Date(),
+        fixado,
+        arquivado: false,
+        arquivadoEm: null,
+      });
+      showMenuNotification('Comunicado publicado! 📢', 'success');
+    }
     closeComunicadoModal();
-    showMenuNotification('Comunicado publicado! 📢', 'success');
-  } catch(e) {
-    showMenuNotification('Erro ao publicar comunicado.', 'error');
+  } catch (e) {
+    showMenuNotification('Erro ao salvar comunicado.', 'error');
   }
 }
 
@@ -232,11 +248,42 @@ async function arquivarComunicado(id) {
   showMenuNotification('Comunicado arquivado!', 'success');
 }
 
+async function editarComunicado(id) {
+  try {
+    const doc = await db.collection('comunicados').doc(id).get();
+    if (!doc.exists) { showMenuNotification('Comunicado não encontrado.', 'error'); return; }
+    const d = doc.data();
+
+    // Preencher modal com dados existentes
+    document.getElementById('com-titulo-input').value = d.titulo || '';
+    document.getElementById('com-mensagem-input').value = d.mensagem || '';
+    document.getElementById('com-fixado-input').checked = d.fixado || false;
+    _selectedPrio = d.prioridade || 'normal';
+    updatePrioSelect(_selectedPrio);
+
+    // Guardar ID sendo editado
+    document.getElementById('comunicado-modal').dataset.editId = id;
+    document.getElementById('comunicado-modal').classList.add('open');
+  } catch (e) {
+    showMenuNotification('Erro ao carregar comunicado.', 'error');
+  }
+}
+
+async function excluirComunicado(id) {
+  if (!confirm('Excluir permanentemente esta publicação? Esta ação não pode ser desfeita!')) return;
+  try {
+    await db.collection('comunicados').doc(id).delete();
+    showMenuNotification('Publicação excluída!', 'success');
+  } catch (e) {
+    showMenuNotification('Erro ao excluir publicação.', 'error');
+  }
+}
+
 // ── Histórico toggle ──
 function toggleComunicadosHistory() {
   _comunicadosHistoryOpen = !_comunicadosHistoryOpen;
   const section = document.getElementById('comunicados-history-section');
-  const btn     = document.getElementById('comunicados-history-btn');
+  const btn = document.getElementById('comunicados-history-btn');
   if (section) section.classList.toggle('open', _comunicadosHistoryOpen);
   if (btn) btn.textContent = _comunicadosHistoryOpen ? '📁 Ocultar Histórico' : '📁 Ver Histórico';
 }
