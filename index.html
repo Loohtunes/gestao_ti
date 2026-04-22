@@ -5,9 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#d32f2f">
-  <title>Gestão de T.I</title>
+  <title>Gestão T.I — Chamados</title>
   <link rel="icon" href="img/premovale (1).png">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- ═══ CSS — Ordem de carregamento ═══ -->
   <link rel="stylesheet" href="assets/css/base.css">
@@ -24,6 +26,18 @@
   <link rel="stylesheet" href="assets/css/responsive.css">
 
   <!-- ═══ Firebase SDK ═══ -->
+  <script>
+    // Ocultar tela de login imediatamente se já há sessão salva
+    // Evita o "flash" da tela de login ao voltar do menu
+    if (localStorage.getItem('chamados-current-user-id')) {
+      document.addEventListener('DOMContentLoaded', function () {
+        const loginScreen = document.getElementById('login-screen');
+        const ticketsMain = document.getElementById('tickets-main');
+        if (loginScreen) loginScreen.style.display = 'none';
+        if (ticketsMain) ticketsMain.style.display = 'block';
+      });
+    }
+  </script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -31,55 +45,82 @@
   <style>
     /* ── Modal AFK ── */
     #afk-warning-overlay {
-      position: fixed; inset: 0; z-index: 99999;
-      background: rgba(0,0,0,0.55);
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(6px);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       animation: slideUpDetail 0.25s ease;
     }
+
     .afk-warning-box {
       background: var(--surface);
       border: 1px solid var(--border2);
       border-radius: 18px;
       padding: 2rem 2.5rem;
-      max-width: 380px; width: 90%;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 1rem;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      max-width: 380px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
       text-align: center;
     }
-    .afk-warning-icon  { font-size: 2.5rem; }
-    .afk-warning-title {
-      font-size: 1.1rem; font-weight: 800;
-      color: var(--text); letter-spacing: -0.02em;
+
+    .afk-warning-icon {
+      font-size: 2.5rem;
     }
+
+    .afk-warning-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
     .afk-warning-text {
-      font-size: 0.82rem; color: var(--muted);
+      font-size: 0.82rem;
+      color: var(--muted);
       line-height: 1.6;
     }
+
     .afk-warning-countdown {
-      font-size: 2rem; font-weight: 800;
+      font-size: 2rem;
+      font-weight: 800;
       font-family: var(--font-mono);
       color: var(--accent);
       letter-spacing: 0.05em;
     }
+
     .afk-warning-btn {
-      background: var(--accent); color: #fff;
-      border: none; border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
       padding: 0.7rem 1.8rem;
-      font-size: 0.85rem; font-weight: 700;
+      font-size: 0.85rem;
+      font-weight: 700;
       font-family: var(--font-display);
-      cursor: pointer; transition: background 0.2s;
+      cursor: pointer;
+      transition: background 0.2s;
       width: 100%;
     }
-    .afk-warning-btn:hover { background: var(--accent2); }
+
+    .afk-warning-btn:hover {
+      background: var(--accent2);
+    }
   </style>
 </head>
 
 <body>
 
   <nav>
-    <div class="nav-logo">
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;"
+      title="Voltar ao Menu Principal">
       <img src="img/premovale (1).png" width="30px" height="30px">
       <span class="nav-title">
         <span class="nav-title-ti">T.I</span>
@@ -105,8 +146,8 @@
     <div class="nav-right">
       <!-- Novidades -->
       <div style="position:relative;display:inline-block;">
-        <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()"
-          title="Notas de Atualização" style="gap:0.4rem;">
+        <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()" title="Notas de Atualização"
+          style="gap:0.4rem;">
           📋 Novidades
         </button>
         <span id="changelog-badge" style="display:none;position:absolute;top:-6px;right:-6px;
@@ -116,16 +157,13 @@
       </div>
 
       <!-- Switch Tema Claro/Escuro -->
-      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()"
-        title="Alternar tema"
-        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
           background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
           padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
         <span style="font-size:0.8rem;">☀️</span>
         <div style="position:relative;width:28px;height:16px;background:var(--surface3);
           border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
-          <div id="theme-switch-thumb"
-            style="position:absolute;top:1px;left:1px;width:12px;height:12px;
+          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;
               background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
           </div>
         </div>
@@ -178,7 +216,8 @@
           <h2 class="page-title">Visão geral de <em><u>Tickets</u></em></h2>
         </div>
         <div class="attendant-info">
-          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️ Configurações</button>
+          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️
+            Configurações</button>
           <span class="attendant-badge">👤 <span id="current-attendant">Usuário</span></span>
           <button class="logout-btn" onclick="performLogout()">Sair</button>
         </div>
@@ -200,24 +239,81 @@
       </div>
 
       <div class="tickets-header">
-        <div class="tickets-filter" id="tickets-filter">
-          <button class="filter-btn active" data-attendant-only onclick="filterTickets('all', event)">Todos</button>
-          <button class="filter-btn" data-attendant-only onclick="filterTickets('available', event)">Abertos</button>
-          <button class="filter-btn filter-btn-material" id="filter-btn-material" data-attendant-only
-            onclick="filterTickets('material', event)">📦 Materiais</button>
-          <button class="filter-btn" data-attendant-only onclick="filterTickets('in-progress', event)">Em Atendimento</button>
-          <button class="filter-btn" data-attendant-only onclick="filterTickets('completed', event)">✅ Concluídos</button>
-          <button class="filter-btn" id="filter-btn-test" data-admin-only onclick="filterTickets('test', event)" style="display:none;justify-content:center;align-items:center;">🧪 Testes</button>
-          <button class="filter-btn" data-requester-filter onclick="filterTickets('my-requests', event)">Meus Chamados</button>
-          <button class="filter-btn" data-requester-filter onclick="filterTickets('completed', event)">✅ Concluídos</button>
+        <div class="tickets-filter-bar">
+
+          <!-- Dropdown de filtro principal — atendentes/admins -->
+          <div id="filter-dropdown-wrapper" style="display:none;position:relative;">
+            <button id="filter-dropdown-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
+                background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+                color:var(--text);padding:0.5rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+                cursor:pointer;transition:all 0.2s;white-space:nowrap;font-weight:600;">
+              <span id="filter-dropdown-label">📋 Todos</span>
+              <span style="font-size:0.6rem;opacity:0.5;">▼</span>
+            </button>
+            <div id="filter-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
+              background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+              box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:300;overflow:hidden;">
+              <button class="filter-dd-item active" data-filter="all" onclick="selectFilter('all','📋 Todos')">📋
+                Todos</button>
+              <button class="filter-dd-item" data-filter="available" onclick="selectFilter('available','📂 Abertos')">📂
+                Abertos</button>
+              <button class="filter-dd-item" data-filter="material" id="filter-dd-material"
+                onclick="selectFilter('material','📦 Materiais')">📦 Materiais</button>
+              <button class="filter-dd-item" data-filter="in-progress"
+                onclick="selectFilter('in-progress','⚙️ Em Atendimento')">⚙️ Em Atendimento</button>
+              <button class="filter-dd-item" data-filter="completed"
+                onclick="selectFilter('completed','✅ Concluídos')">✅ Concluídos</button>
+              <button class="filter-dd-item" data-filter="test" id="filter-dd-test" style="display:none;"
+                onclick="selectFilter('test','🧪 Testes')">🧪 Testes</button>
+            </div>
+          </div>
+
+          <!-- Filtros solicitante — dropdown próprio -->
+          <div id="filter-requester-wrapper" style="display:none;position:relative;">
+            <button id="filter-requester-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
+                background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+                color:var(--text);padding:0.5rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+                cursor:pointer;transition:all 0.2s;white-space:nowrap;font-weight:600;">
+              <span id="filter-requester-label">👤 Meus Chamados</span>
+              <span style="font-size:0.6rem;opacity:0.5;">▼</span>
+            </button>
+            <div id="filter-requester-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
+              background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+              box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:180px;z-index:300;overflow:hidden;">
+              <button class="filter-dd-item active" data-filter="my-requests"
+                onclick="selectFilter('my-requests','👤 Meus Chamados')">👤 Meus Chamados</button>
+              <button class="filter-dd-item" data-filter="completed"
+                onclick="selectFilter('completed','✅ Concluídos')">✅ Concluídos</button>
+            </div>
+          </div>
+
+          <!-- Filtro por Setor — só atendentes/admins -->
+          <div id="setor-filter-wrapper" style="display:none;">
+            <select id="setor-filter-select" class="arc-filter-select"
+              onchange="currentSetorFilter=this.value;renderTickets()">
+              <option value="">🏢 Todos os Setores</option>
+              <option value="Engenharia">Engenharia</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="PCP">PCP</option>
+              <option value="Orçamento">Orçamento</option>
+              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+              <option value="Suprimentos">Suprimentos</option>
+              <option value="RH">RH</option>
+              <option value="TI">TI</option>
+              <option value="Contabilidade">Contabilidade</option>
+            </select>
+          </div>
+
         </div>
+
         <div class="tickets-header-right">
-          <button id="view-toggle-btn" onclick="toggleViewMode()" title="Alternar visualização"
-            style="display:none;width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
+          <button id="view-toggle-btn" onclick="toggleViewMode()" title="Alternar visualização" style="display:none;width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
               background:var(--surface);color:var(--muted);cursor:pointer;font-size:1rem;
               align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">☰</button>
           <div class="search-widget" id="search-widget">
-            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()" title="Pesquisar chamados">🔍</button>
+            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()"
+              title="Pesquisar chamados">🔍</button>
             <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
               oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
           </div>
@@ -225,8 +321,7 @@
 
           <!-- Dropdown de Ações — visível apenas para atendentes/admins -->
           <div id="actions-dropdown-wrapper" style="position:relative;display:none;">
-            <button id="actions-dropdown-btn" onclick="toggleActionsDropdown()"
-              style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+            <button id="actions-dropdown-btn" onclick="toggleActionsDropdown()" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;
                 color:var(--muted);padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
                 cursor:pointer;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:0.4rem;">
               ⚙️ Ações <span style="font-size:0.6rem;opacity:0.6;">▼</span>
@@ -235,8 +330,7 @@
               background:var(--surface);border:1px solid var(--border2);border-radius:12px;
               box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:200;overflow:hidden;
               color:var(--text);">
-              <button id="merge-mode-btn" onclick="toggleMergeMode()"
-                style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
+              <button id="merge-mode-btn" onclick="toggleMergeMode()" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
                   font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:var(--text);
                   display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
                 onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'"
@@ -245,15 +339,13 @@
               </button>
               <div id="test-actions-group" style="display:none;">
                 <div style="height:1px;background:var(--border2);margin:0 0.75rem;"></div>
-                <button id="new-test-btn" onclick="closeActionsDropdown();openTicketModal(null, true)"
-                  style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
+                <button id="new-test-btn" onclick="closeActionsDropdown();openTicketModal(null, true)" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
                     font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:#a855f7;
                     display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
                   onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
                   🧪 Chamado de Teste
                 </button>
-                <button id="clear-test-btn" onclick="closeActionsDropdown();clearTestTickets()"
-                  style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
+                <button id="clear-test-btn" onclick="closeActionsDropdown();clearTestTickets()" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
                     font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:#ef4444;
                     display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
                   onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
@@ -273,13 +365,51 @@
           🔗 Modo de Mesclagem — <span id="merge-count">0</span> chamado(s) selecionado(s)
         </div>
         <div style="font-size:0.78rem;opacity:0.85;">Clique nos cards para selecionar (mínimo 2)</div>
-        <button id="merge-confirm-btn" onclick="openMergeConfirmModal()" disabled
-          style="background:#fff;color:var(--accent);border:none;border-radius:8px;
+        <button id="merge-confirm-btn" onclick="openMergeConfirmModal()" disabled style="background:#fff;color:var(--accent);border:none;border-radius:8px;
             padding:0.5rem 1.2rem;font-size:0.82rem;font-weight:700;
             font-family:var(--font-display);cursor:pointer;transition:all 0.2s;
             opacity:0.5;">
           Mesclar Selecionados
         </button>
+      </div>
+
+      <!-- Barra de filtros concluídos — fora do board para não ser re-renderizada -->
+      <div id="arc-filter-bar" style="display:none;">
+        <div class="arc-filter-bar">
+          <select id="arc-filter-setor" class="arc-filter-select" onchange="_arcSetor=this.value;renderTickets()"
+            title="Filtrar por Setor">
+            <option value="">🏢 Todos os Setores</option>
+            <option value="Engenharia">Engenharia</option>
+            <option value="Comercial">Comercial</option>
+            <option value="Financeiro">Financeiro</option>
+            <option value="PCP">PCP</option>
+            <option value="Orçamento">Orçamento</option>
+            <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+            <option value="Suprimentos">Suprimentos</option>
+            <option value="RH">RH</option>
+            <option value="TI">TI</option>
+            <option value="Contabilidade">Contabilidade</option>
+          </select>
+          <select id="arc-filter-prio" class="arc-filter-select" onchange="_arcPrio=this.value;renderTickets()"
+            title="Filtrar por Prioridade">
+            <option value="">⚡ Todas as Prioridades</option>
+            <option value="urgent">🚨 Urgente</option>
+            <option value="high">🔴 Alta</option>
+            <option value="medium">🟡 Média</option>
+            <option value="low">🟢 Baixa</option>
+          </select>
+          <div class="arc-filter-dates">
+            <label class="arc-filter-label">De</label>
+            <input type="date" id="arc-filter-from" class="arc-filter-date" onclick="event.stopPropagation()"
+              onchange="event.stopPropagation();_arcFrom=this.value;renderTickets()">
+            <label class="arc-filter-label">Até</label>
+            <input type="date" id="arc-filter-to" class="arc-filter-date" onclick="event.stopPropagation()"
+              onchange="event.stopPropagation();_arcTo=this.value;renderTickets()">
+          </div>
+          <button class="arc-filter-clear" id="arc-filter-clear-btn" onclick="clearArcFilters()" style="display:none;">✕
+            Limpar</button>
+          <span class="arc-filter-count" id="arc-filter-count"></span>
+        </div>
       </div>
 
       <div class="tickets-board" id="tickets-board"></div>
@@ -318,35 +448,48 @@
       </div>
       <div class="modal-body" style="gap:0;padding:1.25rem;">
         <div id="user-list-container" style="display:none;">
-          <h3 style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">Usuários Cadastrados</h3>
-          <div id="users-list" style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);"></div>
-          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo Usuário</button>
+          <h3
+            style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">
+            Usuários Cadastrados</h3>
+          <div id="users-list"
+            style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);">
+          </div>
+          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo
+            Usuário</button>
         </div>
         <div id="user-form-container" style="display:flex;flex-direction:column;gap:0.8rem;width:100%;">
 
           <!-- Linha 1: Nome + Senha -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Nome de Usuário</label>
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Nome
+                de Usuário</label>
               <input type="text" class="form-input" id="user-name-input" placeholder="Login do usuário">
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Senha</label>
-              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha" autocomplete="new-password">
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Senha</label>
+              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha"
+                autocomplete="new-password">
             </div>
           </div>
 
           <!-- Linha 2: Papel + Setor -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;" id="user-role-group">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Papel do Usuário</label>
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Papel
+                do Usuário</label>
               <select class="form-input" id="user-role-input" onchange="toggleAdminCheckbox()">
                 <option value="requester">Solicitante</option>
                 <option value="attendant">Atendente</option>
               </select>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🏢 Setor</label>
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🏢
+                Setor</label>
               <select class="form-input" id="user-setor-input">
                 <option value="">Selecione o Setor</option>
                 <option value="Engenharia">Engenharia</option>
@@ -355,7 +498,7 @@
                 <option value="PCP">PCP</option>
                 <option value="Orçamento">Orçamento</option>
                 <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-                <option value="Compras/Almoxarifado">Compras/Almoxarifado</option>
+                <option value="Suprimentos">Suprimentos</option>
                 <option value="RH">RH</option>
                 <option value="TI">TI</option>
                 <option value="Contabilidade">Contabilidade</option>
@@ -367,47 +510,64 @@
           <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
             <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
               background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-              <input type="checkbox" id="user-admin-input" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
+              <input type="checkbox" id="user-admin-input"
+                style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
               <div style="display:flex;flex-direction:column;gap:3px;">
-                <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-admin-input">É Administrador?</label>
-                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Gerencia usuários e chamados</span>
+                <label
+                  style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
+                  for="user-admin-input">É Administrador?</label>
+                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Gerencia usuários e
+                  chamados</span>
               </div>
             </div>
             <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
               background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-              <input type="checkbox" id="user-vip-input" style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
+              <input type="checkbox" id="user-vip-input"
+                style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
               <div style="display:flex;flex-direction:column;gap:3px;">
-                <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;" for="user-vip-input">⭐ Usuário VIP</label>
-                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Card terá destaque especial</span>
+                <label
+                  style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
+                  for="user-vip-input">⭐ Usuário VIP</label>
+                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Card terá destaque
+                  especial</span>
               </div>
             </div>
           </div>
 
           <!-- Divisor -->
-          <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
+          <div
+            style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
             <span style="flex:1;height:1px;background:#e0e0e8;"></span>
-            <span>Informações de Contato <span style="font-size:0.6rem;text-transform:none;letter-spacing:0;opacity:0.7;">(opcional)</span></span>
+            <span>Informações de Contato <span
+                style="font-size:0.6rem;text-transform:none;letter-spacing:0;opacity:0.7;">(opcional)</span></span>
             <span style="flex:1;height:1px;background:#e0e0e8;"></span>
           </div>
 
           <!-- Linha: E-mail + WhatsApp -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">✉️ E-mail</label>
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">✉️
+                E-mail</label>
               <input type="email" class="form-input" id="user-email-input" placeholder="email@empresa.com">
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;">
-              <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱 WhatsApp</label>
+              <label
+                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱
+                WhatsApp</label>
               <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
             </div>
           </div>
 
           <!-- AnyDesk -->
           <div style="display:flex;flex-direction:column;gap:6px;">
-            <label style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🖥️ AnyDesk</label>
+            <label
+              style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🖥️
+              AnyDesk</label>
             <div class="anydesk-toggle">
               <label class="anydesk-option">
-                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked onchange="toggleAnydeskInput()">
+                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked
+                  onchange="toggleAnydeskInput()">
                 <span>Não tenho AnyDesk</span>
               </label>
               <label class="anydesk-option">
@@ -415,14 +575,17 @@
                 <span>Tenho AnyDesk</span>
               </label>
             </div>
-            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
+            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)"
+              style="display:none;margin-top:0.4rem;">
+          </div>
+
+          <!-- Botões — dentro do formulário, somem na lista -->
+          <div class="modal-footer" style="padding:1rem 0 0;border-top:1px solid var(--border);margin-top:0.5rem;">
+            <button class="btn-cancel" onclick="cancelUserForm()">Cancelar</button>
+            <button class="btn-save" onclick="saveUser()">Salvar Usuário</button>
           </div>
 
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeUserModal()">Cancelar</button>
-        <button class="btn-save" onclick="saveUser()">Salvar Usuário</button>
       </div>
     </div>
   </div>
@@ -474,18 +637,20 @@
             <option value="PCP">PCP</option>
             <option value="Orçamento">Orçamento</option>
             <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-            <option value="Compras/Almoxarifado">Compras/Almoxarifado</option>
+            <option value="Suprimentos">Suprimentos</option>
             <option value="RH">RH</option>
             <option value="TI">TI</option>
             <option value="Contabilidade">Contabilidade</option>
           </select>
-          <div id="setor-locked-hint" style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+          <div id="setor-locked-hint"
+            style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
             🔒 Setor vinculado ao seu cadastro
           </div>
         </div>
         <div class="form-group">
           <label class="form-label" id="ticket-desc-label">Descrição</label>
-          <textarea class="form-textarea" id="ticket-description-input" placeholder="Descreva o chamado em detalhes..."></textarea>
+          <textarea class="form-textarea" id="ticket-description-input"
+            placeholder="Descreva o chamado em detalhes..."></textarea>
         </div>
         <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
           <div class="form-row-2">
@@ -519,7 +684,8 @@
           <div class="form-group">
             <label class="form-label">📅 Data de Necessidade</label>
             <input type="date" class="form-input" id="ticket-material-date" min="">
-            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o material é necessário?</div>
+            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
+              material é necessário?</div>
           </div>
         </div>
         <div class="form-group" id="ticket-priority-group">
@@ -572,7 +738,8 @@
         </div>
         <div class="form-group">
           <label class="form-label">Dropbox Access Token</label>
-          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..." autocomplete="off">
+          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..."
+            autocomplete="off">
         </div>
         <div class="sync-actions">
           <button class="sync-btn secondary" onclick="testConnection()">🔍 Testar Conexão</button>
@@ -580,7 +747,8 @@
         </div>
         <div class="sync-actions">
           <button class="sync-btn" onclick="syncToCloud()" id="sync-upload-btn" disabled>⬆️ Enviar para Nuvem</button>
-          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da Nuvem</button>
+          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da
+            Nuvem</button>
         </div>
         <div class="sync-actions">
           <button class="sync-btn danger" onclick="disconnectDropbox()">🔌 Desconectar</button>
@@ -601,14 +769,12 @@
       display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
       <span style="font-size:0.88rem;font-weight:700;">📋 Novidades</span>
       <div style="display:flex;align-items:center;gap:0.5rem;">
-        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades"
-          style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
+        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades" style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
             padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;
             background:var(--accent);color:#fff;border:none;transition:all 0.15s;">
           ✏️ Publicar
         </button>
-        <button onclick="toggleChangelog()"
-          style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
+        <button onclick="toggleChangelog()" style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
             background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.8rem;
             display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
@@ -659,13 +825,13 @@
       el.textContent = msg;
       el.style.display = 'block';
       el.style.background = type === 'warn' ? '#fef3c7' : '#f0fdf4';
-      el.style.color       = type === 'warn' ? '#92400e' : '#166534';
-      el.style.border      = type === 'warn' ? '1px solid #fde68a' : '1px solid #bbf7d0';
+      el.style.color = type === 'warn' ? '#92400e' : '#166534';
+      el.style.border = type === 'warn' ? '1px solid #fde68a' : '1px solid #bbf7d0';
       // Dark mode
       if (document.body.classList.contains('dark-mode')) {
         el.style.background = type === 'warn' ? '#2a1f00' : '#0d2818';
-        el.style.color       = type === 'warn' ? '#fde68a' : '#86efac';
-        el.style.border      = type === 'warn' ? '1px solid #854d0e' : '1px solid #166534';
+        el.style.color = type === 'warn' ? '#fde68a' : '#86efac';
+        el.style.border = type === 'warn' ? '1px solid #854d0e' : '1px solid #166534';
       }
     }
   </script>
@@ -682,4 +848,5 @@
   <script src="assets/js/init.js"></script>
 
 </body>
+
 </html>

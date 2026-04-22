@@ -16,8 +16,8 @@ function showNotification(message, type) {
 
 function toggleSearch() {
   const widget = document.getElementById('search-widget');
-  const input  = document.getElementById('ticket-search');
-  const btn    = document.getElementById('search-toggle-btn');
+  const input = document.getElementById('ticket-search');
+  const btn = document.getElementById('search-toggle-btn');
   if (!widget) return;
   const open = widget.classList.toggle('open');
   if (open) {
@@ -30,9 +30,9 @@ function toggleSearch() {
 }
 
 function collapseSearchIfEmpty() {
-  const input  = document.getElementById('ticket-search');
+  const input = document.getElementById('ticket-search');
   const widget = document.getElementById('search-widget');
-  const btn    = document.getElementById('search-toggle-btn');
+  const btn = document.getElementById('search-toggle-btn');
   if (!input?.value.trim()) {
     setTimeout(() => {
       if (!input.value.trim() && document.activeElement !== input) {
@@ -74,19 +74,19 @@ function closeActionsDropdownOutside(e) {
 
 function formatWhatsApp(input) {
   let v = input.value.replace(/\D/g, '').slice(0, 11);
-  if (v.length <= 2)       input.value = v.length ? '(' + v : v;
-  else if (v.length <= 3)  input.value = '(' + v.slice(0,2) + ') ' + v.slice(2);
-  else if (v.length <= 7)  input.value = '(' + v.slice(0,2) + ') ' + v.slice(2,3) + ' ' + v.slice(3);
-  else if (v.length <= 11) input.value = '(' + v.slice(0,2) + ') ' + v.slice(2,3) + ' ' + v.slice(3,7) + '-' + v.slice(7);
-  else                     input.value = '(' + v.slice(0,2) + ') ' + v.slice(2,3) + ' ' + v.slice(3,7) + '-' + v.slice(7,11);
+  if (v.length <= 2) input.value = v.length ? '(' + v : v;
+  else if (v.length <= 3) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2);
+  else if (v.length <= 7) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3);
+  else if (v.length <= 11) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3, 7) + '-' + v.slice(7);
+  else input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3, 7) + '-' + v.slice(7, 11);
 }
 
 function formatAnyDesk(input) {
   let v = input.value.replace(/\D/g, '').slice(0, 10);
-  if (v.length <= 1)      input.value = v;
-  else if (v.length <= 4) input.value = v.slice(0,1) + ' ' + v.slice(1);
-  else if (v.length <= 7) input.value = v.slice(0,1) + ' ' + v.slice(1,4) + ' ' + v.slice(4);
-  else                    input.value = v.slice(0,1) + ' ' + v.slice(1,4) + ' ' + v.slice(4,7) + ' ' + v.slice(7);
+  if (v.length <= 1) input.value = v;
+  else if (v.length <= 4) input.value = v.slice(0, 1) + ' ' + v.slice(1);
+  else if (v.length <= 7) input.value = v.slice(0, 1) + ' ' + v.slice(1, 4) + ' ' + v.slice(4);
+  else input.value = v.slice(0, 1) + ' ' + v.slice(1, 4) + ' ' + v.slice(4, 7) + ' ' + v.slice(7);
 }
 
 // ══════════════════════════════════════════════════════
@@ -124,7 +124,7 @@ function toggleChangelog() {
     panel.style.display = 'flex';
     panel.getBoundingClientRect();
     panel.style.transform = 'scaleY(1) scaleX(1)';
-    panel.style.opacity   = '1';
+    panel.style.opacity = '1';
     panel.style.pointerEvents = 'auto';
     loadChangelogEntries();
     markChangelogRead();
@@ -133,7 +133,7 @@ function toggleChangelog() {
     }, 10);
   } else {
     panel.style.transform = 'scaleY(0.8) scaleX(0.95)';
-    panel.style.opacity   = '0';
+    panel.style.opacity = '0';
     panel.style.pointerEvents = 'none';
     setTimeout(() => { if (!_changelogOpen) panel.style.display = 'none'; }, 200);
   }
@@ -141,7 +141,7 @@ function toggleChangelog() {
 
 function closeChangelogOutside(e) {
   const panel = document.getElementById('changelog-panel');
-  const btn   = document.getElementById('changelog-btn');
+  const btn = document.getElementById('changelog-btn');
   if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
     _changelogOpen = true;
     toggleChangelog();
@@ -188,7 +188,7 @@ async function loadChangelogEntries() {
         </ul>
       </div>`;
     }).join('');
-  } catch(e) {
+  } catch (e) {
     list.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:2rem;">Erro ao carregar.</div>';
   }
 }
@@ -199,10 +199,10 @@ async function checkChangelogBadge() {
   try {
     const snap = await db.collection('changelog').orderBy('date', 'desc').limit(1).get();
     if (snap.empty) return;
-    const latest   = snap.docs[0].data();
+    const latest = snap.docs[0].data();
     const lastSeen = localStorage.getItem('changelog-last-seen');
     badge.style.display = (latest.date && latest.date !== lastSeen) ? 'flex' : 'none';
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function markChangelogRead() {
@@ -211,12 +211,12 @@ function markChangelogRead() {
   db.collection('changelog').orderBy('date', 'desc').limit(1).get()
     .then(snap => {
       if (!snap.empty) localStorage.setItem('changelog-last-seen', snap.docs[0].data().date);
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 function openChangelogManager() {
   document.getElementById('cl-version-input').value = '';
-  document.getElementById('cl-notes-input').value   = '';
+  document.getElementById('cl-notes-input').value = '';
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('cl-date-input').value = today;
   document.getElementById('changelog-modal').classList.add('open');
@@ -227,12 +227,25 @@ function closeChangelogManager() {
   if (modal) { modal.classList.remove('open'); delete modal.dataset.editId; }
 }
 
+function newChangelogEntry() {
+  // Limpar campos e abrir modal para nova entrada
+  const modal = document.getElementById('changelog-modal');
+  if (modal) delete modal.dataset.editId;
+  const versionInput = document.getElementById('cl-version-input');
+  const dateInput = document.getElementById('cl-date-input');
+  const notesInput = document.getElementById('cl-notes-input');
+  if (versionInput) versionInput.value = '';
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+  if (notesInput) notesInput.value = '';
+  document.getElementById('changelog-modal').classList.add('open');
+}
+
 async function saveChangelog() {
   const version = document.getElementById('cl-version-input').value.trim();
-  const date    = document.getElementById('cl-date-input').value;
-  const notes   = document.getElementById('cl-notes-input').value.trim();
+  const date = document.getElementById('cl-date-input').value;
+  const notes = document.getElementById('cl-notes-input').value.trim();
   if (!version || !date || !notes) { showNotification('Preencha todos os campos.', 'error'); return; }
-  const modal  = document.getElementById('changelog-modal');
+  const modal = document.getElementById('changelog-modal');
   const editId = modal?.dataset?.editId || '';
   try {
     if (editId) {
@@ -247,7 +260,7 @@ async function saveChangelog() {
     }
     closeChangelogManager();
     if (_changelogOpen) loadChangelogEntries();
-  } catch(e) {
+  } catch (e) {
     console.error('[Changelog] Erro ao salvar:', e);
     const msg = e?.code === 'permission-denied'
       ? 'Sem permissão no Firestore. Verifique as regras de segurança da coleção "changelog".'
@@ -262,12 +275,12 @@ async function editChangelogEntry(docId) {
     if (!doc.exists) { showNotification('Entrada não encontrada.', 'error'); return; }
     const d = doc.data();
     document.getElementById('cl-version-input').value = d.version || '';
-    document.getElementById('cl-date-input').value    = d.date    || '';
-    document.getElementById('cl-notes-input').value   = d.notes   || '';
+    document.getElementById('cl-date-input').value = d.date || '';
+    document.getElementById('cl-notes-input').value = d.notes || '';
     // Guardar o ID sendo editado no modal
     document.getElementById('changelog-modal').dataset.editId = docId;
     document.getElementById('changelog-modal').classList.add('open');
-  } catch(e) {
+  } catch (e) {
     showNotification('Erro ao carregar entrada.', 'error');
   }
 }
@@ -278,7 +291,7 @@ async function deleteChangelogEntry(docId) {
     await db.collection('changelog').doc(docId).delete();
     showNotification('Entrada excluída!', 'success');
     loadChangelogEntries();
-  } catch(e) {
+  } catch (e) {
     showNotification('Erro ao excluir entrada.', 'error');
   }
 }
@@ -306,132 +319,203 @@ function initDarkMode() {
 }
 
 // ══════════════════════════════════════════════════════
-// AUTO-LOGOUT POR INATIVIDADE
+// SESSÃO — LOGOUT POR SEGUNDO PLANO
 // ══════════════════════════════════════════════════════
 
-const IS_TEST_ENV = window.location.hostname === 'localhost'
-               || window.location.hostname === '127.0.0.1';
-
-// Tempos por papel (role)
-const AFK_CONFIG = {
-  requester: { timeout: 15 * 60 * 1000, warnBefore:  3 * 60 * 1000 }, // 15min / aviso 3min
-  attendant:  { timeout: 40 * 60 * 1000, warnBefore:  5 * 60 * 1000 }, // 40min / aviso 5min
-  default:    { timeout: 15 * 60 * 1000, warnBefore:  3 * 60 * 1000 }, // fallback
+// Tempos em segundo plano por papel
+const SESSION_CONFIG = {
+  requester: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 15min / aviso 3min
+  attendant: { bgTimeout: 30 * 60 * 1000, warnBefore: 5 * 60 * 1000 }, // 30min / aviso 5min
+  default: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // fallback
 };
 
-let _afkTimeout   = AFK_CONFIG.default.timeout;
-let _afkWarnBefore = AFK_CONFIG.default.warnBefore;
-let _afkTimer     = null;
-let _afkWarnTimer = null;
-let _afkWarning   = false;
-let _afkVisualTimer = null;   // intervalo do countdown visual
-let _afkStartTime   = null;   // quando o timer foi iniciado
+let _sessionBgTimeout = SESSION_CONFIG.default.bgTimeout;
+let _sessionWarnBefore = SESSION_CONFIG.default.warnBefore;
+let _sessionBgStart = null;   // quando foi para segundo plano
+let _sessionBgTimer = null;   // timer do logout em segundo plano
+let _sessionWarnTimer = null;   // timer do aviso
+let _sessionWarning = false;
+let _sessionVisualTimer = null;   // intervalo do countdown visual
+let _sessionLastHide = 0;  // timestamp da última saída (deduplicação)
+let _sessionLastFocus = 0;  // timestamp do último retorno
+let _sessionFocusCheck = null; // timeout para verificar perda de foco real
 
-// Eventos que reiniciam o timer
-const AFK_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+function initSessionTimer(role) {
+  const isAttendant = role === 'attendant' || role === 'admin' || role === 'superadmin';
+  const cfg = isAttendant ? SESSION_CONFIG.attendant : SESSION_CONFIG.requester;
+  _sessionBgTimeout = cfg.bgTimeout;
+  _sessionWarnBefore = cfg.warnBefore;
 
-function initAfkTimer(role) {
-  if (IS_TEST_ENV) { initVisualTimerTest(); return; } // Mostra timer estático em teste
-  const isAttendant = role === 'attendant' || role === 'admin';
-  const cfg = isAttendant ? AFK_CONFIG.attendant : AFK_CONFIG.requester;
-  _afkTimeout    = cfg.timeout;
-  _afkWarnBefore = cfg.warnBefore;
-  AFK_EVENTS.forEach(ev => document.removeEventListener(ev, resetAfkTimer));
-  AFK_EVENTS.forEach(ev => document.addEventListener(ev, resetAfkTimer, { passive: true }));
-  resetAfkTimer();
+  // Detectar troca de aba
+  document.addEventListener('visibilitychange', onVisibilityChange);
+
+  // Detectar saída da janela (inclui contenteditable, modais, etc)
+  document.addEventListener('blur', onDocumentBlur, true); // capture
+  document.addEventListener('focus', onDocumentFocus, true); // capture
+  window.addEventListener('blur', onWindowBlur);
+  window.addEventListener('focus', onWindowFocus);
+
+
 }
 
-function resetAfkTimer() {
-  if (IS_TEST_ENV) return;
-  // Se o aviso já estava aberto e o usuário interagiu, fecha e renova
-  if (_afkWarning) dismissAfkWarning();
+function stopSessionTimer() {
+  clearTimeout(_sessionBgTimer);
+  clearTimeout(_sessionWarnTimer);
+  clearInterval(_sessionVisualTimer);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  document.removeEventListener('blur', onDocumentBlur, true);
+  document.removeEventListener('focus', onDocumentFocus, true);
+  window.removeEventListener('blur', onWindowBlur);
+  window.removeEventListener('focus', onWindowFocus);
 
-  clearTimeout(_afkTimer);
-  clearTimeout(_afkWarnTimer);
+  clearTimeout(_sessionFocusCheck);
+  dismissSessionWarning();
+  hideVisualTimer();
+  _sessionBgStart = null;
+  _sessionWarning = false;
+  _sessionLastHide = 0;
+  _sessionLastFocus = 0;
+}
+
+function onVisibilityChange() {
+  if (document.hidden) {
+    const now = Date.now();
+    if (now - _sessionLastHide < 500) return; // deduplicar com blur
+    _sessionLastHide = now;
+    console.log('[Session] visibilitychange → hidden');
+    startBackgroundTimer();
+  } else {
+    const now = Date.now();
+    if (now - _sessionLastFocus < 500) return; // deduplicar com focus
+    _sessionLastFocus = now;
+    console.log('[Session] visibilitychange → visible');
+    onReturnToTab();
+  }
+}
+
+function onWindowBlur() {
+  const now = Date.now();
+  if (now - _sessionLastHide < 500) return; // deduplicar com visibilitychange
+  _sessionLastHide = now;
+  console.log('[Session] blur → segundo plano');
+  startBackgroundTimer();
+}
+
+function onWindowFocus() {
+  const now = Date.now();
+  if (now - _sessionLastFocus < 500) return; // deduplicar com visibilitychange
+  _sessionLastFocus = now;
+  // Só age se havia um timer rodando
+  if (!_sessionBgStart) return;
+  console.log('[Session] focus → voltou');
+  onReturnToTab();
+}
+
+function onDocumentBlur() {
+  // Verificar com delay se o foco realmente saiu da janela
+  // (evita falsos positivos de blur entre elementos internos)
+  clearTimeout(_sessionFocusCheck);
+  _sessionFocusCheck = setTimeout(() => {
+    if (!document.hasFocus()) {
+      const now = Date.now();
+      if (now - _sessionLastHide < 500) return;
+      _sessionLastHide = now;
+      console.log('[Session] document blur → janela perdeu foco');
+      startBackgroundTimer();
+    }
+  }, 200);
+}
+
+function onDocumentFocus() {
+  clearTimeout(_sessionFocusCheck);
+  if (!_sessionBgStart) return;
+  const now = Date.now();
+  if (now - _sessionLastFocus < 500) return;
+  _sessionLastFocus = now;
+  console.log('[Session] document focus → janela ganhou foco');
+  onReturnToTab();
+}
+
+function startBackgroundTimer() {
+  // Não iniciar se já está rodando
+  if (_sessionBgStart) return;
+  _sessionBgStart = Date.now();
+  console.log('[Session] timer iniciado —', new Date().toLocaleTimeString('pt-BR'));
+  showVisualTimer();
+
+  clearTimeout(_sessionWarnTimer);
+  clearTimeout(_sessionBgTimer);
 
   // Aviso antes do logout
-  _afkWarnTimer = setTimeout(() => {
+  _sessionWarnTimer = setTimeout(() => {
     showAfkWarning();
-  }, _afkTimeout - _afkWarnBefore);
+  }, _sessionBgTimeout - _sessionWarnBefore);
 
   // Logout automático
-  _afkTimer = setTimeout(() => {
+  _sessionBgTimer = setTimeout(() => {
     triggerAfkLogout();
-  }, _afkTimeout);
-
-  // Timer visual
-  _afkStartTime = Date.now();
-  startVisualTimer();
+  }, _sessionBgTimeout);
 }
 
-function stopAfkTimer() {
-  clearTimeout(_afkTimer);
-  clearTimeout(_afkWarnTimer);
-  clearInterval(_afkVisualTimer);
-  AFK_EVENTS.forEach(ev => document.removeEventListener(ev, resetAfkTimer));
-  dismissAfkWarning();
-  _afkWarning = false;
+function onReturnToTab() {
+  const elapsed = _sessionBgStart ? Date.now() - _sessionBgStart : 0;
+  console.log('[Session] voltou — ausente por', Math.round(elapsed / 1000) + 's');
+
+  clearTimeout(_sessionBgTimer);
+  clearTimeout(_sessionWarnTimer);
   hideVisualTimer();
+
+  if (elapsed >= _sessionBgTimeout) {
+    triggerAfkLogout();
+  } else {
+    dismissSessionWarning();
+    _sessionBgStart = null;
+  }
 }
 
 // ── Timer visual na navbar ──
-function startVisualTimer() {
-  clearInterval(_afkVisualTimer);
-  updateVisualTimer();
-  _afkVisualTimer = setInterval(updateVisualTimer, 1000);
-
-  // Mostrar timer na navbar
+function showVisualTimer() {
   const el = document.getElementById('session-timer');
   if (el) el.style.display = 'flex';
+  _sessionBgStart = _sessionBgStart || Date.now();
+  clearInterval(_sessionVisualTimer);
+  updateVisualTimer();
+  _sessionVisualTimer = setInterval(updateVisualTimer, 1000);
 }
 
 function hideVisualTimer() {
-  clearInterval(_afkVisualTimer);
+  clearInterval(_sessionVisualTimer);
   const el = document.getElementById('session-timer');
   if (el) el.style.display = 'none';
 }
 
 function updateVisualTimer() {
   const countdown = document.getElementById('session-countdown');
-  const barFill   = document.getElementById('session-bar-fill');
-  if (!countdown || !barFill) return;
+  const barFill = document.getElementById('session-bar-fill');
+  if (!countdown || !barFill || !_sessionBgStart) return;
 
-  const elapsed  = Date.now() - (_afkStartTime || Date.now());
-  const remaining = Math.max(0, _afkTimeout - elapsed);
-  const pct = (remaining / _afkTimeout) * 100;
+  const elapsed = Date.now() - _sessionBgStart;
+  const remaining = Math.max(0, _sessionBgTimeout - elapsed);
+  const pct = (remaining / _sessionBgTimeout) * 100;
 
-  // Formatar mm:ss
   const totalSecs = Math.ceil(remaining / 1000);
   const mins = Math.floor(totalSecs / 60);
   const secs = String(totalSecs % 60).padStart(2, '0');
   countdown.textContent = `${mins}:${secs}`;
-
-  // Atualizar barra
   barFill.style.width = `${pct}%`;
 
-  // Estados de cor
-  const isWarn   = remaining <= _afkWarnBefore;
-  const isDanger = remaining <= 60000; // último minuto
-
+  const isWarn = remaining <= _sessionWarnBefore;
+  const isDanger = remaining <= 60000;
   countdown.className = isDanger ? 'danger' : isWarn ? 'warn' : '';
-  barFill.className   = isDanger ? 'danger' : isWarn ? 'warn' : '';
+  barFill.className = isDanger ? 'danger' : isWarn ? 'warn' : '';
 }
 
-function initVisualTimerTest() {
-  // Em ambiente teste — mostra o timer zerado/estático
-  const el = document.getElementById('session-timer');
-  if (el) el.style.display = 'flex';
-  const countdown = document.getElementById('session-countdown');
-  const barFill   = document.getElementById('session-bar-fill');
-  if (countdown) countdown.textContent = '∞';
-  if (barFill)   { barFill.style.width = '100%'; barFill.style.background = 'var(--border2)'; }
-}
+
 
 function showAfkWarning() {
-  if (_afkWarning) return;
-  _afkWarning = true;
+  if (_sessionWarning) return;
+  _sessionWarning = true;
 
-  // Criar modal de aviso
   const overlay = document.createElement('div');
   overlay.id = 'afk-warning-overlay';
   overlay.innerHTML = `
@@ -439,23 +523,21 @@ function showAfkWarning() {
       <div class="afk-warning-icon">⏰</div>
       <div class="afk-warning-title">Sessão expirando</div>
       <div class="afk-warning-text">
-        Sua sessão encerrará em <strong id="afk-warn-mins"></strong> por inatividade.<br>
-        Clique em continuar para permanecer conectado.
+        Você está ausente há algum tempo.<br>
+        Sua sessão encerrará em <strong id="afk-warn-mins"></strong>.
       </div>
       <div class="afk-warning-countdown" id="afk-countdown"></div>
-      <button class="afk-warning-btn" onclick="dismissAfkWarning()">
+      <button class="afk-warning-btn" onclick="dismissSessionWarning()">
         ✅ Continuar conectado
       </button>
     </div>`;
   document.body.appendChild(overlay);
 
-  // Preencher texto dinâmico com minutos corretos
-  const warnMins = Math.round(_afkWarnBefore / 60000);
+  const warnMins = Math.round(_sessionWarnBefore / 60000);
   const warnMinsEl = document.getElementById('afk-warn-mins');
   if (warnMinsEl) warnMinsEl.textContent = `${warnMins} minuto${warnMins > 1 ? 's' : ''}`;
 
-  // Countdown visual
-  let secsLeft = _afkWarnBefore / 1000;
+  let secsLeft = _sessionWarnBefore / 1000;
   const countEl = document.getElementById('afk-countdown');
   if (countEl) {
     const m0 = Math.floor(secsLeft / 60);
@@ -470,27 +552,23 @@ function showAfkWarning() {
     }
     const m = Math.floor(secsLeft / 60);
     const s = String(secsLeft % 60).padStart(2, '0');
-    countEl.textContent = `${m}:${s}`;
-    // Fica vermelho nos últimos 60s
-    if (secsLeft <= 60) countEl.style.color = '#ef4444';
+    if (countEl) countEl.textContent = `${m}:${s}`;
+    if (secsLeft <= 60 && countEl) countEl.style.color = '#ef4444';
   }, 1000);
   overlay.dataset.interval = interval;
 }
 
-function dismissAfkWarning() {
-  _afkWarning = false;
+function dismissSessionWarning() {
+  _sessionWarning = false;
   const overlay = document.getElementById('afk-warning-overlay');
   if (!overlay) return;
   clearInterval(parseInt(overlay.dataset.interval));
   overlay.remove();
-  resetAfkTimer(); // Renova o timer completo
 }
 
 function triggerAfkLogout() {
-  stopAfkTimer();
-  // Salvar estado atual antes de deslogar
+  stopSessionTimer();
   saveSessionState();
-  // Deslogar silenciosamente (sem confirm)
   performAutoLogout();
 }
 
@@ -501,7 +579,7 @@ function saveSessionState() {
       viewMode: localStorage.getItem('chamados-view-mode') || 'cards',
     };
     localStorage.setItem('premovale-last-session', JSON.stringify(state));
-  } catch(e) {}
+  } catch (e) { }
 }
 
 function restoreSessionState() {
@@ -517,5 +595,5 @@ function restoreSessionState() {
     }
     // viewMode já é restaurado pelo initDarkMode/applyViewMode via localStorage
     localStorage.removeItem('premovale-last-session');
-  } catch(e) {}
+  } catch (e) { }
 }

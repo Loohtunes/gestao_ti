@@ -24,10 +24,10 @@
   --prio-medium-border: #fde047;
   --prio-medium-stripe: #eab308;
   --prio-medium-text: #a16207;
-  --prio-high-bg: #fff7ed;
-  --prio-high-border: #fdba74;
-  --prio-high-stripe: #f97316;
-  --prio-high-text: #c2410c;
+  --prio-high-bg: #fff1e6;
+  --prio-high-border: #f97316;
+  --prio-high-stripe: #c2410c;
+  --prio-high-text: #7c2d12;
   --prio-urgent-bg: #fef2f2;
   --prio-urgent-border: #fca5a5;
   --prio-urgent-stripe: #ef4444;
@@ -191,9 +191,9 @@ body.dark-mode {
   --prio-medium-stripe: #eab308;
   --prio-medium-text: #fde68a;
   --prio-high-bg: #2a1500;
-  --prio-high-border: #9a3412;
-  --prio-high-stripe: #f97316;
-  --prio-high-text: #fed7aa;
+  --prio-high-border: #c2410c;
+  --prio-high-stripe: #c2410c;
+  --prio-high-text: #fdba74;
   --prio-urgent-bg: #2a0808;
   --prio-urgent-border: #991b1b;
   --prio-urgent-stripe: #ef4444;

@@ -265,9 +265,9 @@
 }
 
 .ticket-priority-badge.prio-high {
-  background: #ffedd5;
+  background: #fff1e6;
   color: var(--prio-high-text);
-  border: 1px solid #fed7aa;
+  border: 1px solid #f97316;
 }
 
 .ticket-priority-badge.prio-urgent {
@@ -722,7 +722,7 @@ body.dark-mode .tl-row.tl-following {
 }
 
 .tl-prio-tag.high {
-  background: #ffedd5;
+  background: #fff1e6;
   color: var(--prio-high-text);
 }
 
@@ -1200,8 +1200,8 @@ body.dark-mode .ticket-priority-badge.prio-medium {
 
 body.dark-mode .ticket-priority-badge.prio-high {
   background: #2a1500;
-  color: #fed7aa;
-  border-color: #9a3412;
+  color: #fdba74;
+  border-color: #c2410c;
 }
 
 body.dark-mode .ticket-priority-badge.prio-urgent {
@@ -1305,4 +1305,232 @@ body.dark-mode .mat-date-badge {
 /* VIP no dark — já é escuro, leve ajuste na borda */
 body.dark-mode .ticket-card.vip-card {
   border-color: #fef08a66 !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   FILTROS DA ABA CONCLUÍDOS
+══════════════════════════════════════════════════════ */
+
+.arc-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.2rem;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.arc-filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.arc-filter-select:focus {
+  border-color: var(--accent);
+}
+
+.arc-filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.arc-filter-label {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.arc-filter-date {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.arc-filter-date:focus {
+  border-color: var(--accent);
+}
+
+.arc-filter-clear {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.arc-filter-clear:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.arc-filter-count {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  margin-left: auto;
+}
+
+/* Cabeçalho ordenável */
+.arc-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.arc-sortable:hover {
+  color: var(--accent);
+}
+
+/* Mensagem de vazio com filtros */
+.arc-empty {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+/* Ícone do calendário — forçar cor independente do color-scheme */
+.arc-filter-date::-webkit-calendar-picker-indicator {
+  filter: brightness(0) opacity(0.45);
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.arc-filter-date::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) opacity(0.75);
+}
+
+/* Dark mode — forçar branco */
+body.dark-mode .arc-filter-date::-webkit-calendar-picker-indicator {
+  filter: brightness(0) invert(1) opacity(0.45);
+}
+
+body.dark-mode .arc-filter-date::-webkit-calendar-picker-indicator:hover {
+  filter: brightness(0) invert(1) opacity(0.75);
+}
+
+/* ══════════════════════════════════════════════════════
+   ALTERAR PRIORIDADE NO CARD — selects lado a lado
+══════════════════════════════════════════════════════ */
+
+.ticket-actions-selects {
+  display: flex;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.ticket-actions-btns {
+  display: flex;
+  gap: 0.35rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.ticket-prio-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticket-prio-select:focus {
+  border-color: var(--accent);
+}
+
+/* Ações do card em duas linhas quando tem os dois selects */
+.ticket-actions-bottom:has(.ticket-actions-selects) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Ajustar substatus-select quando ao lado do prio-select */
+.ticket-actions-selects .ticket-substatus-select {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.7rem;
+  padding: 0.4rem 0.35rem;
+}
+
+/* Botões compactos na segunda linha */
+.ticket-actions-btns .ticket-complete-btn,
+.ticket-actions-btns .ticket-release-btn {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.72rem;
+  padding: 0.4rem 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════════
+   DROPDOWN DE FILTRO PRINCIPAL
+══════════════════════════════════════════════════════ */
+
+.filter-dd-item {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: none;
+  font-size: 0.82rem;
+  font-family: var(--font-display);
+  cursor: pointer;
+  color: var(--text);
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.12s;
+}
+
+.filter-dd-item:hover {
+  background: var(--surface2);
+}
+
+.filter-dd-item.active {
+  background: var(--surface2);
+  color: var(--accent);
+  font-weight: 700;
 }

@@ -49,6 +49,17 @@ function closeUserModal() {
   resetUserForm();
 }
 
+function cancelUserForm() {
+  // Se há lista de usuários disponível, volta para ela em vez de fechar
+  const hasList = users && users.length > 0;
+  if (hasList) {
+    openUserManagerModal();
+  } else {
+    // Primeiro usuário — não há lista, fecha o modal
+    closeUserModal();
+  }
+}
+
 function resetUserForm() {
   document.getElementById('user-name-input').value = '';
   document.getElementById('user-pass-input').value = '';
@@ -241,15 +252,10 @@ async function performLogin() {
   const user = users.find(u => u.username.toLowerCase() === name && u.password === hashedPass);
   if (!user) { alert('Usuário ou senha incorretos.'); return; }
   currentUser = user;
-  if (typeof initAfkTimer === 'function') initAfkTimer(user.role);
   localStorage.setItem('chamados-current-user-id', user.id);
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('tickets-main').style.display = 'block';
-  document.getElementById('current-attendant').textContent = capitalizeName(user.username);
   document.getElementById('attendant-pass').value = '';
-  applyRoleUI();
-  loadTickets();
-  showNotification(`Bem-vindo(a), ${user.username}! 👋`, 'success');
+  // Redirecionar para menu principal após login
+  window.location.href = 'menu.html';
 }
 
 function applyRoleUI() {
@@ -260,51 +266,56 @@ function applyRoleUI() {
   else { adminBtn.style.display = 'none'; }
 
   const newTicketBtn = document.getElementById('new-ticket-btn');
-  const filtersWrapper = document.getElementById('tickets-filter');
   if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
 
   const isAdmin = !!(currentUser.isAdmin || currentUser.isSuperAdmin);
   const isAttendant = currentUser.role !== 'requester';
 
-  // Dropdown de Ações — visível para atendentes e admins
-  // Botao alternar visualizacao
+  // Botão alternar visualização
   const viewToggleBtn = document.getElementById('view-toggle-btn');
   if (viewToggleBtn) viewToggleBtn.style.display = isAttendant ? 'flex' : 'none';
 
-  // Botao gerenciar changelog — so super admin
+  // Botão gerenciar changelog — só super admin
   const changelogManageBtn = document.getElementById('changelog-manage-btn');
   if (changelogManageBtn) changelogManageBtn.style.display = currentUser.isSuperAdmin ? 'flex' : 'none';
 
+  // Firebase — só superadmin
+  const syncFab = document.getElementById('sync-fab-nav');
+  if (syncFab) syncFab.style.display = currentUser.isSuperAdmin ? 'inline-flex' : 'none';
+
+  // Dropdown de Ações
   const actionsWrapper = document.getElementById('actions-dropdown-wrapper');
   if (actionsWrapper) actionsWrapper.style.display = isAttendant ? 'block' : 'none';
 
-  // Grupo de testes dentro do dropdown — só para admins
+  // Grupo de testes no dropdown de ações
   const testGroup = document.getElementById('test-actions-group');
   if (testGroup) testGroup.style.display = isAdmin ? 'block' : 'none';
 
-  // Aba Testes nos filtros — só para admins
-  const testFilterBtn = document.getElementById('filter-btn-test');
-  if (testFilterBtn) testFilterBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  // Testes no dropdown de filtros — só admins
+  const filterDdTest = document.getElementById('filter-dd-test');
+  if (filterDdTest) filterDdTest.style.display = isAdmin ? 'flex' : 'none';
+
+  // Materiais no dropdown de filtros — só atendentes
+  const filterDdMaterial = document.getElementById('filter-dd-material');
+  if (filterDdMaterial) filterDdMaterial.style.display = isAttendant ? 'flex' : 'none';
 
   if (currentUser.role === 'requester') {
-    // Solicitante: mostra filtros próprios, esconde os de atendente
-    filtersWrapper.style.display = 'flex';
-    document.querySelectorAll('[data-attendant-only]').forEach(b => b.style.display = 'none');
-    document.querySelectorAll('[data-requester-filter]').forEach(b => b.style.display = 'inline-flex');
-    // Ativa "Meus Chamados" como padrão
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    const myBtn = document.querySelector('[data-requester-filter]');
-    if (myBtn) myBtn.classList.add('active');
+    // Solicitante — mostra dropdown de solicitante
+    const ddAtt = document.getElementById('filter-dropdown-wrapper');
+    const ddReq = document.getElementById('filter-requester-wrapper');
+    if (ddAtt) ddAtt.style.display = 'none';
+    if (ddReq) ddReq.style.display = 'block';
     currentFilter = 'my-requests';
   } else {
-    // Atendente/Admin: mostra todos os filtros de atendente, esconde os de solicitante
-    filtersWrapper.style.display = 'flex';
-    document.querySelectorAll('[data-attendant-only]').forEach(b => b.style.display = 'inline-flex');
-    document.querySelectorAll('[data-requester-filter]').forEach(b => b.style.display = 'none');
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    const firstAttendantBtn = document.querySelector('[data-attendant-only]');
-    if (firstAttendantBtn) firstAttendantBtn.classList.add('active');
+    // Atendente/Admin — mostra dropdown de atendente
+    const ddAtt = document.getElementById('filter-dropdown-wrapper');
+    const ddReq = document.getElementById('filter-requester-wrapper');
+    if (ddAtt) ddAtt.style.display = 'block';
+    if (ddReq) ddReq.style.display = 'none';
     currentFilter = 'all';
+    // Atualizar label padrão
+    const label = document.getElementById('filter-dropdown-label');
+    if (label) label.textContent = '📋 Todos';
   }
 }
 
@@ -314,10 +325,8 @@ function performAutoLogout() {
   currentUser = null;
   localStorage.removeItem('chamados-current-user-id');
   localStorage.setItem('premovale-logout-reason', 'inatividade');
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('tickets-main').style.display = 'none';
-  document.getElementById('attendant-name').value = '';
-  showLoginMessage('⏰ Sua sessão foi encerrada por inatividade.', 'warn');
+  // Redirecionar para login com mensagem de inatividade
+  window.location.href = 'index.html?reason=inatividade';
   loadUsers().then(() => {
     const hasSA = users.some(u => u.isSuperAdmin);
     document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
@@ -328,22 +337,23 @@ function performLogout() {
   if (!confirm('Deseja realmente sair do sistema?')) return;
   closeTicketDetail();
   if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
-  if (typeof stopAfkTimer === 'function') stopAfkTimer();
+  if (typeof stopSessionTimer === 'function') stopSessionTimer();
   currentUser = null;
   localStorage.removeItem('chamados-current-user-id');
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('tickets-main').style.display = 'none';
-  document.getElementById('attendant-name').value = '';
-  loadUsers().then(() => {
-    const hasSA = users.some(u => u.isSuperAdmin);
-    document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
-  });
+  window.location.href = 'index.html';
 }
 
 async function checkLoginStatus() {
   await loadUsers();
   const hasSuperAdmin = users.some(u => u.isSuperAdmin);
   document.getElementById('first-user-btn').style.display = (!hasSuperAdmin) ? 'inline-block' : 'none';
+  // Mostrar mensagem de inatividade se vier redirecionado
+  const urlReason = new URLSearchParams(window.location.search).get('reason');
+  if (urlReason === 'inatividade') {
+    if (typeof showLoginMessage === 'function')
+      showLoginMessage('⏰ Sua sessão foi encerrada por inatividade.', 'warn');
+    window.history.replaceState({}, '', window.location.pathname);
+  }
   const savedId = localStorage.getItem('chamados-current-user-id');
   if (savedId) {
     const fresh = users.find(u => u.id === savedId);
@@ -354,7 +364,7 @@ async function checkLoginStatus() {
       document.getElementById('current-attendant').textContent = capitalizeName(currentUser.username);
       applyRoleUI();
       loadTickets();
-      if (typeof initAfkTimer === 'function') initAfkTimer(currentUser.role);
+      if (typeof initSessionTimer === 'function') initSessionTimer(currentUser.role);
       if (typeof restoreSessionState === 'function') setTimeout(restoreSessionState, 800);
     } else {
       localStorage.removeItem('chamados-current-user-id');

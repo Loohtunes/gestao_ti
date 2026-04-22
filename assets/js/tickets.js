@@ -48,6 +48,15 @@ async function saveTicket(ticketId) {
 
 function filterTickets(filter, event) {
   currentFilter = filter;
+  // Resetar filtro de setor ao trocar de aba
+  currentSetorFilter = '';
+  const sel = document.getElementById('setor-filter-select');
+  if (sel) sel.value = '';
+  // Fechar menus dropdown se abertos
+  const mAtt = document.getElementById('filter-dropdown-menu');
+  const mReq = document.getElementById('filter-requester-menu');
+  if (mAtt) mAtt.style.display = 'none';
+  if (mReq) mReq.style.display = 'none';
   currentPage = 1; // reset paginação ao mudar filtro
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   if (event && event.target) event.target.classList.add('active');
@@ -75,6 +84,152 @@ function isMentionedIn(ticket) {
 
 // Ordem de prioridade para ordenação
 const PRIO_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
+
+// ── Dropdown de filtro principal ──
+let _filterDropdownOpen = false;
+
+function toggleFilterDropdown() {
+  const menuAtt = document.getElementById('filter-dropdown-menu');
+  const menuReq = document.getElementById('filter-requester-menu');
+  const menu = menuAtt?.style.display !== 'none' ? menuAtt :
+    menuReq?.style.display !== 'none' ? menuReq :
+      (menuAtt || menuReq);
+  if (!menu) return;
+  const isOpen = menu.style.display === 'block';
+  if (menuAtt) menuAtt.style.display = 'none';
+  if (menuReq) menuReq.style.display = 'none';
+  if (!isOpen) {
+    menu.style.display = 'block';
+    setTimeout(() => document.addEventListener('click', closeFilterDropdownOutside, { once: true }), 10);
+  }
+}
+
+function closeFilterDropdownOutside(e) {
+  const wAtt = document.getElementById('filter-dropdown-wrapper');
+  const wReq = document.getElementById('filter-requester-wrapper');
+  if ((!wAtt || !wAtt.contains(e.target)) && (!wReq || !wReq.contains(e.target))) {
+    const mAtt = document.getElementById('filter-dropdown-menu');
+    const mReq = document.getElementById('filter-requester-menu');
+    if (mAtt) mAtt.style.display = 'none';
+    if (mReq) mReq.style.display = 'none';
+  }
+}
+
+function selectFilter(filter, label) {
+  // Fechar menus
+  const mAtt = document.getElementById('filter-dropdown-menu');
+  const mReq = document.getElementById('filter-requester-menu');
+  if (mAtt) mAtt.style.display = 'none';
+  if (mReq) mReq.style.display = 'none';
+
+  // Atualizar label do botão ativo
+  const labelAtt = document.getElementById('filter-dropdown-label');
+  const labelReq = document.getElementById('filter-requester-label');
+  if (labelAtt && document.getElementById('filter-dropdown-wrapper')?.style.display !== 'none') labelAtt.textContent = label;
+  if (labelReq && document.getElementById('filter-requester-wrapper')?.style.display !== 'none') labelReq.textContent = label;
+
+  // Marcar item ativo
+  document.querySelectorAll('.filter-dd-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+
+  // Chamar filterTickets
+  filterTickets(filter);
+}
+
+// Filtro de setor na aba principal
+let currentSetorFilter = '';
+
+// ── Estado dos filtros de Concluídos ──
+let _arcSort = { col: 'date', dir: 'desc' }; // ordenação padrão: mais recente primeiro
+let _arcSetor = '';
+let _arcPrio = '';
+let _arcFrom = '';
+let _arcTo = '';
+
+function setArcSort(col) {
+  if (_arcSort.col === col) {
+    _arcSort.dir = _arcSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _arcSort.col = col;
+    _arcSort.dir = col === 'date' ? 'desc' : 'asc';
+  }
+  renderTickets();
+}
+
+function clearArcFilters() {
+  _arcSetor = ''; _arcPrio = ''; _arcFrom = ''; _arcTo = '';
+  const s = document.getElementById('arc-filter-setor');
+  const p = document.getElementById('arc-filter-prio');
+  const f = document.getElementById('arc-filter-from');
+  const t = document.getElementById('arc-filter-to');
+  if (s) s.value = '';
+  if (p) p.value = '';
+  if (f) f.value = '';
+  if (t) t.value = '';
+  renderTickets();
+}
+
+function applyArcFilters(list) {
+  let out = [...list];
+
+  // Filtro setor
+  if (_arcSetor) out = out.filter(t => t.setor === _arcSetor);
+
+  // Filtro prioridade
+  if (_arcPrio) out = out.filter(t => (t.priority || 'medium') === _arcPrio);
+
+  // Filtro data de/até
+  if (_arcFrom || _arcTo) {
+    out = out.filter(t => {
+      const raw = t.completedAt || t.archivedAt || '';
+      if (!raw) return false;
+      // Extrair data dd/mm/yyyy
+      const parts = raw.split(/[,\s]+/);
+      const [d, m, y] = (parts[0] || '').split('/');
+      if (!d || !m || !y) return false;
+      const ts = new Date(+y, +m - 1, +d).getTime();
+      if (_arcFrom) {
+        const [fy, fm, fd] = _arcFrom.split('-');
+        if (ts < new Date(+fy, +fm - 1, +fd).getTime()) return false;
+      }
+      if (_arcTo) {
+        const [ty, tm, td] = _arcTo.split('-');
+        if (ts > new Date(+ty, +tm - 1, +td).getTime()) return false;
+      }
+      return true;
+    });
+  }
+
+  // Ordenação
+  out.sort((a, b) => {
+    const dir = _arcSort.dir === 'asc' ? 1 : -1;
+    if (_arcSort.col === 'num') {
+      const na = parseInt(String(a.number).replace(/\D/g, '')) || 0;
+      const nb = parseInt(String(b.number).replace(/\D/g, '')) || 0;
+      return (na - nb) * dir;
+    }
+    if (_arcSort.col === 'setor') {
+      return ((a.setor || '').localeCompare(b.setor || '')) * dir;
+    }
+    if (_arcSort.col === 'prio') {
+      return ((PRIO_ORDER[a.priority || 'medium'] || 2) - (PRIO_ORDER[b.priority || 'medium'] || 2)) * dir;
+    }
+    if (_arcSort.col === 'date') {
+      const da = a.completedAt || a.archivedAt || '';
+      const db = b.completedAt || b.archivedAt || '';
+      const toTs = s => {
+        const p = s.split(/[,\s]+/);
+        const [d, m, y] = (p[0] || '').split('/');
+        return d && m && y ? new Date(+y, +m - 1, +d).getTime() : 0;
+      };
+      return (toTs(da) - toTs(db)) * dir;
+    }
+    return 0;
+  });
+
+  return out;
+}
 
 function sortByPriority(list) {
   return [...list].sort((a, b) => {
@@ -151,6 +306,22 @@ function renderTickets() {
       return t.title.toLowerCase().includes(searchVal) || numStr.includes(searchVal.replace('#', ''));
     });
   }
+
+  // Filtro por setor — nunca para solicitantes, nunca na aba Concluídos
+  const isCompletedFilter = currentFilter === 'archived' || currentFilter === 'completed';
+  const isAttendantUser = currentUser.role !== 'requester';
+  const setorWrapper = document.getElementById('setor-filter-wrapper');
+  if (setorWrapper) {
+    setorWrapper.style.display = (isAttendantUser && !isCompletedFilter) ? 'flex' : 'none';
+  }
+  if (currentSetorFilter && isAttendantUser && !isCompletedFilter) {
+    list = list.filter(t => t.setor === currentSetorFilter);
+  }
+
+  // Controlar visibilidade da barra de filtros — só na aba Concluídos
+  const _filterBar = document.getElementById('arc-filter-bar');
+  const _isArc = currentFilter === 'archived' || currentFilter === 'completed';
+  if (_filterBar) _filterBar.style.display = _isArc ? 'block' : 'none';
 
   if (!list.length) { board.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
@@ -256,9 +427,30 @@ function renderTicketsList(board, list) {
   board.style.display = 'block';
   board.className = isArchived ? 'tickets-board list-view archived-list' : 'tickets-board list-view';
   if (isArchived) {
-    board.innerHTML = '<div class="tl-header arc-header"><span class="tl-col tl-num">#</span><span class="tl-col tl-title">Título</span><span class="tl-col tl-setor">Setor</span><span class="tl-col tl-prio">Prioridade</span><span class="tl-col tl-date">Concluído em</span><span class="tl-col tl-arc-actions"></span></div>' + list.map(buildArchivedRow).join('');
+    // Atualizar botão limpar e contador
+    const clearBtn = document.getElementById('arc-filter-clear-btn');
+    const countEl = document.getElementById('arc-filter-count');
+    const filtered = applyArcFilters(list);
+    if (clearBtn) clearBtn.style.display = (_arcSetor || _arcPrio || _arcFrom || _arcTo) ? 'inline-flex' : 'none';
+    if (countEl) countEl.textContent = `${filtered.length} chamado${filtered.length !== 1 ? 's' : ''}`;
+
+    // Renderizar apenas o cabeçalho e linhas (sem re-criar os inputs)
+    const sortArrow = dir => dir === 'asc' ? ' ↑' : ' ↓';
+    const thNum = `<span class="tl-col tl-num arc-sortable" onclick="setArcSort('num')">#${_arcSort.col === 'num' ? sortArrow(_arcSort.dir) : ''}</span>`;
+    const thTitle = `<span class="tl-col tl-title">Título</span>`;
+    const thSetor = `<span class="tl-col tl-setor arc-sortable" onclick="setArcSort('setor')">Setor${_arcSort.col === 'setor' ? sortArrow(_arcSort.dir) : ''}</span>`;
+    const thPrio = `<span class="tl-col tl-prio arc-sortable" onclick="setArcSort('prio')">Prioridade${_arcSort.col === 'prio' ? sortArrow(_arcSort.dir) : ''}</span>`;
+    const thDate = `<span class="tl-col tl-date arc-sortable" onclick="setArcSort('date')">Concluído em${_arcSort.col === 'date' ? sortArrow(_arcSort.dir) : ''}</span>`;
+    const thAct = `<span class="tl-col tl-arc-actions"></span>`;
+
+    board.innerHTML =
+      `<div class="tl-header arc-header">${thNum}${thTitle}${thSetor}${thPrio}${thDate}${thAct}</div>` +
+      (filtered.length ? filtered.map(buildArchivedRow).join('') :
+        '<div class="arc-empty">Nenhum chamado encontrado com os filtros selecionados.</div>');
     return;
   }
+
+
   board.innerHTML = `<div class="tl-header"><span class="tl-col tl-num">#</span><span class="tl-col tl-title">Título / Descrição</span><span class="tl-col tl-setor">Setor</span><span class="tl-col tl-prio">Prioridade</span><span class="tl-col tl-status">Status</span><span class="tl-col tl-date">Datas</span><span class="tl-col tl-actions"></span></div>
   ${list.map(ticket => {
     const status = ticket.status || 'available';
@@ -328,13 +520,25 @@ function renderTicketsCards(board, list) {
       actions = `<div class="ticket-actions-bottom"><button class="ticket-pull-btn" onclick="event.stopPropagation();pullTicket('${ticket.id}')">🎯 Assumir</button></div>`;
     } else if ((status === 'in-progress' || SUB_STATUS.has(status)) && (ticket.attendant === currentUser.username || currentUser.isAdmin || currentUser.isSuperAdmin)) {
       actions = `<div class="ticket-actions-bottom">
-        <select class="ticket-substatus-select" onchange="event.stopPropagation();setSubStatus('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
-          <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>⚙️ Em Atendimento</option>
-          <option value="waiting-info" ${status === 'waiting-info' ? 'selected' : ''}>💬 Aguard. Informações</option>
-          <option value="waiting" ${status === 'waiting' ? 'selected' : ''}>⏸️ Em Espera</option>
-        </select>
-        <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
-        <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
+        <div class="ticket-actions-selects">
+          <select class="ticket-substatus-select" onchange="event.stopPropagation();setSubStatus('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
+            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>⚙️ Em Atendimento</option>
+            <option value="waiting-info" ${status === 'waiting-info' ? 'selected' : ''}>💬 Aguard. Informações</option>
+            <option value="waiting" ${status === 'waiting' ? 'selected' : ''}>⏸️ Em Espera</option>
+          </select>
+          <select class="ticket-prio-select" onchange="event.stopPropagation();setTicketPriority('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
+            <option value="" disabled ${!prio ? 'selected' : ''}>⚡ Prioridade</option>
+            <option value="urgent" ${prio === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+            <option value="high"   ${prio === 'high' ? 'selected' : ''}>🔴 Alta</option>
+            <option value="medium" ${prio === 'medium' ? 'selected' : ''}>🟡 Média</option>
+            <option value="low"    ${prio === 'low' ? 'selected' : ''}>🟢 Baixa</option>
+            <option value="none"   ${prio === 'none' ? 'selected' : ''}>⚪ Sem Prioridade</option>
+          </select>
+        </div>
+        <div class="ticket-actions-btns">
+          <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
+          <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
+        </div>
       </div>`;
     } else if ((status === 'completed' || status === 'archived') && (currentUser.isAdmin || currentUser.isSuperAdmin || ticket.attendant === currentUser.username)) {
       actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button></div>`;
@@ -418,6 +622,16 @@ function setMatStatus(id, newStatus) {
   logTicketEvent(t, 'Material ' + (STATUS_LABEL[newStatus] || newStatus).toLowerCase() + ' por ' + capitalizeName(currentUser.username));
   saveTickets(); if (activeDetailId === id) openTicketDetail(id);
   showNotification('Status: ' + (STATUS_LABEL[newStatus] || newStatus), 'success');
+}
+
+function setTicketPriority(id, priority) {
+  const t = tickets.find(t => t.id === id);
+  if (!t) return;
+  t.priority = priority;
+  logTicketEvent(t, `Prioridade alterada para "${PRIORITY_LABEL[priority] || priority}" por ${capitalizeName(currentUser.username)}`);
+  saveTickets();
+  if (activeDetailId === id) openTicketDetail(id);
+  showNotification('Prioridade atualizada!', 'success');
 }
 
 function setSubStatus(id, subStatus) {

@@ -1,0 +1,231 @@
+/* ===== MENU PRINCIPAL — Sidebar & Layout ===== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Layout principal ── */
+.menu-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 48px);
+}
+
+/* ── Sidebar ── */
+.menu-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border2);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 0.75rem;
+  gap: 0.3rem;
+  position: sticky;
+  top: 48px;
+  height: calc(100vh - 48px);
+}
+
+.sidebar-section-label {
+  font-size: 0.6rem;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sidebar-item:hover:not(:disabled) {
+  background: var(--surface2);
+  color: var(--accent);
+}
+
+.sidebar-item.active {
+  background: var(--surface2);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sidebar-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sidebar-item-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Badge Em breve */
+.sidebar-soon {
+  font-size: 0.52rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface3);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
+}
+
+/* Divisor */
+.sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.5rem 0.75rem;
+}
+
+/* Rodapé da sidebar */
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: var(--surface2);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sidebar-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.sidebar-user-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-role {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+}
+
+.sidebar-logout {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-logout:hover {
+  background: #fee2e2;
+  color: var(--accent);
+}
+
+body.dark-mode .sidebar-logout:hover {
+  background: #2a0808;
+  color: var(--accent);
+}
+
+/* ── Área central ── */
+.menu-content {
+  flex: 1;
+  padding: 2.5rem 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  overflow-y: auto;
+}
+
+.menu-greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 860px;
+}
+
+.menu-greeting-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.menu-greeting-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+}
+
+/* ── Dark mode ── */
+body.dark-mode .menu-sidebar {
+  background: var(--surface);
+  border-color: var(--border2);
+}

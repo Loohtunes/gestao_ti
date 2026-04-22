@@ -10,7 +10,7 @@ function openTicketModal(ticketId = null, isTest = false) {
   if (testTypeBtn) testTypeBtn.style.display = (currentUser?.isAdmin || currentUser?.isSuperAdmin) ? 'flex' : 'none';
 
   const prioGroup = document.getElementById('ticket-priority-group');
-  if (prioGroup) prioGroup.style.display = (currentUser?.role === 'requester') ? 'none' : 'flex';
+  if (prioGroup) prioGroup.style.display = 'none'; // prioridade definida pelo atendente após abertura
   // Campo "Abrir em nome de" — só admins/superadmins
   const onBehalfGroup = document.getElementById('ticket-onbehalf-group');
   const onBehalfSelect = document.getElementById('ticket-onbehalf-input');
@@ -61,13 +61,13 @@ function openTicketModal(ticketId = null, isTest = false) {
     const unitInput = document.getElementById('ticket-material-unit');
     const dateInput = document.getElementById('ticket-material-date');
     const unitBadge = document.getElementById('material-unit-badge');
-    if (qtyInput)  qtyInput.value  = '';
+    if (qtyInput) qtyInput.value = '';
     if (unitInput) unitInput.value = 'un';
     if (dateInput) dateInput.value = '';
     if (unitBadge) unitBadge.textContent = 'un.';
-    const userSetor  = currentUser?.setor || '';
+    const userSetor = currentUser?.setor || '';
     const setorInput = document.getElementById('ticket-setor-input');
-    const setorHint  = document.getElementById('setor-locked-hint');
+    const setorHint = document.getElementById('setor-locked-hint');
     setorInput.value = userSetor;
     const locked = !!userSetor && !isSuperAdmin();
     setorInput.disabled = locked;
@@ -77,20 +77,20 @@ function openTicketModal(ticketId = null, isTest = false) {
 }
 
 function setTicketType(type) {
-  const isError    = type === 'error' || type === 'test';
+  const isError = type === 'error' || type === 'test';
   const isMaterial = type === 'material';
-  const titleGroup    = document.getElementById('ticket-title-group');
-  const prioGroup     = document.getElementById('ticket-priority-group');
-  const attachGroup   = document.getElementById('ticket-attach-group');
+  const titleGroup = document.getElementById('ticket-title-group');
+  const prioGroup = document.getElementById('ticket-priority-group');
+  const attachGroup = document.getElementById('ticket-attach-group');
   const materialGroup = document.getElementById('ticket-material-fields');
-  const typeInput     = document.getElementById('ticket-type-input');
-  const descLabel     = document.getElementById('ticket-desc-label');
-  if (titleGroup)    titleGroup.style.display    = isError ? 'flex' : 'none';
-  if (prioGroup)     prioGroup.style.display     = (isError && currentUser?.role !== 'requester') ? 'flex' : 'none';
-  if (attachGroup)   attachGroup.style.display   = isError ? 'flex' : 'none';
+  const typeInput = document.getElementById('ticket-type-input');
+  const descLabel = document.getElementById('ticket-desc-label');
+  if (titleGroup) titleGroup.style.display = isError ? 'flex' : 'none';
+  if (prioGroup) prioGroup.style.display = 'none'; // prioridade definida pelo atendente
+  if (attachGroup) attachGroup.style.display = isError ? 'flex' : 'none';
   if (materialGroup) materialGroup.style.display = isMaterial ? 'flex' : 'none';
-  if (typeInput)     typeInput.value             = type;
-  if (descLabel)     descLabel.textContent       = isMaterial ? 'Material(is) a solicitar' : 'Descrição';
+  if (typeInput) typeInput.value = type;
+  if (descLabel) descLabel.textContent = isMaterial ? 'Material(is) a solicitar' : 'Descrição';
   document.getElementById('ticket-description-input').placeholder = isMaterial
     ? 'Ex: Resma de papel A4, cartucho HP 664...'
     : 'Descreva o chamado em detalhes...';
@@ -104,7 +104,7 @@ function setTicketType(type) {
   }
 }
 
-function updateMaterialUnit(val) {}
+function updateMaterialUnit(val) { }
 
 function closeTicketModal() {
   document.getElementById('ticket-modal').classList.remove('open');
@@ -122,22 +122,22 @@ async function saveTicket() {
   _savingTicket = true;
   const saveBtn = document.querySelector('#ticket-modal .btn-save');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
-  const title      = document.getElementById('ticket-title-input').value.trim();
-  const desc       = document.getElementById('ticket-description-input').value.trim();
-  const setor      = document.getElementById('ticket-setor-input').value;
+  const title = document.getElementById('ticket-title-input').value.trim();
+  const desc = document.getElementById('ticket-description-input').value.trim();
+  const setor = document.getElementById('ticket-setor-input').value;
   const isRequester = currentUser?.role === 'requester';
-  const prio       = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
-  const rawType    = document.getElementById('ticket-type-input')?.value || 'error';
+  const prio = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
+  const rawType = document.getElementById('ticket-type-input')?.value || 'error';
   const ticketType = (rawType === 'test' || _isTestTicket) ? 'test' : rawType;
   const isMaterial = ticketType === 'material';
-  const matQty     = isMaterial ? (document.getElementById('ticket-material-qty')?.value  || '') : '';
-  const matUnit    = isMaterial ? (document.getElementById('ticket-material-unit')?.value || 'un') : '';
+  const matQty = isMaterial ? (document.getElementById('ticket-material-qty')?.value || '') : '';
+  const matUnit = isMaterial ? (document.getElementById('ticket-material-unit')?.value || 'un') : '';
   const matUnitText = isMaterial
     ? (document.getElementById('ticket-material-unit')?.options[document.getElementById('ticket-material-unit')?.selectedIndex]?.text?.split(' — ')[0] || matUnit)
     : '';
   const matDate = isMaterial ? (document.getElementById('ticket-material-date')?.value || '') : '';
   if (!isMaterial && !title) { alert('Por favor, adicione um título ao chamado'); return; }
-  if (isMaterial  && !desc)  { alert('Descreva os materiais a solicitar'); return; }
+  if (isMaterial && !desc) { alert('Descreva os materiais a solicitar'); return; }
 
   // Solicitante: admin pode abrir em nome de outro usuário
   const onBehalfVal = document.getElementById('ticket-onbehalf-input')?.value?.trim();
@@ -168,7 +168,7 @@ async function saveTicket() {
     }
   } else {
     const number = await getNextTicketNumber(ticketType);
-    const finalTitle   = isMaterial ? ('Solicitação de material — ' + (effectiveSetor || 'Geral')) : title;
+    const finalTitle = isMaterial ? ('Solicitação de material — ' + (effectiveSetor || 'Geral')) : title;
     const materialData = isMaterial ? { qty: matQty, unit: matUnit, unitText: matUnitText, needByDate: matDate } : null;
     const newTicket = {
       id: Date.now().toString(), number, title: finalTitle, description: desc,
@@ -231,7 +231,7 @@ function handleTicketFiles(input) {
 function renderTicketFiles() {
   document.getElementById('ticket-files-list').innerHTML = ticketFiles.map(f =>
     `<div class="file-item">
-      <span style="cursor:pointer;" onclick="openAttachmentPreview('${f.id}')">📎 ${f.name} <span style="color:var(--muted);font-size:0.7rem;">(${(f.size/1024).toFixed(1)}KB)</span></span>
+      <span style="cursor:pointer;" onclick="openAttachmentPreview('${f.id}')">📎 ${f.name} <span style="color:var(--muted);font-size:0.7rem;">(${(f.size / 1024).toFixed(1)}KB)</span></span>
       <span class="file-remove" onclick="removeTicketFile('${f.id}')">✕</span>
     </div>`
   ).join('');
@@ -261,7 +261,7 @@ function openAttachment(ticketId, fileId) {
 // Visualizador universal de anexos
 function openAttachmentData(dataUrl, name, type) {
   const isImage = type && type.startsWith('image/');
-  const isPdf   = type === 'application/pdf';
+  const isPdf = type === 'application/pdf';
   if (isImage || isPdf) {
     // Abre em nova aba para visualização direta
     const win = window.open();
