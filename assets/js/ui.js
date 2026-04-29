@@ -666,6 +666,11 @@ async function renderRamaisDropdown() {
     <div class="ramais-search-wrap">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--muted)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="text" id="ramais-search" class="ramais-search-input" placeholder="Buscar nome ou ramal..." oninput="filterRamais(this.value)" autofocus>
+      <button onclick="exportRamaisXLS()" title="Exportar para Excel"
+        style="flex-shrink:0;border:none;background:none;cursor:pointer;color:var(--muted);display:flex;align-items:center;padding:0 2px;transition:color 0.15s;"
+        onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+      </button>
     </div>
     <div id="ramais-list" class="ramais-list">
       <div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">Carregando...</div>
@@ -749,4 +754,39 @@ function filterRamais(query) {
   })).filter(s => s.ramais.length > 0);
 
   renderRamaisList(filtered);
+}
+
+// ── Exportar ramais para XLS ───────────────────────────────────────────────
+function exportRamaisXLS() {
+  if (!window._ramaisData || !window._ramaisData.length) {
+    showNotification('Nenhum ramal para exportar.', 'error');
+    return;
+  }
+
+  // Montar linhas: Setor | Nome | Ramal
+  const rows = [['Setor', 'Nome', 'Ramal']];
+  window._ramaisData.forEach(s => {
+    (s.ramais || []).forEach(r => {
+      rows.push([s.nome || '—', r.nome || '—', r.ramal || '—']);
+    });
+  });
+
+  // Criar workbook via SheetJS (disponível via CDN no projeto)
+  try {
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 20 }, { wch: 30 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Ramais');
+    XLSX.writeFile(wb, 'ramais_premovale.xlsx');
+    showNotification('Ramais exportados! ✅', 'success');
+  } catch (e) {
+    // Fallback: CSV se SheetJS não estiver disponível
+    const csv = rows.map(r => r.join(';')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ramais_premovale.csv'; a.click();
+    URL.revokeObjectURL(url);
+    showNotification('Exportado como CSV! ✅', 'success');
+  }
 }

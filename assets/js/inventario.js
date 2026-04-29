@@ -1,3 +1,12 @@
+// ── Sidebar toggle ─────────────────────────────────────────────────────────
+function toggleMenuSidebar() {
+  const sidebar = document.getElementById('chamados-sidebar');
+  const icon = document.getElementById('sidebar-toggle-icon');
+  if (!sidebar) return;
+  const isCollapsed = sidebar.classList.toggle('collapsed');
+  if (icon) icon.textContent = isCollapsed ? '›' : '‹';
+  localStorage.setItem('chamados-sidebar-collapsed', isCollapsed ? '1' : '0');
+}
 // ===== INVENTÁRIO — Ativos =====
 
 let _ativoEditingId = null;
@@ -73,19 +82,30 @@ async function renderInsumos() {
         <div style="position:relative;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input type="text" id="insumo-search" class="form-input" placeholder="Buscar insumo..."
-            oninput="filterInsumos(this.value)"
-            style="padding-left:28px;height:34px;font-size:0.8rem;width:200px;">
+            oninput="filterInsumos()"
+            style="padding-left:28px;font-size:0.8rem;width:180px;">
         </div>
+        <select id="insumo-filter-cat" class="form-input" onchange="filterInsumos()"
+          style="font-size:0.8rem;width:195px;">
+          <option value="">Todas as Categorias</option>
+          <option value="Toner/Cilindro">Toner/Cilindro</option>
+          <option value="Periférico">Periférico</option>
+          <option value="Diversos">Diversos</option>
+        </select>
         <button class="config-new-user-btn" onclick="openInsumoForm()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
           Novo Insumo
         </button>
       </div>` : ''}
     </div>
-    <div id="insumos-list" style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;min-height:300px;"></div>`;
+    <div id="insumos-list" style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;min-height:300px;align-items:start;"></div>
+    <div id="insumos-pagination" style="margin-top:0.75rem;"></div>`;
 
   await loadInsumos(canManage);
 }
+
+const INSUMOS_PER_PAGE = 10;
+let _insumosPage = 1;
 
 async function loadInsumos(canManage) {
   try {
@@ -103,6 +123,7 @@ async function loadInsumos(canManage) {
 
 function renderInsumosList(list, canManage) {
   const container = document.getElementById('insumos-list');
+  const pagEl = document.getElementById('insumos-pagination');
   if (!container) return;
 
   if (list.length === 0) {
@@ -111,10 +132,16 @@ function renderInsumosList(list, canManage) {
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></svg>
         <span>Nenhum insumo cadastrado ainda.</span>
       </div>`;
+    if (pagEl) pagEl.innerHTML = '';
     return;
   }
 
-  container.innerHTML = list.map(i => {
+  const totalPages = Math.ceil(list.length / INSUMOS_PER_PAGE);
+  if (_insumosPage > totalPages) _insumosPage = 1;
+  const start = (_insumosPage - 1) * INSUMOS_PER_PAGE;
+  const paged = list.slice(start, start + INSUMOS_PER_PAGE);
+
+  container.innerHTML = paged.map(i => {
     const qtd = i.qtdFisica ?? 0;
     const minimo = i.qtdMinima ?? 0;
     const disponivel = i.qtdDisponivel ?? qtd;
@@ -140,7 +167,7 @@ function renderInsumosList(list, canManage) {
           <div style="flex:1;min-width:0;">
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
               <span class="insumo-card-nome">${i.nome}</span>
-              <span class="insumo-cat-badge">${i.categoria || 'Outro'}</span>
+              <span class="insumo-cat-badge">${i.categoria || 'Diversos'}</span>
               ${zerado ? `<span class="insumo-status-badge insumo-status--zerado">Zerado</span>` : ''}
               ${!zerado && alerta ? `<span class="insumo-status-badge insumo-status--alerta">No limite</span>` : ''}
             </div>
@@ -150,6 +177,11 @@ function renderInsumosList(list, canManage) {
             <button class="insumo-action-btn" onclick="openEntradaForm('${i.id}')" title="Registrar entrada de estoque">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Entrada
+            </button>
+            <button class="insumo-action-btn" onclick="openSaidaForm('${i.id}')" title="Registrar saída manual"
+              style="color:#ef4444;border-color:#ef444433;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+              Saída
             </button>
             <button class="config-user-edit-btn" onclick="openInsumoForm('${i.id}')" title="Editar insumo">✎</button>
             <button class="config-user-del-btn" onclick="deleteInsumo('${i.id}')" title="Excluir insumo">✕</button>` : ''}
@@ -182,15 +214,51 @@ function renderInsumosList(list, canManage) {
         </div>
       </div>`;
   }).join('');
+
+  // Renderizar paginação
+  if (pagEl) {
+    if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+    const prev = _insumosPage > 1;
+    const next = _insumosPage < totalPages;
+    pagEl.innerHTML = `
+      <div class="config-users-pagination">
+        <span class="config-page-info">${start + 1}–${Math.min(start + INSUMOS_PER_PAGE, list.length)} de ${list.length} insumos</span>
+        <div class="config-page-btns">
+          <button class="config-page-btn" onclick="changeInsumosPage(${_insumosPage - 1})" ${!prev ? 'disabled' : ''}>‹</button>
+          ${Array.from({ length: totalPages }, (_, i) => `
+            <button class="config-page-btn ${i + 1 === _insumosPage ? 'active' : ''}" onclick="changeInsumosPage(${i + 1})">${i + 1}</button>`).join('')}
+          <button class="config-page-btn" onclick="changeInsumosPage(${_insumosPage + 1})" ${!next ? 'disabled' : ''}>›</button>
+        </div>
+      </div>`;
+  }
+}
+
+function changeInsumosPage(page) {
+  const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
+  const q = (document.getElementById('insumo-search')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('insumo-filter-cat')?.value || '';
+  const list = _insumos.filter(i => {
+    const matchQ = !q || (i.nome || '').toLowerCase().includes(q);
+    const matchCat = !cat || (i.categoria || '') === cat;
+    return matchQ && matchCat;
+  });
+  const totalPages = Math.ceil(list.length / INSUMOS_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  _insumosPage = page;
+  renderInsumosList(list, canManage);
 }
 
 // ── Filtro ─────────────────────────────────────────────────────────────────
-function filterInsumos(q) {
-  const query = (q || '').toLowerCase().trim();
+function filterInsumos() {
+  const q = (document.getElementById('insumo-search')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('insumo-filter-cat')?.value || '';
   const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
-  const filtered = !query ? _insumos : _insumos.filter(i =>
-    (i.nome || '').toLowerCase().includes(query) ||
-    (i.categoria || '').toLowerCase().includes(query));
+  _insumosPage = 1;
+  const filtered = _insumos.filter(i => {
+    const matchQ = !q || (i.nome || '').toLowerCase().includes(q);
+    const matchCat = !cat || (i.categoria || '') === cat;
+    return matchQ && matchCat;
+  });
   renderInsumosList(filtered, canManage);
 }
 
@@ -211,7 +279,7 @@ function openInsumoForm(id = null) {
   document.getElementById('insumo-form-title').textContent = id ? 'Editar Insumo' : 'Novo Insumo';
   const ins = id ? _insumos.find(i => i.id === id) : null;
   document.getElementById('insumo-nome-input').value = ins?.nome || '';
-  document.getElementById('insumo-categoria-input').value = ins?.categoria || 'Papel';
+  document.getElementById('insumo-categoria-input').value = ins?.categoria || 'Periférico';
   document.getElementById('insumo-unidade-input').value = ins?.unidade || 'Unidade';
   document.getElementById('insumo-qtd-input').value = ins ? (ins.qtdFisica ?? 0) : '';
   document.getElementById('insumo-minimo-input').value = ins?.qtdMinima ?? '';
@@ -334,6 +402,75 @@ function closeEntradaForm() {
   _entradaInsumoId = null;
 }
 
+// ── Saída manual ───────────────────────────────────────────────────────────
+let _saidaInsumoId = null;
+
+function openSaidaForm(insumoId) {
+  _saidaInsumoId = insumoId;
+  const ins = _insumos.find(i => i.id === insumoId);
+  if (!ins) return;
+  document.getElementById('saida-form-title').textContent = `Saída — ${ins.nome}`;
+  document.getElementById('saida-insumo-info').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+      <div>
+        <div style="font-weight:700;color:var(--text);font-size:0.85rem;">${ins.nome}</div>
+        <div style="font-size:0.7rem;margin-top:2px;">${ins.categoria} · ${ins.unidade}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:0.72rem;">Disponível</div>
+        <div style="font-weight:800;font-size:1.1rem;color:var(--text);">${ins.qtdDisponivel ?? ins.qtdFisica ?? 0} <span style="font-size:0.7rem;font-weight:400;">${ins.unidade}</span></div>
+      </div>
+    </div>`;
+  document.getElementById('saida-qtd-input').value = '';
+  document.getElementById('saida-just-input').value = '';
+  document.getElementById('saida-form-modal').classList.add('open');
+}
+
+function closeSaidaForm() {
+  document.getElementById('saida-form-modal').classList.remove('open');
+  _saidaInsumoId = null;
+}
+
+async function saveSaida() {
+  const qtd = parseInt(document.getElementById('saida-qtd-input').value);
+  const just = document.getElementById('saida-just-input').value.trim();
+
+  if (!qtd || qtd < 1) { showNotification('Informe a quantidade retirada.', 'error'); return; }
+  if (!just) { showNotification('Justificativa obrigatória para saída manual.', 'error'); return; }
+
+  const ins = _insumos.find(i => i.id === _saidaInsumoId);
+  if (!ins) return;
+
+  const disponivel = ins.qtdDisponivel ?? ins.qtdFisica ?? 0;
+  if (qtd > disponivel) {
+    showNotification(`Quantidade insuficiente. Disponível: ${disponivel} ${ins.unidade}.`, 'error');
+    return;
+  }
+
+  const novaFisica = Math.max(0, (ins.qtdFisica ?? 0) - qtd);
+  const novaDisp = Math.max(0, disponivel - qtd);
+
+  try {
+    await db.collection('insumos').doc(_saidaInsumoId).update({
+      qtdFisica: novaFisica, qtdDisponivel: novaDisp,
+      updatedAt: new Date().toISOString()
+    });
+    await db.collection('insumos_mov').add({
+      insumoId: _saidaInsumoId, insumoNome: ins.nome,
+      tipo: 'saida_manual', qtd,
+      desc: just,
+      responsavel: currentUser?.username || '—',
+      data: new Date().toISOString()
+    });
+    showNotification(`-${qtd} ${ins.unidade} registrado em ${ins.nome}! ✅`, 'success');
+    closeSaidaForm();
+    await renderInsumos();
+  } catch (e) {
+    console.error('[Inventário] Erro ao registrar saída:', e);
+    showNotification('Erro ao registrar saída.', 'error');
+  }
+}
+
 async function saveEntrada() {
   const qtd = parseInt(document.getElementById('entrada-qtd-input').value);
   const nf = document.getElementById('entrada-nf-input').value.trim();
@@ -442,10 +579,10 @@ async function renderAtivos() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input type="text" id="ativo-search" class="form-input" placeholder="Buscar ativo..."
             oninput="filterAtivos(this.value)"
-            style="padding-left:28px;height:34px;font-size:0.8rem;width:200px;">
+            style="padding-left:28px;font-size:0.8rem;width:200px;">
         </div>
         <select id="ativo-filter-setor" class="form-input" onchange="filterAtivos()"
-          style="height:34px;font-size:0.8rem;width:180px;">
+          style="font-size:0.8rem;width:170px;">
           <option value="">Todos os Setores</option>
         </select>
         <button class="config-new-user-btn" onclick="openAtivoForm()">
@@ -577,8 +714,36 @@ function filterAtivos(q) {
 }
 
 // ── Formulário ─────────────────────────────────────────────────────────────
+// ── Dirty check modal ativo ────────────────────────────────────────────────
+let _ativoFormDirty = false;
+
+function _watchAtivoForm() {
+  ['ativo-nome-input', 'ativo-patrimonio-input', 'ativo-usuario-input',
+    'ativo-setor-input', 'ativo-amigavel-input'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', () => { _ativoFormDirty = true; });
+      if (el) el.addEventListener('change', () => { _ativoFormDirty = true; });
+    });
+}
+
+function tryCloseAtivoForm() {
+  if (_ativoFormDirty) {
+    document.getElementById('ativo-discard-warning').classList.add('open');
+  } else {
+    closeAtivoForm();
+  }
+}
+function closeAtivoDiscardWarning() {
+  document.getElementById('ativo-discard-warning').classList.remove('open');
+}
+function confirmAtivoDiscard() {
+  closeAtivoDiscardWarning();
+  closeAtivoForm();
+}
+
 async function openAtivoForm(id = null) {
   _ativoEditingId = id;
+  _ativoFormDirty = false;
   document.getElementById('ativo-form-title').textContent = id ? 'Editar Ativo' : 'Novo Ativo';
 
   const ativo = id ? _ativos.find(a => a.id === id) : null;
@@ -596,11 +761,15 @@ async function openAtivoForm(id = null) {
   });
 
   document.getElementById('ativo-form-modal').classList.add('open');
+  const overlay = document.getElementById('ativo-form-modal');
+  overlay.onclick = (e) => { if (e.target === overlay) tryCloseAtivoForm(); };
+  setTimeout(_watchAtivoForm, 100);
 }
 
 function closeAtivoForm() {
   document.getElementById('ativo-form-modal').classList.remove('open');
   _ativoEditingId = null;
+  _ativoFormDirty = false;
 }
 
 async function saveAtivo() {

@@ -288,7 +288,7 @@ async function renderSetores() {
         Novo Setor
       </button>` : ''}
     </div>
-    <div id="setores-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;"></div>
+    <div id="setores-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:start;"></div>
   `;
 
   try {
@@ -357,8 +357,44 @@ function renderSetoresList(canManage) {
   }).join('');
 }
 
+
+// ── Dirty check modal setor ────────────────────────────────────────────────
+let _setorFormDirty = false;
+
+function _watchSetorForm() {
+  ['setor-nome-input', 'setor-responsavel-input', 'setor-ativo-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => { _setorFormDirty = true; });
+    if (el && el.type !== 'checkbox') el.addEventListener('input', () => { _setorFormDirty = true; });
+  });
+  // Ramais
+  const container = document.getElementById('setor-ramais-container');
+  if (container) {
+    const obs = new MutationObserver(() => { _setorFormDirty = true; });
+    obs.observe(container, { childList: true, subtree: true, characterData: true });
+  }
+}
+
+function tryCloseSetorForm() {
+  if (_setorFormDirty) {
+    document.getElementById('setor-discard-warning').classList.add('open');
+  } else {
+    closeSetorForm();
+  }
+}
+
+function closeSetorDiscardWarning() {
+  document.getElementById('setor-discard-warning').classList.remove('open');
+}
+
+function confirmSetorDiscard() {
+  closeSetorDiscardWarning();
+  closeSetorForm();
+}
+
 function openSetorForm(id = null) {
   _setorEditingId = id;
+  _setorFormDirty = false;
   const title = id ? 'Editar Setor' : 'Novo Setor';
   document.getElementById('setor-form-title').textContent = title;
 
@@ -376,11 +412,15 @@ function openSetorForm(id = null) {
   else ramais.forEach(r => addRamalRow(r.nome, r.ramal));
 
   document.getElementById('setor-form-modal').classList.add('open');
+  const overlay = document.getElementById('setor-form-modal');
+  overlay.onclick = (e) => { if (e.target === overlay) tryCloseSetorForm(); };
+  setTimeout(_watchSetorForm, 100);
 }
 
 function closeSetorForm() {
   document.getElementById('setor-form-modal').classList.remove('open');
   _setorEditingId = null;
+  _setorFormDirty = false;
 }
 
 function addRamalRow(nome = '', ramal = '') {
