@@ -43,7 +43,7 @@ function updateFirebaseStatus(online) {
   const btn = document.getElementById('sync-fab-nav');
   const icon = document.getElementById('sync-icon-nav');
   if (!btn || !icon) return;
-  icon.textContent = online ? '🟢' : '🔴';
+  icon.innerHTML = online ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7.072 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19.05 12.859a10 10 0 0 0-2.007-1.523"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 5.7-4.5"/><path d="m2 2 20 20"/></svg>`;
   btn.title = online
     ? 'Firebase: Conectado — dados em tempo real'
     : 'Firebase: Sem conexão — trabalhando offline';

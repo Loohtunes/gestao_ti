@@ -48,15 +48,15 @@ function openTicketModal(ticketId = null, isTest = false) {
       }
     }
   } else {
-    document.getElementById('modal-title').textContent = isTest ? '🧪 Chamado de Teste' : 'Novo Chamado';
+    document.getElementById('modal-title').textContent = 'Novo Chamado';
     document.getElementById('ticket-title-input').value = '';
     document.getElementById('ticket-description-input').value = '';
     document.getElementById('ticket-priority-input').value = 'medium';
     document.getElementById('ticket-files-list').innerHTML = '';
-    setTicketType(isTest ? 'test' : 'error');
+    setTicketType('error');
     // Ativa botão de tipo correspondente
     document.querySelectorAll('.ticket-type-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(isTest ? 'type-btn-test' : 'type-btn-error')?.classList.add('active');
+    document.getElementById('type-btn-error')?.classList.add('active');
     const qtyInput = document.getElementById('ticket-material-qty');
     const unitInput = document.getElementById('ticket-material-unit');
     const dateInput = document.getElementById('ticket-material-date');
@@ -112,6 +112,10 @@ function closeTicketModal() {
   if (setorInput) setorInput.disabled = false;
   editingTicketId = null;
   ticketFiles = [];
+  // Resetar flag de salvamento para evitar bloqueio em aberturas futuras
+  _savingTicket = false;
+  const saveBtn = document.querySelector('#ticket-modal .btn-save');
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar Chamado'; }
 }
 
 let _savingTicket = false;
@@ -128,7 +132,7 @@ async function saveTicket() {
   const isRequester = currentUser?.role === 'requester';
   const prio = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
   const rawType = document.getElementById('ticket-type-input')?.value || 'error';
-  const ticketType = (rawType === 'test' || _isTestTicket) ? 'test' : rawType;
+  const ticketType = rawType === 'test' ? 'error' : rawType; // Tipo teste removido
   const isMaterial = ticketType === 'material';
   const matQty = isMaterial ? (document.getElementById('ticket-material-qty')?.value || '') : '';
   const matUnit = isMaterial ? (document.getElementById('ticket-material-unit')?.value || 'un') : '';
@@ -231,7 +235,7 @@ function handleTicketFiles(input) {
 function renderTicketFiles() {
   document.getElementById('ticket-files-list').innerHTML = ticketFiles.map(f =>
     `<div class="file-item">
-      <span style="cursor:pointer;" onclick="openAttachmentPreview('${f.id}')">📎 ${f.name} <span style="color:var(--muted);font-size:0.7rem;">(${(f.size / 1024).toFixed(1)}KB)</span></span>
+      <span style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;" onclick="openAttachmentPreview('${f.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${f.name} <span style="color:var(--muted);font-size:0.7rem;">(${(f.size / 1024).toFixed(1)}KB)</span></span>
       <span class="file-remove" onclick="removeTicketFile('${f.id}')">✕</span>
     </div>`
   ).join('');

@@ -1,17 +1,43 @@
 // ===== UI — Notificações, busca e utilitários de interface =====
 
 function showNotification(message, type) {
-  const notif = document.createElement('div');
-  notif.style.cssText = `
-    position:fixed;top:80px;right:2rem;z-index:9999;
-    background:${type === 'success' ? '#00d4aa' : '#ff6b6b'};color:#fff;
-    padding:1rem 1.5rem;border-radius:8px;font-size:0.85rem;
-    font-family:'Space Mono',monospace;box-shadow:0 8px 24px rgba(0,0,0,0.3);
-    animation:slideInRight 0.3s ease;max-width:320px;
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none;';
+    document.body.appendChild(stack);
+  }
+  // Remove o mais antigo se tiver mais de 4
+  while (stack.children.length >= 4) stack.removeChild(stack.firstChild);
+
+  const colors = {
+    success: { bg: '#00d4aa', border: '#00b894' },
+    error: { bg: '#ff6b6b', border: '#e05555' },
+    info: { bg: '#378add', border: '#2563eb' },
+    warn: { bg: '#f59e0b', border: '#d97706' }
+  };
+  const col = colors[type] || colors.info;
+
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    background:${col.bg};border:1px solid ${col.border};color:#fff;
+    padding:0.65rem 1.1rem;border-radius:10px;font-size:0.8rem;
+    font-family:'Space Mono',monospace;max-width:300px;word-break:break-word;
+    box-shadow:0 4px 16px rgba(0,0,0,0.18);pointer-events:all;
+    animation:toastIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    transition:opacity 0.35s ease,transform 0.35s ease;
   `;
-  notif.textContent = message;
-  document.body.appendChild(notif);
-  setTimeout(() => notif.remove(), 3500);
+  toast.innerHTML = message;
+  stack.appendChild(toast);
+
+  const remove = () => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(16px)';
+    setTimeout(() => toast.remove(), 360);
+  };
+  toast.addEventListener('click', remove);
+  setTimeout(remove, 3500);
 }
 
 function toggleSearch() {
@@ -301,6 +327,8 @@ async function deleteChangelogEntry(docId) {
 // ══════════════════════════════════════════════════════
 
 function applyDarkMode(dark) {
+  // Aplicar em html E body — html para evitar flash, body para os estilos CSS
+  document.documentElement.classList.toggle('dark-mode', dark);
   document.body.classList.toggle('dark-mode', dark);
   const track = document.getElementById('theme-switch-track');
   if (track) track.dataset.dark = dark ? '1' : '0';
@@ -528,7 +556,7 @@ function showAfkWarning() {
       </div>
       <div class="afk-warning-countdown" id="afk-countdown"></div>
       <button class="afk-warning-btn" onclick="dismissSessionWarning()">
-        ✅ Continuar conectado
+        <span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Continuar conectado</span>
       </button>
     </div>`;
   document.body.appendChild(overlay);
@@ -596,4 +624,129 @@ function restoreSessionState() {
     // viewMode já é restaurado pelo initDarkMode/applyViewMode via localStorage
     localStorage.removeItem('premovale-last-session');
   } catch (e) { }
+}
+
+// ══════════════════════════════
+// DROPDOWN RAMAIS
+// ══════════════════════════════
+let _ramaisOpen = false;
+let _ramaisListener = null;
+
+function toggleRamaisDropdown() {
+  const dd = document.getElementById('ramais-dropdown');
+  if (!dd) return;
+  _ramaisOpen = !_ramaisOpen;
+  dd.style.display = _ramaisOpen ? 'block' : 'none';
+  if (_ramaisOpen) {
+    renderRamaisDropdown();
+    // Fechar ao clicar fora
+    setTimeout(() => {
+      document.addEventListener('click', _closeRamaisOutside);
+    }, 10);
+  } else {
+    document.removeEventListener('click', _closeRamaisOutside);
+  }
+}
+
+function _closeRamaisOutside(e) {
+  const wrapper = document.getElementById('ramais-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    const dd = document.getElementById('ramais-dropdown');
+    if (dd) dd.style.display = 'none';
+    _ramaisOpen = false;
+    document.removeEventListener('click', _closeRamaisOutside);
+  }
+}
+
+async function renderRamaisDropdown() {
+  const dd = document.getElementById('ramais-dropdown');
+  if (!dd) return;
+
+  dd.innerHTML = `
+    <div class="ramais-search-wrap">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--muted)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="ramais-search" class="ramais-search-input" placeholder="Buscar nome ou ramal..." oninput="filterRamais(this.value)" autofocus>
+    </div>
+    <div id="ramais-list" class="ramais-list">
+      <div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">Carregando...</div>
+    </div>`;
+
+  // Garantir que db está disponível
+  if (typeof db === 'undefined') {
+    document.getElementById('ramais-list').innerHTML =
+      '<div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">Firebase não inicializado.</div>';
+    return;
+  }
+
+  try {
+    const snap = await db.collection('setores').get();
+
+    // Coleção vazia — ainda não há setores cadastrados
+    if (snap.empty) {
+      document.getElementById('ramais-list').innerHTML =
+        '<div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">Nenhum setor cadastrado ainda.</div>';
+      return;
+    }
+
+    const setores = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(s => s.ativo !== false && (s.ramais || []).length > 0)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
+    window._ramaisData = setores;
+    renderRamaisList(setores);
+
+  } catch (e) {
+    console.error('[Premovale] Erro ao carregar ramais:', e?.code, e?.message);
+    const list = document.getElementById('ramais-list');
+    if (list) {
+      const msg = e?.code === 'permission-denied'
+        ? 'Sem permissão. Verifique as regras do Firestore.'
+        : e?.code === 'unavailable'
+          ? 'Sem conexão com o Firebase.'
+          : 'Erro ao carregar ramais.';
+      list.innerHTML = `<div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">${msg}</div>`;
+    }
+  }
+}
+
+function renderRamaisList(setores) {
+  const list = document.getElementById('ramais-list');
+  if (!list) return;
+
+  if (setores.length === 0) {
+    list.innerHTML = '<div style="padding:0.75rem;font-size:0.75rem;color:var(--muted);text-align:center;">Nenhum ramal encontrado.</div>';
+    return;
+  }
+
+  list.innerHTML = setores.map(s => {
+    const ramais = (s.ramais || []);
+    if (ramais.length === 0) return '';
+    return `
+      <div class="ramais-setor-label">${s.nome}</div>
+      ${ramais.map(r => `
+        <div class="ramais-item">
+          <span class="ramais-item-nome">${r.nome || '—'}</span>
+          <span class="ramais-item-num">${r.ramal || '—'}</span>
+        </div>`).join('')}`;
+  }).join('');
+}
+
+function filterRamais(query) {
+  if (!window._ramaisData) return;
+  const q = query.toLowerCase().trim();
+
+  if (!q) {
+    renderRamaisList(window._ramaisData);
+    return;
+  }
+
+  const filtered = window._ramaisData.map(s => ({
+    ...s,
+    ramais: (s.ramais || []).filter(r =>
+      (r.nome || '').toLowerCase().includes(q) ||
+      (r.ramal || '').toLowerCase().includes(q))
+  })).filter(s => s.ramais.length > 0);
+
+  renderRamaisList(filtered);
 }

@@ -1,0 +1,434 @@
+/* ===== INVENTÁRIO ===== */
+
+/* Badge Em Breve na aba */
+.inv-soon-badge {
+  font-size: 0.5rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface3);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.3rem;
+}
+
+/* ── Grid de Ativos ── */
+.ativos-grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: 100%;
+  min-height: 300px;
+}
+
+.ativos-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.82rem;
+}
+
+/* Grupo por setor */
+.ativos-setor-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ativos-setor-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.ativos-setor-count {
+  margin-left: auto;
+  font-size: 0.65rem;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.05rem 0.45rem;
+}
+
+/* Row de cards */
+.ativos-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+}
+
+/* Card individual */
+.ativo-card {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ativo-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ativo-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.ativo-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ativo-card-nome {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ativo-card-modelo {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+
+.ativo-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.ativo-meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+}
+
+.ativo-card-actions {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Dark mode */
+body.dark-mode .ativo-card {
+  border-color: var(--border2);
+}
+
+body.dark-mode .ativo-card:hover {
+  border-color: var(--accent);
+}
+
+body.dark-mode .ativo-card-icon {
+  background: var(--surface3);
+}
+
+/* ── Insumos ── */
+.insumo-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.insumo-card:hover {
+  border-color: var(--accent);
+}
+
+.insumo-card--alerta {
+  border-color: #f59e0b88;
+}
+
+.insumo-card--zerado {
+  border-color: #ef444488;
+}
+
+.insumo-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+
+.insumo-card-nome {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.insumo-cat-badge {
+  font-size: 0.62rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  background: var(--surface3);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+}
+
+.insumo-status-badge {
+  font-size: 0.62rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 0.05rem 0.4rem;
+}
+
+.insumo-status--alerta {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.insumo-status--zerado {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.insumo-card-body {
+  padding: 0.65rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Estoque */
+.insumo-estoque-row {
+  display: flex;
+  align-items: center;
+}
+
+.insumo-estoque-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.insumo-estoque-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-family: 'Space Mono', monospace;
+  line-height: 1;
+}
+
+.insumo-estoque-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.insumo-estoque-sep {
+  color: var(--border2);
+}
+
+/* Barra de progresso */
+.insumo-bar-track {
+  height: 4px;
+  background: var(--surface3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.insumo-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease, background 0.3s;
+}
+
+/* Movimentações inline */
+.insumo-movs-label {
+  font-size: 0.65rem;
+  font-family: 'Space Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.insumo-movs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.insumo-mov-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.insumo-mov-badge {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.insumo-mov-desc {
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insumo-mov-date {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  flex-shrink: 0;
+}
+
+/* Botão de ação inline */
+.insumo-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.insumo-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Histórico modal */
+.hist-insumo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+}
+
+.hist-insumo-row:last-child {
+  border-bottom: none;
+}
+
+.hist-insumo-badge {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: center;
+}
+
+.hist-insumo-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hist-insumo-desc {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hist-insumo-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.hist-insumo-date {
+  font-size: 0.68rem;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+body.dark-mode .insumo-card--alerta {
+  border-color: #854d0e55;
+}
+
+body.dark-mode .insumo-card--zerado {
+  border-color: #b91c1c55;
+}
+
+body.dark-mode .insumo-status--alerta {
+  background: #2a1f00;
+  color: #fde68a;
+  border-color: #854d0e;
+}
+
+body.dark-mode .insumo-status--zerado {
+  background: #2a0808;
+  color: #fca5a5;
+  border-color: #b91c1c;
+}

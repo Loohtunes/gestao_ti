@@ -18,9 +18,23 @@
   animation: slideUpDetail 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.login-icon    { font-size: 3rem; margin-bottom: 1rem; }
-.login-title   { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.4rem; }
-.login-subtitle { font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem; }
+.login-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.login-subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
 
 .login-form {
   display: flex;
@@ -28,10 +42,14 @@
   gap: 1rem;
 }
 
-.login-input-group { text-align: left; }
+.login-input-group {
+  text-align: left;
+}
 
 .login-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.7rem;
   font-family: var(--font-mono);
   text-transform: uppercase;
@@ -53,7 +71,9 @@
   transition: border-color 0.2s;
 }
 
-.login-input:focus { border-color: var(--accent); }
+.login-input:focus {
+  border-color: var(--accent);
+}
 
 .login-btn {
   width: 100%;
@@ -70,7 +90,10 @@
   letter-spacing: 0.04em;
 }
 
-.login-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+.login-btn:hover {
+  background: var(--accent2);
+  transform: translateY(-1px);
+}
 
 .login-btn.secondary {
   background: transparent;
@@ -79,15 +102,21 @@
   margin-top: 4px;
 }
 
-.login-btn.secondary:hover { background: var(--accent2); color: #fff; }
+.login-btn.secondary:hover {
+  background: var(--accent2);
+  color: #fff;
+}
 
-.login-actions { text-align: center; }
+.login-actions {
+  text-align: center;
+}
 
 /* ===== TEMA ESCURO — auth.css ===== */
 body.dark-mode .login-card {
   background: var(--surface);
   border-color: var(--border2);
 }
+
 body.dark-mode .login-input {
   background: var(--surface2);
   color: var(--text);

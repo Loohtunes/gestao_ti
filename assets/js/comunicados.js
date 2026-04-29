@@ -3,7 +3,7 @@
 const COMUNICADOS_EXPIRY_DAYS = 15;
 const COMUNICADOS_STALE_DAYS = 5;
 
-const PRIO_ICON = { normal: '🔵', importante: '🟡', urgente: '🔴' };
+const PRIO_ICON = { normal: `<svg width="10" height="10" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="#3b82f6"/></svg>`, importante: `<svg width="10" height="10" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="#f59e0b"/></svg>`, urgente: `<svg width="10" height="10" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="#ef4444"/></svg>` };
 const PRIO_LABEL = { normal: 'Normal', importante: 'Importante', urgente: 'Urgente' };
 
 let _comunicadosHistoryOpen = false;
@@ -12,7 +12,8 @@ let _selectedPrio = 'normal';
 
 // ── Inicializar listener em tempo real ──
 function initComunicados() {
-  const canAdmin = menuCurrentUser?.isAdmin || menuCurrentUser?.isSuperAdmin;
+  const canAdmin = menuCurrentUser?.isAdmin || menuCurrentUser?.isSuperAdmin ||
+    (menuCurrentUser?.acessos || []).includes('pub_comunicados');
 
   // Mostrar botão de nova publicação para admins
   const newBtn = document.querySelector('.comunicados-new-btn');
@@ -36,7 +37,8 @@ function renderComunicados(docs) {
   if (!feed) return;
 
   const now = Date.now();
-  const canAdmin = menuCurrentUser?.isAdmin || menuCurrentUser?.isSuperAdmin;
+  const canAdmin = menuCurrentUser?.isAdmin || menuCurrentUser?.isSuperAdmin ||
+    (menuCurrentUser?.acessos || []).includes('pub_comunicados');
 
   // Separar fixados, ativos e arquivados
   const fixados = docs.filter(d => d.fixado && !d.arquivado);
@@ -66,13 +68,13 @@ function renderComunicados(docs) {
 
   if (fixados.length === 0 && ativos.length === 0) {
     html = `<div class="comunicados-empty">
-      <span class="comunicados-empty-icon">📭</span>
+      <span class="comunicados-empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></span>
       <span>Sem publicações atualizadas!</span>
     </div>`;
   } else {
     // Fixados primeiro
     if (fixados.length) {
-      html += `<div class="comunicados-date-sep">📌 Fixados</div>`;
+      html += `<div class="comunicados-date-sep" style="display:flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> Fixados</div>`;
       html += fixados.map(d => buildComunicadoCard(d, canAdmin)).join('');
     }
 
@@ -86,7 +88,7 @@ function renderComunicados(docs) {
     // Aviso de sem publicações recentes
     if (!hasRecent && (fixados.length || ativos.length)) {
       html += `<div class="comunicados-empty" style="padding:1rem;">
-        <span style="font-size:0.75rem;">📅 Sem publicações nos últimos ${COMUNICADOS_STALE_DAYS} dias</span>
+        <span style="font-size:0.75rem;display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Sem publicações nos últimos ${COMUNICADOS_STALE_DAYS} dias</span>
       </div>`;
     }
   }
@@ -130,19 +132,19 @@ function buildComunicadoCard(d, canAdmin, archived = false) {
   const ts = d.criadoEm?.toDate ? d.criadoEm.toDate() : new Date(d.criadoEm || Date.now());
   const time = ts.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   const prio = d.prioridade || 'normal';
-  const icon = PRIO_ICON[prio] || '🔵';
+  const icon = PRIO_ICON[prio] || `<svg width="10" height="10" viewBox="0 0 24 24" style="flex-shrink:0"><circle cx="12" cy="12" r="10" fill="#3b82f6"/></svg>`;
 
-  const fixBadge = d.fixado ? `<span class="comunicado-fixed-badge">📌 Fixado</span>` : '';
+  const fixBadge = d.fixado ? `<span class="comunicado-fixed-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> Fixado</span>` : '';
 
   const adminActions = canAdmin && !archived ? `
     <div class="comunicado-actions">
       ${!d.fixado
-      ? `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', true)">📌 Fixar</button>`
-      : `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', false)">📌 Desafixar</button>`
+      ? `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', true)" style="display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> Fixar</button>`
+      : `<button class="comunicado-action-btn" onclick="fixarComunicado('${d.id}', false)" style="display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> Desafixar</button>`
     }
       <button class="comunicado-action-btn" onclick="editarComunicado('${d.id}')">✎ Editar</button>
-      <button class="comunicado-action-btn danger" onclick="arquivarComunicado('${d.id}')">🗑️ Arquivar</button>
-      <button class="comunicado-action-btn danger" onclick="excluirComunicado('${d.id}')">❌ Excluir</button>
+      <button class="comunicado-action-btn danger" onclick="arquivarComunicado('${d.id}')" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Arquivar</button>
+      <button class="comunicado-action-btn danger" onclick="excluirComunicado('${d.id}')" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg> Excluir</button>
     </div>` : '';
 
   return `
@@ -151,8 +153,8 @@ function buildComunicadoCard(d, canAdmin, archived = false) {
       <div class="comunicado-card-header">
         <span class="comunicado-prio-icon">${icon}</span>
         <div class="comunicado-meta">
-          <span class="comunicado-author">👤 ${capitalizeName(d.autor || '—')} · ${d.autorRole || ''}</span>
-          <span class="comunicado-timestamp">🕐 ${time}</span>
+          <span class="comunicado-author" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${capitalizeName(d.autor || '—')} · ${d.autorSetor || d.autorRole || '—'}</span>
+          <span class="comunicado-timestamp" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${time}</span>
         </div>
       </div>
       <div class="comunicado-title">${d.titulo || ''}</div>
@@ -222,6 +224,7 @@ async function salvarComunicado() {
         prioridade: _selectedPrio,
         autor: menuCurrentUser.username,
         autorRole: roleLabel,
+        autorSetor: menuCurrentUser.setor || '',
         criadoEm: new Date(),
         fixado,
         arquivado: false,
@@ -281,11 +284,11 @@ async function excluirComunicado(id) {
 
 // ── Histórico toggle ──
 function toggleComunicadosHistory() {
-  _comunicadosHistoryOpen = !_comunicadosHistoryOpen;
-  const section = document.getElementById('comunicados-history-section');
-  const btn = document.getElementById('comunicados-history-btn');
-  if (section) section.classList.toggle('open', _comunicadosHistoryOpen);
-  if (btn) btn.textContent = _comunicadosHistoryOpen ? '📁 Ocultar Histórico' : '📁 Ver Histórico';
+  document.getElementById('comunicados-history-modal').classList.add('open');
+}
+
+function closeComunicadosHistory() {
+  document.getElementById('comunicados-history-modal').classList.remove('open');
 }
 
 // ── Notificação simples para o menu ──

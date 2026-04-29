@@ -169,9 +169,11 @@ body::before {
 /* ===== TEMA ESCURO ===== */
 
 body {
+  background: var(--bg);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+html.dark-mode,
 body.dark-mode {
   --bg: #0f0f14;
   --surface: #1a1a24;
@@ -200,9 +202,27 @@ body.dark-mode {
   --prio-urgent-text: #fecaca;
 }
 
+/* Fundo aplicado imediatamente no html — evita flash branco */
+html.dark-mode {
+  background: #0f0f14;
+  color: #e8e8f0;
+}
+
 /* Grade de fundo no tema escuro */
 body.dark-mode::before {
   background-image:
     linear-gradient(#ef444408 1px, transparent 1px),
     linear-gradient(90deg, #ef444408 1px, transparent 1px);
+}
+
+@keyframes toastIn {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }

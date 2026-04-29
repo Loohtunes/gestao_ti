@@ -116,25 +116,25 @@ function closeFilterDropdownOutside(e) {
 }
 
 function selectFilter(filter, label) {
-  // Fechar menus
   const mAtt = document.getElementById('filter-dropdown-menu');
   const mReq = document.getElementById('filter-requester-menu');
   if (mAtt) mAtt.style.display = 'none';
   if (mReq) mReq.style.display = 'none';
-
-  // Atualizar label do botão ativo
   const labelAtt = document.getElementById('filter-dropdown-label');
   const labelReq = document.getElementById('filter-requester-label');
   if (labelAtt && document.getElementById('filter-dropdown-wrapper')?.style.display !== 'none') labelAtt.textContent = label;
   if (labelReq && document.getElementById('filter-requester-wrapper')?.style.display !== 'none') labelReq.textContent = label;
-
-  // Marcar item ativo
   document.querySelectorAll('.filter-dd-item').forEach(b => {
     b.classList.toggle('active', b.dataset.filter === filter);
   });
-
-  // Chamar filterTickets
   filterTickets(filter);
+}
+
+// Versão sem SVG no onclick — lê label do data-label
+function selectFilterBtn(btn) {
+  const filter = btn.dataset.filter;
+  const label = btn.dataset.label || btn.textContent.trim();
+  selectFilter(filter, label);
 }
 
 // Filtro de setor na aba principal
@@ -417,8 +417,8 @@ function buildArchivedRow(ticket) {
     '<span class="tl-col tl-prio"><span class="tl-prio-tag ' + prio + '">' + (PRIORITY_LABEL[prio] || '—') + '</span></span>' +
     '<span class="tl-col tl-date"><span class="tl-date-done">' + dateHtml + '</span></span>' +
     '<span class="tl-col tl-arc-actions" onclick="event.stopPropagation()">' +
-    '<button class="tl-btn arc-unarchive" onclick="reopenTicket(\'' + ticket.id + '\')" title="Desarquivar">🔄</button>' +
-    '<button class="tl-btn arc-delete" onclick="deleteTicket(\'' + ticket.id + '\')" title="Excluir">🗑️</button>' +
+    '<button class="tl-btn arc-unarchive" onclick="reopenTicket(\'' + ticket.id + '\')" title="Desarquivar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg></button>' +
+    '<button class="tl-btn arc-delete" onclick="deleteTicket(\'' + ticket.id + '\')" title="Excluir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>' +
     '</span></div>';
 }
 
@@ -456,15 +456,15 @@ function renderTicketsList(board, list) {
     const status = ticket.status || 'available';
     const num = ticket.number ? (typeof ticket.number === 'string' ? ticket.number : '#' + String(ticket.number).padStart(4, '0')) : '—';
     const canEdit = ticket.requester === currentUser.username && status === 'available';
-    const dateBlock = [ticket.date ? `<span class="tl-date-text">📅 ${ticket.date}</span>` : '', ticket.startedAt ? `<span class="tl-date-sub">▶️ ${ticket.startedAt}</span>` : '', ticket.completedAt ? `<span class="tl-date-done">✅ ${ticket.completedAt}</span>` : ''].filter(Boolean).join('');
+    const dateBlock = [ticket.date ? `<span class="tl-date-text" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>${ticket.date}</span>` : '', ticket.startedAt ? `<span class="tl-date-sub" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>${ticket.startedAt}</span>` : '', ticket.completedAt ? `<span class="tl-date-done" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>${ticket.completedAt}</span>` : ''].filter(Boolean).join('');
     const tlMentionBadge = hasPendingMention(ticket) ? `<span class="card-mention-badge" style="top:-8px;left:-8px;">@</span>` : '';
     const isFollowing = isMentionedIn(ticket) && ticket.requester !== currentUser.username;
     return `<div class="tl-row-wrapper" style="position:relative;display:block;" data-ticket-id="${ticket.id}">${tlMentionBadge}<div class="tl-row ${status} prio-${ticket.priority || 'medium'}${isFollowing ? ' tl-following' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
       <span class="tl-col tl-num"><span class="tl-num-badge">${num}</span></span>
-      <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach">📎 ${ticket.attachments.length} anexo(s)</span>` : ''}</span>
+      <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${ticket.attachments.length} anexo(s)</span>` : ''}</span>
       <span class="tl-col tl-setor">${ticket.setor ? `<span class="tl-setor-tag">${ticket.setor}</span>` : '<span class="tl-empty">—</span>'}</span>
       <span class="tl-col tl-prio"><span class="tl-prio-tag ${ticket.priority || 'medium'}">${PRIORITY_LABEL[ticket.priority] || '—'}</span></span>
-      <span class="tl-col tl-status"><span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag">👤 ${capitalizeName(ticket.attendant)}</span>` : ''}</span>
+      <span class="tl-col tl-status"><span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>${ticket.attendant ? `<span class="tl-attendant-tag" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>${capitalizeName(ticket.attendant)}</span>` : ''}</span>
       <span class="tl-col tl-date">${dateBlock}</span>
       <span class="tl-col tl-actions" onclick="event.stopPropagation()">${canEdit ? `<button class="tl-btn edit" onclick="editTicket('${ticket.id}')">✎</button><button class="tl-btn del" onclick="deleteTicket('${ticket.id}')">✕</button>` : ''}</span>
     </div></div>`;
@@ -512,44 +512,44 @@ function renderTicketsCards(board, list) {
     const isMat = ticket.ticketType === 'material';
     if (isMat) {
       if ((status === 'mat-seen' || status === 'available') && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.role === 'attendant')) {
-        actions = `<div class="ticket-actions-bottom"><button class="ticket-pull-btn" onclick="event.stopPropagation();setMatStatus('${ticket.id}','mat-ordered')">✅ Marcar Solicitado</button><button class="ticket-archive-btn" onclick="event.stopPropagation();archiveTicket('${ticket.id}')">📦 Arquivar</button></div>`;
+        actions = `<div class="ticket-actions-bottom"><button class="ticket-pull-btn" onclick="event.stopPropagation();setMatStatus('${ticket.id}','mat-ordered')" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Marcar Solicitado</button><button class="ticket-archive-btn" onclick="event.stopPropagation();archiveTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Arquivar</button></div>`;
       } else if (status === 'mat-ordered' && (currentUser.isAdmin || currentUser.isSuperAdmin)) {
-        actions = `<div class="ticket-actions-bottom"><button class="ticket-archive-btn" onclick="event.stopPropagation();archiveTicket('${ticket.id}')">📦 Arquivar</button></div>`;
+        actions = `<div class="ticket-actions-bottom"><button class="ticket-archive-btn" onclick="event.stopPropagation();archiveTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg> Arquivar</button></div>`;
       }
     } else if (status === 'available') {
-      actions = `<div class="ticket-actions-bottom"><button class="ticket-pull-btn" onclick="event.stopPropagation();pullTicket('${ticket.id}')">🎯 Assumir</button></div>`;
+      actions = `<div class="ticket-actions-bottom"><button class="ticket-pull-btn" onclick="event.stopPropagation();pullTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg> Assumir</button></div>`;
     } else if ((status === 'in-progress' || SUB_STATUS.has(status)) && (ticket.attendant === currentUser.username || currentUser.isAdmin || currentUser.isSuperAdmin)) {
       actions = `<div class="ticket-actions-bottom">
         <div class="ticket-actions-selects">
           <select class="ticket-substatus-select" onchange="event.stopPropagation();setSubStatus('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
-            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}>⚙️ Em Atendimento</option>
+            <option value="in-progress" ${status === 'in-progress' ? 'selected' : ''}> Em Atendimento</option>
             <option value="waiting-info" ${status === 'waiting-info' ? 'selected' : ''}>💬 Aguard. Informações</option>
             <option value="waiting" ${status === 'waiting' ? 'selected' : ''}>⏸️ Em Espera</option>
           </select>
           <select class="ticket-prio-select" onchange="event.stopPropagation();setTicketPriority('${ticket.id}',this.value);this.blur()" onclick="event.stopPropagation()">
-            <option value="" disabled ${!prio ? 'selected' : ''}>⚡ Prioridade</option>
-            <option value="urgent" ${prio === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-            <option value="high"   ${prio === 'high' ? 'selected' : ''}>🔴 Alta</option>
-            <option value="medium" ${prio === 'medium' ? 'selected' : ''}>🟡 Média</option>
-            <option value="low"    ${prio === 'low' ? 'selected' : ''}>🟢 Baixa</option>
-            <option value="none"   ${prio === 'none' ? 'selected' : ''}>⚪ Sem Prioridade</option>
+            <option value="" disabled ${!prio ? 'selected' : ''}> Prioridade</option>
+            <option value="urgent" ${prio === 'urgent' ? 'selected' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> Urgente</option>
+            <option value="high"   ${prio === 'high' ? 'selected' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff7b00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg> Alta</option>
+            <option value="medium" ${prio === 'medium' ? 'selected' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg> Média</option>
+            <option value="low"    ${prio === 'low' ? 'selected' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#36fa00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg> Baixa</option>
+            <option value="none"   ${prio === 'none' ? 'selected' : ''}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg> Sem Prioridade</option>
           </select>
         </div>
         <div class="ticket-actions-btns">
-          <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')">✅ Concluir</button>
-          <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')">↩️ Devolver</button>
+          <button class="ticket-complete-btn" onclick="event.stopPropagation();completeTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4m-6-6 2 2 4-4M13 6h8M13 12h8M13 18h8"/></svg> Concluir</button>
+          <button class="ticket-release-btn" onclick="event.stopPropagation();releaseTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Devolver</button>
         </div>
       </div>`;
     } else if ((status === 'completed' || status === 'archived') && (currentUser.isAdmin || currentUser.isSuperAdmin || ticket.attendant === currentUser.username)) {
-      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button></div>`;
+      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg> Reabrir</button></div>`;
     } else if (false && status === 'archived') {  // nunca cai aqui — bloco unificado acima
-      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')">🔄 Reabrir</button></div>`;
+      actions = `<div class="ticket-actions-bottom"><button class="ticket-reopen-btn" onclick="event.stopPropagation();reopenTicket('${ticket.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16M8 16H3v5"/></svg> Reabrir</button></div>`;
     }
     const numDisplay = ticket.number ? (typeof ticket.number === 'string' ? ticket.number : '#' + String(ticket.number).padStart(4, '0')) : '';
     const ticketNum = numDisplay ? `<span class="ticket-number">${numDisplay}</span>` : '';
-    const setorBadge = ticket.setor ? `<span class="ticket-setor-badge">🏢 ${ticket.setor}</span>` : '';
-    const matBadge = ticket.materialData?.qty ? `<div class="mat-info-row"><span class="mat-qty-badge">📦 ${ticket.materialData.qty} ${ticket.materialData.unitText || ticket.materialData.unit}</span>${ticket.materialData.needByDate ? `<span class="mat-date-badge">📅 Necessário: ${new Date(ticket.materialData.needByDate + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : ''}</div>` : '';
-    const dates = [ticket.startedAt ? `<div class="ticket-date-row started"><span class="date-icon">▶️</span><span>Início: ${ticket.startedAt}</span></div>` : '', ticket.completedAt ? `<div class="ticket-date-row done"><span class="date-icon">✅</span><span>Concluído: ${ticket.completedAt}</span></div>` : ''].filter(Boolean).join('');
+    const setorBadge = ticket.setor ? `<span class="ticket-setor-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>${ticket.setor}</span>` : '';
+    const matBadge = ticket.materialData?.qty ? `<div class="mat-info-row"><span class="mat-qty-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg>${ticket.materialData.qty} ${ticket.materialData.unitText || ticket.materialData.unit}</span>${ticket.materialData.needByDate ? `<span class="mat-date-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Necessário: ${new Date(ticket.materialData.needByDate + "T12:00:00").toLocaleDateString("pt-BR")}</span>` : ""}</div>` : '';
+    const dates = [ticket.startedAt ? `<div class="ticket-date-row started"><span class="date-icon" style="display:inline-flex;align-items:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span><span>Início: ${ticket.startedAt}</span></div>` : '', ticket.completedAt ? `<div class="ticket-date-row done"><span class="date-icon" style="display:inline-flex;align-items:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span>Concluído: ${ticket.completedAt}</span></div>` : ''].filter(Boolean).join('');
     const isDone = status === 'completed' || status === 'archived';
     const isMaterialCard = ticket.ticketType === 'material';
     const unseen = getUnseenCount(ticket);
@@ -561,8 +561,8 @@ function renderTicketsCards(board, list) {
     const requesterData = users.find(u => u.username === ticket.requester);
     const isVipTicket = !isDone && !!requesterData?.isVip;
     const vipBadge = isVipTicket ? `<span class="vip-badge">⭐ VIP</span>` : '';
-    const isTestTicket = ticket.ticketType === 'test';
-    const testBadge = isTestTicket ? `<span class="test-badge">🧪 TESTE</span>` : '';
+    const isTestTicket = false; // Tipo teste removido
+    const testBadge = isTestTicket ? `<span class="test-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 3h6l1 7H8L9 3z"/><path d="M8 10c-1.5 2-2 3.5-2 5a6 6 0 0 0 12 0c0-1.5-.5-3-2-5"/><path d="M7 3h10"/></svg> TESTE</span>` : '';
     const isMergeSelected = mergeMode && selectedForMerge.has(ticket.id);
     const mergeCheckbox = (mergeMode && !isDone && status !== 'archived') ? `
       <div onclick="event.stopPropagation();toggleSelectForMerge('${ticket.id}', event)"
@@ -576,9 +576,9 @@ function renderTicketsCards(board, list) {
       </div>` : '';
     // Indicadores extras no número (anexos, material, teste)
     const extraIcons = [
-      ticket.attachments?.length ? `<span class="card-extra-icon" title="${ticket.attachments.length} anexo(s)">📎</span>` : '',
-      isMaterialCard ? `<span class="card-extra-icon" title="Solicitação de Material">📦</span>` : '',
-      isTestTicket ? `<span class="card-extra-icon" title="Chamado de Teste">🧪</span>` : '',
+      ticket.attachments?.length ? `<span class="card-extra-icon" title="${ticket.attachments.length} anexo(s)" style="display:inline-flex;align-items:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></span>` : '',
+      isMaterialCard ? `<span class="card-extra-icon" title="Solicitação de Material" style="display:inline-flex;align-items:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg></span>` : '',
+      isTestTicket ? `<span class="card-extra-icon" title="Chamado de Teste" style="display:inline-flex;align-items:center;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 3h6l1 7H8L9 3z"/><path d="M8 10c-1.5 2-2 3.5-2 5a6 6 0 0 0 12 0c0-1.5-.5-3-2-5"/><path d="M7 3h10"/></svg></span>` : '',
     ].filter(Boolean).join('');
     return `<div class="ticket-card-wrapper" style="position:relative;${isMergeSelected ? 'outline:2px solid var(--accent);border-radius:15px;' : ''}" data-ticket-id="${ticket.id}">${badge}${mentionBadge}${mergeCheckbox}
       <div class="ticket-card ${status}${isDone ? '' : ' prio-' + prio}${isMaterialCard ? ' material-card' : ''}${isVipTicket ? ' vip-card' : ''}${isTestTicket ? ' test-card' : ''}${mentionClass}" onclick="${mergeMode ? `toggleSelectForMerge('${ticket.id}', event)` : `openTicketDetail('${ticket.id}')`}" style="cursor:pointer;">
@@ -588,7 +588,7 @@ function renderTicketsCards(board, list) {
             <div class="card-top-row">
               <div class="card-top-left">
                 <span class="ticket-status-badge ${status}">${STATUS_LABEL[status] || status}</span>
-                <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
+                <span class="ticket-priority-badge prio-${prio}">${PRIORITY_ICON_LABEL[prio] || PRIORITY_LABEL[prio]}</span>
               </div>
               <div class="card-top-right">
                 ${extraIcons}
@@ -599,8 +599,8 @@ function renderTicketsCards(board, list) {
             </div>
             <div class="ticket-title">${ticket.title}</div>
             <div class="card-meta-row">
-              ${ticket.setor ? `<span class="card-setor-tag">🏢 ${ticket.setor}</span>` : ''}
-              ${ticket.materialData?.qty ? `<span class="card-meta-sep">•</span><span class="mat-qty-badge">📦 ${ticket.materialData.qty} ${ticket.materialData.unitText || ticket.materialData.unit}</span>` : ''}
+              ${ticket.setor ? `<span class="card-setor-tag" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>${ticket.setor}</span>` : ''}
+              ${ticket.materialData?.qty ? `<span class="card-meta-sep">•</span><span class="mat-qty-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg>${ticket.materialData.qty} ${ticket.materialData.unitText || ticket.materialData.unit}</span>` : ''}
               ${!isDone && ticket.date ? `<span class="card-meta-sep">•</span><span class="card-time-open">⏱️ ${tempoEmAberto(ticket.date) || ''}</span>` : ''}
             </div>
             <div class="card-people-row">
@@ -667,17 +667,17 @@ function openPriorityModal(ticketId) {
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
       padding:1.5rem;width:100%;max-width:360px;animation:slideUpDetail 0.3s cubic-bezier(0.34,1.56,0.64,1);">
       <div style="font-size:1rem;font-weight:800;margin-bottom:0.4rem;letter-spacing:-0.02em;">
-        🎯 Assumir Chamado
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg> Assumir Chamado
       </div>
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1.2rem;">
         Defina a prioridade antes de assumir
       </div>
       <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1.2rem;">
         ${[
-      ['low', '🟢', 'Baixa', '#dcfce7', '#16a34a'],
-      ['medium', '🟡', 'Média', '#fef9c3', '#d97706'],
-      ['high', '🔴', 'Alta', '#ffedd5', '#c2410c'],
-      ['urgent', '🚨', 'Urgente', '#fee2e2', '#b91c1c'],
+      ['low', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#36fa00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>', 'Baixa', '#dcfce7', '#16a34a'],
+      ['medium', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>', 'Média', '#fef9c3', '#d97706'],
+      ['high', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff7b00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>', 'Alta', '#ffedd5', '#c2410c'],
+      ['urgent', '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>', 'Urgente', '#fee2e2', '#b91c1c'],
     ].map(([val, emoji, label, bg, tc]) => `
           <label style="display:flex;align-items:center;gap:0.75rem;
             background:${bg};border:1.5px solid ${tc}30;border-radius:10px;
@@ -699,7 +699,7 @@ function openPriorityModal(ticketId) {
           style="flex:2;padding:0.65rem;background:var(--accent);border:none;
             border-radius:8px;color:#fff;font-family:var(--font-display);
             font-size:0.85rem;font-weight:700;cursor:pointer;">
-          🎯 Assumir Chamado
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></svg> Assumir Chamado
         </button>
       </div>
     </div>
@@ -812,7 +812,7 @@ function toggleMergeMode() {
     btn.style.background = mergeMode ? 'var(--accent)' : '';
     btn.style.color = mergeMode ? '#fff' : '';
     btn.style.borderColor = mergeMode ? 'var(--accent)' : '';
-    btn.textContent = mergeMode ? '✕ Cancelar Mesclagem' : '🔗 Mesclar Chamados';
+    btn.textContent = mergeMode ? '✕ Cancelar Mesclagem' : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Mesclar Chamados`;
   }
   const mergeBanner = document.getElementById('merge-banner');
   if (mergeBanner) mergeBanner.style.display = mergeMode ? 'flex' : 'none';
@@ -849,7 +849,7 @@ function openMergeConfirmModal() {
   modal.innerHTML = `
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
       padding:1.5rem;width:100%;max-width:480px;animation:slideUpDetail 0.3s cubic-bezier(0.34,1.56,0.64,1);">
-      <div style="font-size:1rem;font-weight:800;margin-bottom:0.3rem;">🔗 Mesclar Chamados</div>
+      <div style="font-size:1rem;font-weight:800;margin-bottom:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Mesclar Chamados</div>
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:1rem;">
         Escolha o chamado principal. Os demais serão arquivados e vinculados ao novo.
       </div>
@@ -883,7 +883,7 @@ function openMergeConfirmModal() {
 
       <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
         padding:0.75rem;font-size:0.78rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;">
-        ⚠️ Os chamados não selecionados como principal serão <strong>arquivados</strong> 
+        <span style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg> Os chamados não selecionados como principal serão</span> <strong>arquivados</strong> 
         automaticamente com uma nota no histórico indicando a mesclagem.
       </div>
 
@@ -896,7 +896,7 @@ function openMergeConfirmModal() {
         <button onclick="executeMerge()"
           style="flex:2;padding:0.65rem;background:var(--accent);border:none;border-radius:8px;
             color:#fff;font-family:var(--font-display);font-size:0.85rem;font-weight:700;cursor:pointer;">
-          🔗 Confirmar Mesclagem
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Confirmar Mesclagem
         </button>
       </div>
     </div>
@@ -953,7 +953,7 @@ function executeMerge() {
 
   // Atualiza botão
   const btn = document.getElementById('merge-mode-btn');
-  if (btn) { btn.textContent = '🔗 Mesclar Chamados'; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+  if (btn) { btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Mesclar Chamados`; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
   const banner = document.getElementById('merge-banner');
   if (banner) banner.style.display = 'none';
 }

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão T.I — Configurações</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    /* Anti-flash: aplica tema ANTES do primeiro pixel ser renderizado */
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/configuracoes.css">
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav>
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;"
+      title="Voltar ao Menu Principal">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+
+    <!-- Timer de sessão -->
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);
+          text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown" style="font-size:0.75rem;font-family:'Space Mono',monospace;
+          font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track"
+        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill" style="height:100%;width:100%;border-radius:2px;
+          background:var(--accent);transition:width 1s linear,background 0.3s;"></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+
+      <!-- Ramais -->
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+
+      <!-- Switch Tema -->
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
+          background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
+          padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
+        <div style="position:relative;width:28px;height:16px;background:var(--surface3);
+          border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;
+              background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;"></div>
+        </div>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
+      </div>
+      <!-- Firebase — só superadmin -->
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ LAYOUT ══ -->
+  <div class="config-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <a class="chamados-sidebar-item" href="index.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" />
+              <path d="M13 17v2" />
+              <path d="M13 11v2" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Chamados</span>
+        </a>
+
+        <span id="cs-mod-materiais" class="chamados-sidebar-item chamados-sidebar-disabled" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+              <path d="M12 22V12" />
+              <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+              <path d="m7.5 4.27 9 5.15" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Materiais</span>
+          <span class="chamados-sidebar-soon">Em breve</span>
+        </span>
+
+        <a class="chamados-sidebar-item" id="cs-mod-inventario" href="inventario.html" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+              <path d="m7 16.5-4.74-2.85" />
+              <path d="m7 16.5 5-3" />
+              <path d="M7 16.5v5.17" />
+              <path
+                d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+              <path d="m17 16.5-5-3" />
+              <path d="m17 16.5 4.74-2.85" />
+              <path d="M17 16.5v5.17" />
+              <path
+                d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+              <path d="M12 8 7.26 5.15" />
+              <path d="m12 8 4.74-2.85" />
+              <path d="M12 13.5V8" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Inventário</span>
+        </a>
+
+        <div class="chamados-sidebar-divider"></div>
+
+        <a class="chamados-sidebar-item" href="menu.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Menu Principal</span>
+        </a>
+
+        <!-- Rodapé fixo no fundo -->
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item active" href="configuracoes.html" title="Configurações">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="config-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="config-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="config-sidebar-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="configLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="config-main">
+      <div class="config-header">
+        <div class="config-header-title" style="display:flex;align-items:center;gap:7px;"><svg width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+            <path
+              d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg> Configurações</div>
+        <div class="config-header-sub">// Gerenciamento do sistema</div>
+        <div class="config-tabs">
+          <button class="config-tab active" data-tab="usuarios" onclick="openTab('usuarios')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg> Usuários
+          </button>
+          <button class="config-tab" data-tab="setores" onclick="openTab('setores')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+              <path d="M10 6h4" />
+              <path d="M10 10h4" />
+              <path d="M10 14h4" />
+              <path d="M10 18h4" />
+            </svg> Setores
+          </button>
+          <button class="config-tab" data-tab="acessos" onclick="openTab('acessos')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg> Acessos
+          </button>
+          <button class="config-tab" data-tab="administracao" onclick="openTab('administracao')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg> Administração
+          </button>
+        </div>
+      </div>
+
+      <div class="config-content">
+
+        <!-- ══ PAINEL USUÁRIOS ══ -->
+        <div class="config-panel active" id="panel-usuarios">
+          <!-- Lista de usuários -->
+          <div id="config-user-list-section">
+            <div class="config-users-header">
+              <span class="config-users-title">Usuários cadastrados</span>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div style="position:relative;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input type="text" id="config-user-search" class="form-input" placeholder="Buscar usuário..."
+                    oninput="filterConfigUsers(this.value)"
+                    style="padding-left:28px;height:34px;font-size:0.8rem;width:200px;">
+                </div>
+                <button class="config-new-user-btn" onclick="showNewUserForm()">+ Novo Usuário</button>
+              </div>
+            </div>
+            <div class="config-user-list" id="config-user-list"></div>
+            <div class="config-users-pagination" id="config-users-pagination"></div>
+          </div>
+
+          <!-- Formulário de usuário -->
+        </div>
+
+        <!-- ══ PAINEL ACESSOS ══ -->
+        <div class="config-panel" id="panel-setores"></div>
+
+        <div class="config-panel" id="panel-acessos">
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:0.88rem;font-weight:700;margin-bottom:0.25rem;">Permissões por módulo</div>
+            <div style="font-size:0.72rem;font-family:'Space Mono',monospace;color:var(--muted);">
+              Módulo "Chamados" é obrigatório e não pode ser desativado. SuperAdmin tem acesso total automático.
+            </div>
+          </div>
+          <table class="config-access-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                      <path d="M13 5v2" />
+                      <path d="M13 17v2" />
+                      <path d="M13 11v2" />
+                    </svg> Chamados</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                      <path d="M12 22V12" />
+                      <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                      <path d="m7.5 4.27 9 5.15" />
+                    </svg> Materiais</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+                      <path d="m7 16.5-4.74-2.85" />
+                      <path d="m7 16.5 5-3" />
+                      <path d="M7 16.5v5.17" />
+                      <path
+                        d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+                      <path d="m17 16.5-5-3" />
+                      <path d="m17 16.5 4.74-2.85" />
+                      <path d="M17 16.5v5.17" />
+                      <path
+                        d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+                      <path d="M12 8 7.26 5.15" />
+                      <path d="m12 8 4.74-2.85" />
+                      <path d="M12 13.5V8" />
+                    </svg> Inventário</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path d="m3 11 18-5v12L3 14v-3z" />
+                      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+                    </svg> Publicar Comunicados</span></th>
+              </tr>
+            </thead>
+            <tbody id="access-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- ══ PAINEL FIREBASE ══ -->
+        <div class="config-panel" id="panel-administracao"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCRIPTS ══ -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/configuracoes.js"></script>
+  <script src="assets/js/init.js"></script>
+
+
+  <!-- ══ MODAL: CADASTRO DE SETOR ══ -->
+  <div class="modal-overlay" id="setor-form-modal" onclick="if(event.target===this)closeSetorForm()">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <div class="modal-title" id="setor-form-title">Novo Setor</div>
+        <button class="modal-close" onclick="closeSetorForm()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;gap:1rem;display:flex;flex-direction:column;">
+
+        <!-- Nome e Responsável -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Nome do Setor</label>
+            <input type="text" class="form-input" id="setor-nome-input" placeholder="Ex: RH, Financeiro, TI...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Responsável</label>
+            <input type="text" class="form-input" id="setor-responsavel-input" placeholder="Nome do responsável">
+          </div>
+        </div>
+
+        <!-- Ramais -->
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+              </svg>
+              Ramais
+            </span>
+            <button type="button" class="setor-add-ramal-btn" onclick="addRamalRow()">+ Adicionar Ramal</button>
+          </label>
+          <div id="setor-ramais-container" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;">
+          </div>
+        </div>
+
+        <!-- Status ativo -->
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <label
+            style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8rem;font-family:var(--font-mono);">
+            <input type="checkbox" id="setor-ativo-input" checked
+              style="width:16px;height:16px;accent-color:var(--accent);">
+            Setor ativo
+          </label>
+        </div>
+
+        <!-- Botões -->
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;padding-top:0.25rem;">
+          <button class="btn-cancel" onclick="closeSetorForm()">Cancelar</button>
+          <button class="btn-save" onclick="saveSetor()">Salvar Setor</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CADASTRO DE USUÁRIO ══ -->
+  <div class="modal-overlay" id="config-user-form-modal" onclick="if(event.target===this)closeConfigUserForm()">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <div class="modal-title" id="config-form-title">Novo Usuário</div>
+        <button class="modal-close" onclick="closeConfigUserForm()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;gap:1rem;">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Nome de Usuário</label>
+            <input type="text" class="form-input" id="config-user-name-input" placeholder="Login do usuário">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Senha</label>
+            <input type="password" class="form-input" id="config-user-pass-input" placeholder="Nova senha"
+              autocomplete="new-password">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group" id="config-user-role-group">
+            <label class="form-label">Papel do Usuário</label>
+            <select class="form-input" id="config-user-role-input" onchange="toggleConfigAdminCheckbox()">
+              <option value="requester">Solicitante</option>
+              <option value="attendant">Atendente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                <path d="M10 6h4" />
+                <path d="M10 10h4" />
+                <path d="M10 14h4" />
+                <path d="M10 18h4" />
+              </svg> Setor</label>
+            <select class="form-input" id="config-user-setor-input">
+              <option value="">Selecione o Setor</option>
+              <option value="Engenharia">Engenharia</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="PCP">PCP</option>
+              <option value="Orçamento">Orçamento</option>
+              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+              <option value="Suprimentos">Suprimentos</option>
+              <option value="RH">RH</option>
+              <option value="TI">TI</option>
+              <option value="Contabilidade">Contabilidade</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <div id="config-user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+                background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="config-user-admin-input"
+              style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;"
+                for="config-user-admin-input">É Administrador?</label>
+              <span style="font-size:0.68rem;color:var(--muted);">Gerencia usuários e chamados</span>
+            </div>
+          </div>
+          <div id="config-user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+                background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="config-user-vip-input"
+              style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;"
+                for="config-user-vip-input">⭐ Usuário VIP</label>
+              <span style="font-size:0.68rem;color:var(--muted);">Card terá destaque especial</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;
+              font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
+          <span style="flex:1;height:1px;background:var(--border);"></span>
+          <span>Contato <span style="font-size:0.6rem;opacity:0.6;">(opcional)</span></span>
+          <span style="flex:1;height:1px;background:var(--border);"></span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg> E-mail</label>
+            <input type="email" class="form-input" id="config-user-email-input" placeholder="email@empresa.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <rect width="14" height="20" x="5" y="2" rx="2" />
+                <path d="M12 18h.01" />
+              </svg> WhatsApp</label>
+            <input type="text" class="form-input" id="config-user-whatsapp-input" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" style="flex-shrink:0">
+              <rect width="20" height="14" x="2" y="3" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg> AnyDesk</label>
+          <div style="display:flex;gap:1rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;">
+              <input type="radio" name="config-anydesk-opt" id="config-anydesk-no" value="no" checked
+                onchange="toggleConfigAnydeskInput()">
+              Não tenho AnyDesk
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;">
+              <input type="radio" name="config-anydesk-opt" id="config-anydesk-yes" value="yes"
+                onchange="toggleConfigAnydeskInput()">
+              Tenho AnyDesk
+            </label>
+          </div>
+          <input type="text" class="form-input" id="config-user-anydesk-input"
+            placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
+        </div>
+
+        <div style="display:flex;gap:0.75rem;padding-top:0.5rem;border-top:1px solid var(--border);">
+          <button class="btn-cancel" onclick="showUserList()">Cancelar</button>
+          <button class="btn-save" onclick="saveConfigUser()">Salvar Usuário</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestão T.I</title>
   <link rel="icon" href="img/premovale (1).png">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
 
   <!-- CSS Base -->
+  <script>
+    /* Anti-flash: aplica tema ANTES do primeiro pixel ser renderizado */
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
   <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/nav.css">
   <link rel="stylesheet" href="assets/css/auth.css">
   <link rel="stylesheet" href="assets/css/modals.css">
@@ -19,53 +35,91 @@
   <!-- Modal AFK -->
   <style>
     #afk-warning-overlay {
-      position: fixed; inset: 0; z-index: 99999;
-      background: rgba(0,0,0,0.55);
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(6px);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       animation: slideUpDetail 0.25s ease;
     }
+
     .afk-warning-box {
       background: var(--surface);
       border: 1px solid var(--border2);
       border-radius: 18px;
       padding: 2rem 2.5rem;
-      max-width: 380px; width: 90%;
-      display: flex; flex-direction: column;
-      align-items: center; gap: 1rem;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+      max-width: 380px;
+      width: 90%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
       text-align: center;
     }
-    .afk-warning-icon  { font-size: 2.5rem; }
-    .afk-warning-title { font-size: 1.1rem; font-weight: 800; color: var(--text); }
-    .afk-warning-text  { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+
+    .afk-warning-icon {
+      font-size: 2.5rem;
+    }
+
+    .afk-warning-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .afk-warning-text {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
     .afk-warning-countdown {
-      font-size: 2rem; font-weight: 800;
+      font-size: 2rem;
+      font-weight: 800;
       font-family: var(--font-mono);
       color: var(--accent);
     }
+
     .afk-warning-btn {
-      background: var(--accent); color: #fff;
-      border: none; border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
       padding: 0.7rem 1.8rem;
-      font-size: 0.85rem; font-weight: 700;
+      font-size: 0.85rem;
+      font-weight: 700;
       font-family: var(--font-display);
-      cursor: pointer; width: 100%;
+      cursor: pointer;
+      width: 100%;
     }
-    .afk-warning-btn:hover { opacity: 0.9; }
+
+    .afk-warning-btn:hover {
+      opacity: 0.9;
+    }
 
     @keyframes slideUpDetail {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
+
 <body>
 
   <!-- ══ NAVBAR ══ -->
   <nav>
-    <div class="nav-logo" onclick="window.location.href='menu.html'"
-      style="cursor:pointer;" title="Menu Principal">
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;" title="Menu Principal">
       <img src="img/premovale (1).png" width="30px" height="30px">
       <span class="nav-title">
         <span class="nav-title-ti">T.I</span>
@@ -92,9 +146,13 @@
     <div class="nav-right">
       <!-- Novidades -->
       <div style="position:relative;display:inline-block;">
-        <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()"
-          title="Notas de Atualização" style="gap:0.4rem;">
-          📋 Novidades
+        <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()" title="Notas de Atualização"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg> Novidades
         </button>
         <span id="changelog-badge" style="display:none;position:absolute;top:-6px;right:-6px;
           width:16px;height:16px;background:var(--accent);color:#fff;border-radius:50%;
@@ -102,27 +160,49 @@
           align-items:center;justify-content:center;border:2px solid var(--bg);">N</span>
       </div>
 
+
+      <!-- Ramais -->
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+
       <!-- Switch Tema -->
-      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()"
-        title="Alternar tema"
-        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
           background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
           padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
-        <span style="font-size:0.8rem;">☀️</span>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
         <div style="position:relative;width:28px;height:16px;background:var(--surface3);
           border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
-          <div id="theme-switch-thumb"
-            style="position:absolute;top:1px;left:1px;width:12px;height:12px;
+          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;
               background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
           </div>
         </div>
-        <span style="font-size:0.8rem;">🌙</span>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
       </div>
 
       <!-- Firebase — só superadmin -->
-      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..."
-        style="display:none;">
-        <span id="sync-icon-nav">🟡</span>Firebase
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
       </button>
     </div>
   </nav>
@@ -131,85 +211,156 @@
   <div class="menu-wrapper">
 
     <!-- SIDEBAR -->
-    <aside class="menu-sidebar">
-
-      <span class="sidebar-section-label">Módulos</span>
-
-      <!-- Chamados — funcional -->
-      <button class="sidebar-item active" onclick="goToChamados()">
-        <span class="sidebar-item-icon">🎫</span>
-        Chamados
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
       </button>
 
-      <!-- Materiais — em breve -->
-      <button class="sidebar-item" disabled>
-        <span class="sidebar-item-icon">📦</span>
-        Materiais
-        <span class="sidebar-soon">Em breve</span>
-      </button>
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
 
-      <!-- Inventário — em breve -->
-      <button class="sidebar-item" disabled>
-        <span class="sidebar-item-icon">🗃️</span>
-        Inventário
-        <span class="sidebar-soon">Em breve</span>
-      </button>
-
-      <!-- Configurações — em breve -->
-      <button class="sidebar-item" disabled>
-        <span class="sidebar-item-icon">⚙️</span>
-        Configurações
-        <span class="sidebar-soon">Em breve</span>
-      </button>
-
-      <div class="sidebar-divider"></div>
-
-      <!-- Rodapé com usuário e sair -->
-      <div class="sidebar-footer">
-        <div class="sidebar-user">
-          <div class="sidebar-user-avatar" id="sidebar-avatar">?</div>
-          <div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">
-            <span class="sidebar-user-name" id="sidebar-user-name">—</span>
-            <span class="sidebar-user-role" id="sidebar-user-role">—</span>
-          </div>
-        </div>
-        <button class="sidebar-logout" onclick="menuLogout()">
-          <span>🚪</span> Sair do sistema
+        <button id="sidebar-mod-chamados" class="chamados-sidebar-item active" onclick="goToChamados()">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" />
+              <path d="M13 17v2" />
+              <path d="M13 11v2" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Chamados</span>
         </button>
-      </div>
 
+        <span id="sidebar-mod-materiais" class="chamados-sidebar-item chamados-sidebar-disabled" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+              <path d="M12 22V12" />
+              <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+              <path d="m7.5 4.27 9 5.15" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Materiais</span>
+          <span class="chamados-sidebar-soon">Em breve</span>
+        </span>
+
+        <a class="chamados-sidebar-item" id="sidebar-mod-inventario" href="inventario.html" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+              <path d="m7 16.5-4.74-2.85" />
+              <path d="m7 16.5 5-3" />
+              <path d="M7 16.5v5.17" />
+              <path
+                d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+              <path d="m17 16.5-5-3" />
+              <path d="m17 16.5 4.74-2.85" />
+              <path d="M17 16.5v5.17" />
+              <path
+                d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+              <path d="M12 8 7.26 5.15" />
+              <path d="m12 8 4.74-2.85" />
+              <path d="M12 13.5V8" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Inventário</span>
+        </a>
+
+        <!-- Rodapé fixo no fundo -->
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" id="sidebar-config-btn" style="display:none;"
+            title="Configurações">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="sidebar-user-name">—</span>
+              <span class="chamados-sidebar-user-role" id="sidebar-user-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="menuLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
     </aside>
 
     <!-- ÁREA CENTRAL -->
     <main class="menu-content">
-      <div class="menu-greeting">
-        <div class="menu-greeting-title" id="menu-greeting-title">Olá! 👋</div>
-        <div class="menu-greeting-sub" id="menu-greeting-sub">// Carregando...</div>
+      <div class="menu-col-left">
+        <div class="menu-greeting">
+          <div class="menu-greeting-title" id="menu-greeting-title">Olá! 👋</div>
+          <div class="menu-greeting-sub" id="menu-greeting-sub">// Carregando...</div>
+        </div>
+
+        <!-- Comunicados -->
+        <div class="comunicados-wrapper">
+          <div class="comunicados-header">
+            <span class="comunicados-header-title" style="display:flex;align-items:center;gap:6px;"><svg width="14"
+                height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                <path d="m3 11 18-5v12L3 14v-3z" />
+                <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+              </svg> Comunicados</span>
+            <div class="comunicados-header-actions">
+              <button class="comunicados-history-btn" id="comunicados-history-btn" onclick="toggleComunicadosHistory()"
+                style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="flex-shrink:0">
+                  <path
+                    d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+                </svg> Ver Histórico</button>
+              <button class="comunicados-new-btn" onclick="openNovaComunicado()">
+                + Nova publicação
+              </button>
+            </div>
+          </div>
+          <div class="comunicados-feed" id="comunicados-feed">
+            <div class="comunicados-empty">
+              <span class="comunicados-empty-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+                  style="flex-shrink:0">
+                  <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+                  <path
+                    d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+                </svg></span>
+              <span>Carregando...</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Comunicados -->
-      <div class="comunicados-wrapper">
-        <div class="comunicados-header">
-          <span class="comunicados-header-title">📢 Comunicados</span>
-          <div class="comunicados-header-actions">
-            <button class="comunicados-history-btn" id="comunicados-history-btn"
-              onclick="toggleComunicadosHistory()">📁 Ver Histórico</button>
-            <button class="comunicados-new-btn" onclick="openNovaComunicado()">
-              + Nova publicação
-            </button>
+      <!-- Coluna direita — Alertas + espaço para widgets futuros -->
+      <div class="menu-col-right">
+        <!-- Alertas de Estoque -->
+        <div id="alertas-estoque-section" style="display:none;">
+          <div class="alertas-header">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <line x1="12" x2="12" y1="9" y2="13" />
+              <line x1="12" x2="12.01" y1="17" y2="17" />
+            </svg>
+            Alertas de Estoque
           </div>
+          <div id="alertas-estoque-list"></div>
         </div>
-        <div class="comunicados-feed" id="comunicados-feed">
-          <div class="comunicados-empty">
-            <span class="comunicados-empty-icon">📭</span>
-            <span>Carregando...</span>
-          </div>
-        </div>
-        <!-- Histórico arquivado -->
-        <div class="comunicados-history-section" id="comunicados-history-section">
-          <div class="comunicados-history-label">📁 Histórico arquivado</div>
-          <div id="comunicados-history"></div>
-        </div>
+        <!-- Espaço reservado para widgets futuros -->
       </div>
 
     </main>
@@ -225,16 +376,18 @@
     opacity:0;pointer-events:none;transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;">
     <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);
       display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
-      <span style="font-size:0.88rem;font-weight:700;">📋 Novidades</span>
+      <span style="font-size:0.88rem;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="8" height="4" x="8" y="2" rx="1" />
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+        </svg> Novidades</span>
       <div style="display:flex;align-items:center;gap:0.5rem;">
-        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades"
-          style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
+        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades" style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
             padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;
             background:var(--accent);color:#fff;border:none;transition:all 0.15s;">
           ✏️ Publicar
         </button>
-        <button onclick="toggleChangelog()"
-          style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
+        <button onclick="toggleChangelog()" style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
             background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.8rem;
             display:flex;align-items:center;justify-content:center;">✕</button>
       </div>
@@ -251,7 +404,11 @@
   <div class="modal-overlay" id="changelog-modal" onclick="if(event.target===this)closeChangelogManager()">
     <div class="modal-content" style="max-width:480px;">
       <div class="modal-header">
-        <div class="modal-title">📋 Publicar Novidades</div>
+        <div class="modal-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg> Publicar Novidades</div>
         <button class="modal-close" onclick="closeChangelogManager()">✕</button>
       </div>
       <div class="modal-body">
@@ -272,7 +429,11 @@
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeChangelogManager()">Cancelar</button>
-        <button class="btn-save" onclick="saveChangelog()">📋 Publicar</button>
+        <button class="btn-save" onclick="saveChangelog()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg> Publicar</button>
       </div>
     </div>
   </div>
@@ -281,43 +442,66 @@
   <div class="modal-overlay" id="comunicado-modal" onclick="if(event.target===this)closeComunicadoModal()">
     <div class="modal-content" style="max-width:500px;">
       <div class="modal-header">
-        <div class="modal-title">📢 Nova Publicação</div>
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;"><svg width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" style="flex-shrink:0">
+            <path d="m3 11 18-5v12L3 14v-3z" />
+            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+          </svg> Nova Publicação</div>
         <button class="modal-close" onclick="closeComunicadoModal()">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
           <label class="form-label">Título</label>
-          <input type="text" class="form-input" id="com-titulo-input"
-            placeholder="Título do comunicado">
+          <input type="text" class="form-input" id="com-titulo-input" placeholder="Título do comunicado">
         </div>
         <div class="form-group">
           <label class="form-label">Mensagem</label>
-          <textarea class="form-textarea" id="com-mensagem-input"
-            placeholder="Escreva o comunicado..."
+          <textarea class="form-textarea" id="com-mensagem-input" placeholder="Escreva o comunicado..."
             style="min-height:120px;"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Prioridade</label>
           <div class="comunicado-prio-select">
-            <button class="comunicado-prio-option selected normal" data-prio="normal"
-              onclick="selectPrio('normal')">🔵 Normal</button>
-            <button class="comunicado-prio-option" data-prio="importante"
-              onclick="selectPrio('importante')">🟡 Importante</button>
-            <button class="comunicado-prio-option" data-prio="urgente"
-              onclick="selectPrio('urgente')">🔴 Urgente</button>
+            <button class="comunicado-prio-option selected normal" data-prio="normal" onclick="selectPrio('normal')"
+              style="display:inline-flex;align-items:center;gap:5px;"><svg width="10" height="10" viewBox="0 0 24 24"
+                style="flex-shrink:0">
+                <circle cx="12" cy="12" r="10" fill="#3b82f6" />
+              </svg> Normal</button>
+            <button class="comunicado-prio-option" data-prio="importante" onclick="selectPrio('importante')"
+              style="display:inline-flex;align-items:center;gap:5px;"><svg width="10" height="10" viewBox="0 0 24 24"
+                style="flex-shrink:0">
+                <circle cx="12" cy="12" r="10" fill="#f59e0b" />
+              </svg> Importante</button>
+            <button class="comunicado-prio-option" data-prio="urgente" onclick="selectPrio('urgente')"
+              style="display:inline-flex;align-items:center;gap:5px;"><svg width="10" height="10" viewBox="0 0 24 24"
+                style="flex-shrink:0">
+                <circle cx="12" cy="12" r="10" fill="#ef4444" />
+              </svg> Urgente</button>
           </div>
         </div>
         <div class="form-group" style="flex-direction:row;align-items:center;gap:0.75rem;">
           <input type="checkbox" id="com-fixado-input"
             style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;">
           <label for="com-fixado-input" style="cursor:pointer;font-size:0.82rem;font-weight:600;">
-            📌 Fixar comunicado (fica sempre visível no topo)
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M12 17v5" />
+              <path
+                d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+            </svg> Fixar comunicado (fica sempre visível no topo)
           </label>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeComunicadoModal()">Cancelar</button>
-        <button class="btn-save" onclick="salvarComunicado()">📢 Publicar</button>
+        <button class="btn-save" onclick="salvarComunicado()"
+          style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="flex-shrink:0">
+            <path d="m3 11 18-5v12L3 14v-3z" />
+            <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+          </svg> Publicar</button>
       </div>
     </div>
   </div>
@@ -335,5 +519,27 @@
   <script src="assets/js/comunicados.js"></script>
   <script src="assets/js/init.js"></script>
 
+
+  <!-- ══ MODAL: HISTÓRICO DE COMUNICADOS ══ -->
+  <div class="modal-overlay" id="comunicados-history-modal" onclick="if(event.target===this)closeComunicadosHistory()">
+    <div class="modal-content" style="max-width:620px;">
+      <div class="modal-header">
+        <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2" />
+          </svg>
+          Histórico de Comunicados
+        </div>
+        <button class="modal-close" onclick="closeComunicadosHistory()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;max-height:70vh;overflow-y:auto;">
+        <div id="comunicados-history"></div>
+      </div>
+    </div>
+  </div>
+
 </body>
+
 </html>

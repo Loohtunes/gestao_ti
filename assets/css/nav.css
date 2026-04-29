@@ -17,7 +17,9 @@ nav {
   transition: box-shadow 0.25s;
 }
 
-.nav.scrolled { box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.nav.scrolled {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
 
 .nav-logo {
   display: flex !important;
@@ -25,7 +27,10 @@ nav {
   gap: 0.65rem !important;
 }
 
-.nav-logo img { width: 30px; height: 30px; }
+.nav-logo img {
+  width: 30px;
+  height: 30px;
+}
 
 .nav-title {
   display: inline-flex !important;
@@ -87,32 +92,143 @@ nav {
 }
 
 /* ── Tema escuro — navbar ── */
+html.dark-mode nav,
 body.dark-mode nav {
   background: rgba(15, 15, 20, 0.88);
-  box-shadow: 0 0.2px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0.2px 20px rgba(0, 0, 0, 0.5);
 }
-body.dark-mode .nav.scrolled { box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+
+html.dark-mode .nav.scrolled,
+body.dark-mode .nav.scrolled {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
 
 /* ── Switch de tema — bolinha deslizante ── */
-#theme-switch-track:hover { border-color: var(--accent); }
+#theme-switch-track:hover {
+  border-color: var(--accent);
+}
+
 body.dark-mode #theme-switch-track {
   background: var(--surface3);
   border-color: var(--border2);
 }
+
 body.dark-mode #theme-switch-thumb {
   transform: translateX(12px);
   background: #fde68a;
 }
+
 #theme-switch-track[data-dark="1"] #theme-switch-thumb {
   transform: translateX(12px);
   background: #fde68a;
 }
 
 /* ── Timer de sessão ── */
-#session-timer { flex: 0 0 auto; }
+#session-timer {
+  flex: 0 0 auto;
+}
 
 /* Cores por estado */
-#session-countdown.warn   { color: #f59e0b !important; }
-#session-countdown.danger { color: var(--accent) !important; }
-#session-bar-fill.warn    { background: #f59e0b !important; }
-#session-bar-fill.danger  { background: var(--accent) !important; }
+#session-countdown.warn {
+  color: #f59e0b !important;
+}
+
+#session-countdown.danger {
+  color: var(--accent) !important;
+}
+
+#session-bar-fill.warn {
+  background: #f59e0b !important;
+}
+
+#session-bar-fill.danger {
+  background: var(--accent) !important;
+}
+
+/* ── Dropdown Ramais ── */
+.ramais-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 9998;
+  overflow: hidden;
+  animation: slideUpDetail 0.18s ease;
+}
+
+.ramais-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--border2);
+  background: var(--surface2);
+}
+
+.ramais-search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.ramais-search-input::placeholder {
+  color: var(--muted);
+}
+
+.ramais-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 0.35rem 0;
+}
+
+.ramais-setor-label {
+  font-size: 0.65rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding: 0.5rem 0.85rem 0.2rem;
+}
+
+.ramais-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.8rem;
+  transition: background 0.12s;
+  gap: 0.5rem;
+}
+
+.ramais-item:hover {
+  background: var(--surface2);
+}
+
+.ramais-item-nome {
+  flex: 1;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ramais-item-num {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+body.dark-mode .ramais-dropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}

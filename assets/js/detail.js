@@ -10,11 +10,11 @@ function getSeenCount(ticketId) {
 }
 
 function countNotifiableEvents(ticket) {
-  const msgs     = ticket.messages?.length || 0;
+  const msgs = ticket.messages?.length || 0;
   const relevant = (ticket.history || []).filter(function (e) {
     const a = e.action.toLowerCase();
     return a.includes('assumido') || a.includes('concluido') || a.includes('devolvido') ||
-           a.includes('reaberto') || a.includes('arquivado') || a.includes('prioridade');
+      a.includes('reaberto') || a.includes('arquivado') || a.includes('prioridade');
   }).length;
   return msgs + relevant;
 }
@@ -29,7 +29,7 @@ function markTicketSeen(ticket) {
     const card = el.closest('[data-ticket-id]');
     if (!card) return;
     const tid = card.dataset.ticketId;
-    const t   = tickets.find(t => t.id === tid);
+    const t = tickets.find(t => t.id === tid);
     if (!t || getUnseenCount(t) === 0) el.remove();
   });
 }
@@ -117,7 +117,7 @@ function openTicketDetail(id) {
 
   // Material visto automaticamente
   if (ticket.ticketType === 'material' && ticket.status === 'available' &&
-      currentUser && currentUser.role !== 'requester') {
+    currentUser && currentUser.role !== 'requester') {
     ticket.status = 'mat-seen';
     logTicketEvent(ticket, 'Visualizado por ' + capitalizeName(currentUser.username));
     updateStats();
@@ -135,7 +135,7 @@ function openTicketDetail(id) {
   window._detailUnsubscribe = db.collection('tickets').doc(id).onSnapshot(docSnap => {
     if (!docSnap.exists) return;
     const fresh = docSnap.data();
-    const idx   = tickets.findIndex(t => t.id === id);
+    const idx = tickets.findIndex(t => t.id === id);
     if (idx !== -1) tickets[idx] = fresh;
     // Só atualiza mensagens se o modal ainda estiver aberto nesse ticket
     if (activeDetailId === id) {
@@ -158,12 +158,12 @@ function closeTicketDetail() {
 // ── Toggles do painel ──
 function toggleDetailInfo() {
   const panel = document.getElementById('detail-info-panel');
-  const btn   = document.getElementById('detail-info-toggle-btn');
-  const icon  = document.getElementById('detail-info-toggle-icon');
+  const btn = document.getElementById('detail-info-toggle-btn');
+  const icon = document.getElementById('detail-info-toggle-icon');
   if (!panel) return;
   const open = panel.classList.toggle('open');
-  if (btn)  btn.classList.toggle('active', open);
-  if (icon) icon.textContent = '📋';
+  if (btn) btn.classList.toggle('active', open);
+  if (icon) icon.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg>';
 }
 
 function toggleHistSnap(id) {
@@ -173,7 +173,7 @@ function toggleHistSnap(id) {
 
 function toggleHistoryPanel() {
   const panel = document.getElementById('hist-panel');
-  const btn   = document.getElementById('detail-hist-btn');
+  const btn = document.getElementById('detail-hist-btn');
   if (!panel) return;
   const open = panel.classList.toggle('open');
   if (btn) {
@@ -185,8 +185,8 @@ function toggleHistoryPanel() {
 // ── Renderização do conteúdo ──
 function renderDetailContent(ticket) {
   const status = ticket.status || 'available';
-  const prio   = ticket.priority || 'medium';
-  const num    = ticket.number ? `#${String(ticket.number).padStart(4, '0')}` : '';
+  const prio = ticket.priority || 'medium';
+  const num = ticket.number ? `#${String(ticket.number).padStart(4, '0')}` : '';
   const reqName = capitalizeName(ticket.requester || '—');
   const attName = ticket.attendant ? capitalizeName(ticket.attendant) : null;
 
@@ -200,19 +200,19 @@ function renderDetailContent(ticket) {
           <div class="detail-badges">
             <span class="ticket-status-badge ${status}">${STATUS_LABEL[status]}</span>
             <span class="ticket-priority-badge prio-${prio}">${PRIORITY_LABEL[prio]}</span>
-            ${ticket.setor ? `<span class="detail-setor-badge">🏢 ${ticket.setor}</span>` : ''}
-            <span class="detail-people-pill">📝 ${reqName}</span>
-            ${attName ? `<span class="detail-people-pill attendant">👤 ${attName}</span>` : ''}
+            ${ticket.setor ? `<span class="detail-setor-badge" style="display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg> ${ticket.setor}</span>` : ''}
+            <span class="detail-people-pill" style="display:inline-flex;align-items:center;gap:4px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${reqName}</span>
+            ${attName ? `<span class="detail-people-pill attendant" style="display:inline-flex;align-items:center;gap:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg> ${attName}</span>` : ''}
             <button class="detail-info-toggle-btn" id="detail-info-toggle-btn"
               onclick="toggleDetailInfo()" title="Ver detalhes do chamado">
-              <span id="detail-info-toggle-icon">📋</span> Detalhes
+              <span id="detail-info-toggle-icon" style="display:inline-flex;align-items:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg></span> Detalhes
             </button>
           </div>
         </div>
       </div>
       <div class="detail-header-btns">
         <button class="detail-hist-btn" id="detail-hist-btn"
-          onclick="toggleHistoryPanel()" title="Ver Histórico de Atualizações">🕵️</button>
+          onclick="toggleHistoryPanel()" title="Ver Histórico de Atualizações" style="display:inline-flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l3 3"/><path d="M22 2 12 12"/></svg></button>
         <button class="detail-close-btn" onclick="closeTicketDetail()">✕</button>
       </div>
     </div>
@@ -221,22 +221,22 @@ function renderDetailContent(ticket) {
       <div class="detail-info-panel-inner">
         ${ticket.description ? `
           <div class="dip-section">
-            <div class="dip-label">📝 Descrição</div>
+            <div class="dip-label" style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M15 12H3"/><path d="M17 18H3"/><path d="M21 6H3"/></svg> Descrição</div>
             <div class="dip-text">${ticket.description}</div>
           </div>` : ''}
         <div class="dip-section">
-          <div class="dip-label">📅 Cronograma</div>
+          <div class="dip-label" style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Cronograma</div>
           <div class="dip-dates">
-            ${ticket.date        ? `<div class="dip-date-row"><span class="ddi">📅</span><span>Aberto em</span><strong>${ticket.date}</strong></div>` : ''}
-            ${ticket.startedAt   ? `<div class="dip-date-row started"><span class="ddi">▶️</span><span>Iniciado em</span><strong>${ticket.startedAt}</strong></div>` : ''}
-            ${ticket.completedAt ? `<div class="dip-date-row done"><span class="ddi">✅</span><span>Concluído em</span><strong>${ticket.completedAt}</strong></div>` : ''}
+            ${ticket.date ? `<div class="dip-date-row"><span class="ddi"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></span><span>Aberto em</span><strong>${ticket.date}</strong></div>` : ''}
+            ${ticket.startedAt ? `<div class="dip-date-row started"><span class="ddi"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span><span>Iniciado em</span><strong>${ticket.startedAt}</strong></div>` : ''}
+            ${ticket.completedAt ? `<div class="dip-date-row done"><span class="ddi"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span>Concluído em</span><strong>${ticket.completedAt}</strong></div>` : ''}
           </div>
         </div>
         ${ticket.attachments?.length ? `
           <div class="dip-section">
-            <div class="dip-label">📎 Anexos (${ticket.attachments.length})</div>
+            <div class="dip-label" style="display:flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Anexos (${ticket.attachments.length})</div>
             <div class="dip-attachments">
-              ${ticket.attachments.map(f => `<span class="dip-attach-chip" onclick="openAttachment('${ticket.id}','${f.id}')" style="cursor:pointer;" title="Clique para visualizar">📄 ${f.name}</span>`).join('')}
+              ${ticket.attachments.map(f => `<span class="dip-attach-chip" onclick="openAttachment('${ticket.id}','${f.id}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;" title="Clique para visualizar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg> ${f.name}</span>`).join('')}
             </div>
           </div>` : ''}
       </div>
@@ -282,10 +282,10 @@ function renderDetailContent(ticket) {
       banner.id = 'mention-banner';
       banner.className = 'mention-banner';
       banner.innerHTML = `
-        <span class="mention-banner-text">💬 Você foi mencionado neste chamado</span>
+        <span class="mention-banner-text" style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg> Você foi mencionado neste chamado</span>
         <div class="mention-banner-btns">
           <button class="mention-banner-see" onclick="scrollToMention('${ticket.id}')">↓ Ver</button>
-          <button class="mention-banner-ack" onclick="ackMention('${ticket.id}')">✅ Ciente</button>
+          <button class="mention-banner-ack" onclick="ackMention('${ticket.id}')"> Ciente</button>
         </div>`;
       chatFull.insertBefore(banner, chatFull.firstChild);
     }
@@ -298,15 +298,15 @@ function renderMessagesHTML(ticket) {
     return `<div class="detail-chat-empty">Nenhuma mensagem ainda.<br>Seja o primeiro a escrever!</div>`;
   }
   return msgs.map(m => {
-    const isMine   = m.username === currentUser?.username;
+    const isMine = m.username === currentUser?.username;
     const isSystem = m.type === 'system';
     if (isSystem) {
       return `<div class="chat-msg system"><span>${m.html || escapeHtml(m.text || '')}</span><span class="chat-time">${m.timestamp}</span></div>`;
     }
     const roleLabel = (m.role === 'superadmin' || m.role === 'attendant') ? 'Atendente' : 'Solicitante';
-    const content   = m.html || escapeHtml(m.text || '');  // já formatado com <span class="mention-tag">
+    const content = m.html || escapeHtml(m.text || '');  // já formatado com <span class="mention-tag">
     const canManage = currentUser && (m.username === currentUser.username || currentUser.isSuperAdmin);
-    const ticketId  = activeDetailId;
+    const ticketId = activeDetailId;
     return `
       <div class="trello-comment${isMine ? ' mine' : ''}" id="comment-${m.id}">
         <div class="tc-avatar ${m.role}">${(m.username || '?')[0].toUpperCase()}</div>
@@ -338,11 +338,11 @@ function setupMentionListener() {
   const editor = document.getElementById('detail-chat-editor');
   if (!editor) return;
 
-  editor.addEventListener('input', function() {
-    const sel   = window.getSelection();
+  editor.addEventListener('input', function () {
+    const sel = window.getSelection();
     if (!sel.rangeCount) return;
     const range = sel.getRangeAt(0);
-    const text  = range.startContainer.textContent || '';
+    const text = range.startContainer.textContent || '';
     const caret = range.startOffset;
 
     // Encontrar @ antes do cursor
@@ -372,12 +372,12 @@ function setupMentionListener() {
       const item = document.createElement('div');
       item.className = 'mention-dropdown-item';
       item.innerHTML = `<span class="mention-dd-user">@${u.username}</span><span class="mention-dd-setor">${u.setor || ''}</span>`;
-      item.onmousedown = function(e) {
+      item.onmousedown = function (e) {
         e.preventDefault();
         // Substituir @query pelo @nome formatado
         const newRange = sel.getRangeAt(0);
         const node = newRange.startContainer;
-        const txt  = node.textContent;
+        const txt = node.textContent;
         const caretPos = newRange.startOffset;
         const start = txt.lastIndexOf('@', caretPos - 1);
         node.textContent = txt.slice(0, start) + '@' + u.username + ' ' + txt.slice(caretPos);
@@ -399,7 +399,7 @@ function setupMentionListener() {
     document.body.appendChild(dropdown);
   });
 
-  editor.addEventListener('keydown', function(e) {
+  editor.addEventListener('keydown', function (e) {
     const dd = document.getElementById('mention-dropdown');
     if (!dd) return;
     if (e.key === 'Escape') { removeMentionDropdown(); e.preventDefault(); }
@@ -434,7 +434,7 @@ function setupMentionListener() {
 function sendChatMessage() {
   const editor = document.getElementById('detail-chat-editor');
   if (!editor) return;
-  const html     = editor.innerHTML.trim();
+  const html = editor.innerHTML.trim();
   const stripped = html.replace(/<br\s*\/?>/gi, '').replace(/<[^>]+>/g, '').trim();
   if (!stripped || !activeDetailId || !currentUser) return;
 
@@ -526,11 +526,11 @@ function editComment(ticketId, msgId) {
 
   const actionsEl = contentEl.closest('.tc-body').querySelector('.tc-comment-actions');
   if (actionsEl) {
-    const saveBtn   = document.createElement('button');
+    const saveBtn = document.createElement('button');
     const cancelBtn = document.createElement('button');
-    saveBtn.className   = 'tc-action-btn save';   saveBtn.title   = 'Salvar (Ctrl+Enter)'; saveBtn.textContent   = '✓';
-    cancelBtn.className = 'tc-action-btn cancel'; cancelBtn.title = 'Cancelar';             cancelBtn.textContent = '✕';
-    saveBtn.onclick   = () => saveCommentEdit(ticketId, msgId);
+    saveBtn.className = 'tc-action-btn save'; saveBtn.title = 'Salvar (Ctrl+Enter)'; saveBtn.textContent = '✓';
+    cancelBtn.className = 'tc-action-btn cancel'; cancelBtn.title = 'Cancelar'; cancelBtn.textContent = '✕';
+    saveBtn.onclick = () => saveCommentEdit(ticketId, msgId);
     cancelBtn.onclick = () => cancelCommentEdit(msgId);
     actionsEl.innerHTML = '';
     actionsEl.appendChild(saveBtn);
@@ -549,13 +549,13 @@ function saveCommentEdit(ticketId, msgId) {
   if (idx === -1) return;
   const contentEl = document.getElementById('tc-content-' + msgId);
   if (!contentEl) return;
-  const newHtml  = contentEl.innerHTML.trim();
+  const newHtml = contentEl.innerHTML.trim();
   const stripped = newHtml.replace(/<br\s*\/?>/gi, '').replace(/<[^>]+>/g, '').trim();
   if (!stripped) { alert('O comentário não pode ficar vazio.'); return; }
   const msgIdx = tickets[idx].messages.findIndex(m => m.id === msgId);
   if (msgIdx !== -1) {
     const prevHtml = tickets[idx].messages[msgIdx].html || '';
-    tickets[idx].messages[msgIdx].html   = newHtml;
+    tickets[idx].messages[msgIdx].html = newHtml;
     tickets[idx].messages[msgIdx].edited = true;
     logTicketEvent(tickets[idx], `Comentário editado por ${capitalizeName(currentUser?.username)}`, prevHtml);
   }

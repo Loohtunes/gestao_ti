@@ -12,6 +12,18 @@
     rel="stylesheet">
 
   <!-- ═══ CSS — Ordem de carregamento ═══ -->
+  <script>
+    /* Anti-flash: aplica tema ANTES do primeiro pixel ser renderizado */
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/nav.css">
   <link rel="stylesheet" href="assets/css/auth.css">
@@ -26,18 +38,7 @@
   <link rel="stylesheet" href="assets/css/responsive.css">
 
   <!-- ═══ Firebase SDK ═══ -->
-  <script>
-    // Ocultar tela de login imediatamente se já há sessão salva
-    // Evita o "flash" da tela de login ao voltar do menu
-    if (localStorage.getItem('chamados-current-user-id')) {
-      document.addEventListener('DOMContentLoaded', function () {
-        const loginScreen = document.getElementById('login-screen');
-        const ticketsMain = document.getElementById('tickets-main');
-        if (loginScreen) loginScreen.style.display = 'none';
-        if (ticketsMain) ticketsMain.style.display = 'block';
-      });
-    }
-  </script>
+
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -148,7 +149,11 @@
       <div style="position:relative;display:inline-block;">
         <button class="sync-fab-small" id="changelog-btn" onclick="toggleChangelog()" title="Notas de Atualização"
           style="gap:0.4rem;">
-          📋 Novidades
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg> Novidades
         </button>
         <span id="changelog-badge" style="display:none;position:absolute;top:-6px;right:-6px;
           width:16px;height:16px;background:var(--accent);color:#fff;border-radius:50%;
@@ -156,342 +161,304 @@
           align-items:center;justify-content:center;border:2px solid var(--bg);">N</span>
       </div>
 
+
+      <!-- Ramais -->
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+
       <!-- Switch Tema Claro/Escuro -->
       <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
           background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
           padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
-        <span style="font-size:0.8rem;">☀️</span>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
         <div style="position:relative;width:28px;height:16px;background:var(--surface3);
           border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
           <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;
               background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
           </div>
         </div>
-        <span style="font-size:0.8rem;">🌙</span>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
       </div>
 
       <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão...">
-        <span id="sync-icon-nav">🟡</span>Firebase
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
       </button>
     </div>
   </nav>
 
-  <div class="tickets-container">
+  <div class="chamados-layout">
 
-    <!-- ══ TELA DE LOGIN ══ -->
-    <div class="login-screen" id="login-screen">
-      <div class="login-box">
-        <div class="login-icon"><img src="img/premovale (1).png" width="100px" height="100px"></div>
-        <h2 class="login-title">Sistema de Chamados</h2>
-        <p class="login-subtitle">Faça login para acessar os chamados</p>
-        <div id="login-msg" style="display:none;margin-top:0.75rem;padding:0.6rem 1rem;
-          border-radius:8px;font-size:0.78rem;font-family:'Space Mono',monospace;
-          font-weight:600;text-align:center;animation:slideUpDetail 0.3s ease;">
-        </div>
-        <div class="login-form">
-          <div class="login-input-group">
-            <label class="login-label">👤 Nome de Usuário</label>
-            <input type="text" class="login-input" id="attendant-name" placeholder="Digite seu nome"
-              onkeydown="if(event.key==='Enter')document.getElementById('attendant-pass').focus()">
+    <!-- Sidebar retrátil -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleChamadosSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <a class="chamados-sidebar-item active" href="index.html" title="Chamados">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" />
+              <path d="M13 17v2" />
+              <path d="M13 11v2" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Chamados</span>
+        </a>
+        <span class="chamados-sidebar-item chamados-sidebar-disabled" id="cs-mod-materiais" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+              <path d="M12 22V12" />
+              <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+              <path d="m7.5 4.27 9 5.15" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Materiais</span>
+          <span class="chamados-sidebar-soon">Em breve</span>
+        </span>
+        <a class="chamados-sidebar-item" id="cs-mod-inventario" href="inventario.html" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+              <path d="m7 16.5-4.74-2.85" />
+              <path d="m7 16.5 5-3" />
+              <path d="M7 16.5v5.17" />
+              <path
+                d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+              <path d="m17 16.5-5-3" />
+              <path d="m17 16.5 4.74-2.85" />
+              <path d="M17 16.5v5.17" />
+              <path
+                d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+              <path d="M12 8 7.26 5.15" />
+              <path d="m12 8 4.74-2.85" />
+              <path d="M12 13.5V8" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Inventário</span>
+        </a>
+
+        <div class="chamados-sidebar-divider"></div>
+
+        <a class="chamados-sidebar-item" href="menu.html" title="Menu Principal">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+              <path
+                d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Menu Principal</span>
+        </a>
+
+        <!-- Rodapé fixo no fundo -->
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" id="cs-mod-config" style="display:none;"
+            title="Configurações">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user" id="cs-user-card">
+            <div class="chamados-sidebar-avatar" id="cs-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="cs-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="cs-sidebar-role">—</span>
+            </div>
           </div>
-          <div class="login-input-group">
-            <label class="login-label">🔑 Senha</label>
-            <input type="password" class="login-input" id="attendant-pass" placeholder="Digite sua senha"
-              onkeydown="if(event.key==='Enter')performLogin()">
-          </div>
-          <button class="login-btn" onclick="performLogin()">Entrar</button>
-          <div class="login-actions">
-            <button class="login-btn secondary" id="first-user-btn" style="display:none;"
-              onclick="openUserForm(true)">Criar Administrador Geral</button>
-          </div>
+          <button class="chamados-sidebar-logout" onclick="performLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
         </div>
       </div>
-    </div>
+    </aside>
 
-    <!-- ══ PAINEL PRINCIPAL ══ -->
-    <div class="tickets-main" id="tickets-main" style="display:none;">
-      <div class="page-header">
-        <div class="header-left">
-          <p class="page-eyebrow">// Painel de Atendimento</p>
-          <h2 class="page-title">Visão geral de <em><u>Tickets</u></em></h2>
-        </div>
-        <div class="attendant-info">
-          <button id="admin-shield-btn" class="admin-btn" style="display:none;" onclick="openUserManagerModal()">⚙️
-            Configurações</button>
-          <span class="attendant-badge">👤 <span id="current-attendant">Usuário</span></span>
-          <button class="logout-btn" onclick="performLogout()">Sair</button>
-        </div>
-      </div>
+    <div class="tickets-container">
 
-      <div class="tickets-stats">
-        <div class="stat-card">
-          <div class="stat-number" id="stat-available">0</div>
-          <div class="stat-label">Abertos</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-in-progress">0</div>
-          <div class="stat-label">Em Atendimento</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" id="stat-completed">0</div>
-          <div class="stat-label">Concluídos</div>
-        </div>
-      </div>
+      <!-- ══ TELA DE LOGIN ══ -->
+      <!-- ══ PAINEL PRINCIPAL ══ -->
+      <div class="tickets-main" id="tickets-main">
+        <div class="page-header">
+          <div class="header-left">
+            <p class="page-eyebrow">// Painel de Atendimento</p>
+            <h2 class="page-title">Visão geral de <em><u>Tickets</u></em></h2>
+          </div>
+          <div class="attendant-info">
+            <span class="attendant-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                style="flex-shrink:0">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg> <span id="current-attendant">Usuário</span></span>
+            <span class="attendant-badge" id="current-setor-badge" style="display:none;gap:6px;"><svg width="12"
+                height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                <path d="M10 6h4" />
+                <path d="M10 10h4" />
+                <path d="M10 14h4" />
+                <path d="M10 18h4" />
+              </svg> <span id="current-setor">—</span></span>
 
-      <div class="tickets-header">
-        <div class="tickets-filter-bar">
+          </div>
+        </div>
 
-          <!-- Dropdown de filtro principal — atendentes/admins -->
-          <div id="filter-dropdown-wrapper" style="display:none;position:relative;">
-            <button id="filter-dropdown-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
+        <div class="tickets-stats">
+          <div class="stat-card">
+            <div class="stat-number" id="stat-available">0</div>
+            <div class="stat-label">Abertos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-in-progress">0</div>
+            <div class="stat-label">Em Atendimento</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number" id="stat-completed">0</div>
+            <div class="stat-label">Concluídos</div>
+          </div>
+        </div>
+
+        <div class="tickets-header">
+          <div class="tickets-filter-bar">
+
+            <!-- Dropdown de filtro principal — atendentes/admins -->
+            <div id="filter-dropdown-wrapper" style="display:none;position:relative;">
+              <button id="filter-dropdown-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
                 background:var(--surface);border:1px solid var(--border2);border-radius:10px;
                 color:var(--text);padding:0.5rem 1rem;font-size:0.82rem;font-family:var(--font-display);
                 cursor:pointer;transition:all 0.2s;white-space:nowrap;font-weight:600;">
-              <span id="filter-dropdown-label">📋 Todos</span>
-              <span style="font-size:0.6rem;opacity:0.5;">▼</span>
-            </button>
-            <div id="filter-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
+                <span id="filter-dropdown-label"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="8" x2="21" y1="6" y2="6" />
+                    <line x1="8" x2="21" y1="12" y2="12" />
+                    <line x1="8" x2="21" y1="18" y2="18" />
+                    <line x1="3" x2="3.01" y1="6" y2="6" />
+                    <line x1="3" x2="3.01" y1="12" y2="12" />
+                    <line x1="3" x2="3.01" y1="18" y2="18" />
+                  </svg> Todos</span>
+                <span style="font-size:0.6rem;opacity:0.5;">▼</span>
+              </button>
+              <div id="filter-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
               background:var(--surface);border:1px solid var(--border2);border-radius:12px;
               box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:300;overflow:hidden;">
-              <button class="filter-dd-item active" data-filter="all" onclick="selectFilter('all','📋 Todos')">📋
-                Todos</button>
-              <button class="filter-dd-item" data-filter="available" onclick="selectFilter('available','📂 Abertos')">📂
-                Abertos</button>
-              <button class="filter-dd-item" data-filter="material" id="filter-dd-material"
-                onclick="selectFilter('material','📦 Materiais')">📦 Materiais</button>
-              <button class="filter-dd-item" data-filter="in-progress"
-                onclick="selectFilter('in-progress','⚙️ Em Atendimento')">⚙️ Em Atendimento</button>
-              <button class="filter-dd-item" data-filter="completed"
-                onclick="selectFilter('completed','✅ Concluídos')">✅ Concluídos</button>
-              <button class="filter-dd-item" data-filter="test" id="filter-dd-test" style="display:none;"
-                onclick="selectFilter('test','🧪 Testes')">🧪 Testes</button>
+                <button class="filter-dd-item active" data-filter="all" data-label="Todos"
+                  onclick="selectFilterBtn(this)" style="display:flex;align-items:center;gap:6px;"><svg width="14"
+                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                    <path d="M3 12h.01" />
+                    <path d="M3 18h.01" />
+                    <path d="M3 6h.01" />
+                    <path d="M8 12h13" />
+                    <path d="M8 18h13" />
+                    <path d="M8 6h13" />
+                  </svg> Todos</button>
+                <button class="filter-dd-item" data-filter="available" data-label="Abertos"
+                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                  </svg> Abertos</button>
+                <button class="filter-dd-item" data-filter="material" id="filter-dd-material" data-label="Materiais"
+                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                      d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                    <path d="M12 22V12" />
+                    <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                    <path d="m7.5 4.27 9 5.15" />
+                  </svg> Materiais</button>
+                <button class="filter-dd-item" data-filter="in-progress" data-label="Em Atendimento"
+                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="10" cy="8" r="4" />
+                    <path d="M10.67 16H6a4 4 0 0 0-4 4" />
+                    <circle cx="19" cy="19" r="3" />
+                    <path
+                      d="M22 19h-1M19 16v-1M17 19h-1M19 22v1M20.66 16.54l-.7.7M16.54 21.46l-.7.7M21.46 21.46l.7.7M17.54 17.54l-.7.7" />
+                  </svg> Em Atendimento</button>
+                <button class="filter-dd-item" data-filter="completed" data-label="Concluídos"
+                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m3 17 2 2 4-4m-6-6 2 2 4-4M13 6h8M13 12h8M13 18h8" />
+                  </svg> Concluídos</button>
+              </div>
             </div>
-          </div>
 
-          <!-- Filtros solicitante — dropdown próprio -->
-          <div id="filter-requester-wrapper" style="display:none;position:relative;">
-            <button id="filter-requester-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
+            <!-- Filtros solicitante — dropdown próprio -->
+            <div id="filter-requester-wrapper" style="display:none;position:relative;">
+              <button id="filter-requester-btn" onclick="toggleFilterDropdown()" style="display:flex;align-items:center;gap:0.5rem;
                 background:var(--surface);border:1px solid var(--border2);border-radius:10px;
                 color:var(--text);padding:0.5rem 1rem;font-size:0.82rem;font-family:var(--font-display);
                 cursor:pointer;transition:all 0.2s;white-space:nowrap;font-weight:600;">
-              <span id="filter-requester-label">👤 Meus Chamados</span>
-              <span style="font-size:0.6rem;opacity:0.5;">▼</span>
-            </button>
-            <div id="filter-requester-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
+                <span id="filter-requester-label" style="display:flex;align-items:center;gap:6px;"><svg width="14"
+                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg> Meus Chamados</span>
+                <span style="font-size:0.6rem;opacity:0.5;">▼</span>
+              </button>
+              <div id="filter-requester-menu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;
               background:var(--surface);border:1px solid var(--border2);border-radius:12px;
               box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:180px;z-index:300;overflow:hidden;">
-              <button class="filter-dd-item active" data-filter="my-requests"
-                onclick="selectFilter('my-requests','👤 Meus Chamados')">👤 Meus Chamados</button>
-              <button class="filter-dd-item" data-filter="completed"
-                onclick="selectFilter('completed','✅ Concluídos')">✅ Concluídos</button>
-            </div>
-          </div>
-
-          <!-- Filtro por Setor — só atendentes/admins -->
-          <div id="setor-filter-wrapper" style="display:none;">
-            <select id="setor-filter-select" class="arc-filter-select"
-              onchange="currentSetorFilter=this.value;renderTickets()">
-              <option value="">🏢 Todos os Setores</option>
-              <option value="Engenharia">Engenharia</option>
-              <option value="Comercial">Comercial</option>
-              <option value="Financeiro">Financeiro</option>
-              <option value="PCP">PCP</option>
-              <option value="Orçamento">Orçamento</option>
-              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-              <option value="Suprimentos">Suprimentos</option>
-              <option value="RH">RH</option>
-              <option value="TI">TI</option>
-              <option value="Contabilidade">Contabilidade</option>
-            </select>
-          </div>
-
-        </div>
-
-        <div class="tickets-header-right">
-          <button id="view-toggle-btn" onclick="toggleViewMode()" title="Alternar visualização" style="display:none;width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
-              background:var(--surface);color:var(--muted);cursor:pointer;font-size:1rem;
-              align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">☰</button>
-          <div class="search-widget" id="search-widget">
-            <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()"
-              title="Pesquisar chamados">🔍</button>
-            <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
-              oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
-          </div>
-          <button class="new-ticket-btn" id="new-ticket-btn" onclick="openTicketModal()">+ Novo Chamado</button>
-
-          <!-- Dropdown de Ações — visível apenas para atendentes/admins -->
-          <div id="actions-dropdown-wrapper" style="position:relative;display:none;">
-            <button id="actions-dropdown-btn" onclick="toggleActionsDropdown()" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;
-                color:var(--muted);padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
-                cursor:pointer;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:0.4rem;">
-              ⚙️ Ações <span style="font-size:0.6rem;opacity:0.6;">▼</span>
-            </button>
-            <div id="actions-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;
-              background:var(--surface);border:1px solid var(--border2);border-radius:12px;
-              box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:200;overflow:hidden;
-              color:var(--text);">
-              <button id="merge-mode-btn" onclick="toggleMergeMode()" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
-                  font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:var(--text);
-                  display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
-                onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'"
-                onmouseout="this.style.background='none';this.style.color='var(--text)'">
-                🔗 Mesclar Chamados
-              </button>
-              <div id="test-actions-group" style="display:none;">
-                <div style="height:1px;background:var(--border2);margin:0 0.75rem;"></div>
-                <button id="new-test-btn" onclick="closeActionsDropdown();openTicketModal(null, true)" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
-                    font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:#a855f7;
-                    display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
-                  onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
-                  🧪 Chamado de Teste
-                </button>
-                <button id="clear-test-btn" onclick="closeActionsDropdown();clearTestTickets()" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
-                    font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:#ef4444;
-                    display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
-                  onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
-                  🗑️ Limpar Testes
-                </button>
+                <button class="filter-dd-item active" data-filter="my-requests" data-label="Meus Chamados"
+                  onclick="selectFilterBtn(this)" style="display:flex;align-items:center;gap:6px;"><svg width="14"
+                    height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg> Meus Chamados</button>
+                <button class="filter-dd-item" data-filter="completed" data-label="Concluídos"
+                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m3 17 2 2 4-4m-6-6 2 2 4-4M13 6h8M13 12h8M13 18h8" />
+                  </svg> Concluídos</button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Banner de mesclagem -->
-      <div id="merge-banner" style="display:none;align-items:center;justify-content:space-between;
-        background:var(--accent);color:#fff;border-radius:10px;padding:0.75rem 1.2rem;
-        margin-bottom:1rem;gap:1rem;flex-wrap:wrap;">
-        <div style="font-size:0.85rem;font-weight:700;font-family:var(--font-display);">
-          🔗 Modo de Mesclagem — <span id="merge-count">0</span> chamado(s) selecionado(s)
-        </div>
-        <div style="font-size:0.78rem;opacity:0.85;">Clique nos cards para selecionar (mínimo 2)</div>
-        <button id="merge-confirm-btn" onclick="openMergeConfirmModal()" disabled style="background:#fff;color:var(--accent);border:none;border-radius:8px;
-            padding:0.5rem 1.2rem;font-size:0.82rem;font-weight:700;
-            font-family:var(--font-display);cursor:pointer;transition:all 0.2s;
-            opacity:0.5;">
-          Mesclar Selecionados
-        </button>
-      </div>
-
-      <!-- Barra de filtros concluídos — fora do board para não ser re-renderizada -->
-      <div id="arc-filter-bar" style="display:none;">
-        <div class="arc-filter-bar">
-          <select id="arc-filter-setor" class="arc-filter-select" onchange="_arcSetor=this.value;renderTickets()"
-            title="Filtrar por Setor">
-            <option value="">🏢 Todos os Setores</option>
-            <option value="Engenharia">Engenharia</option>
-            <option value="Comercial">Comercial</option>
-            <option value="Financeiro">Financeiro</option>
-            <option value="PCP">PCP</option>
-            <option value="Orçamento">Orçamento</option>
-            <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-            <option value="Suprimentos">Suprimentos</option>
-            <option value="RH">RH</option>
-            <option value="TI">TI</option>
-            <option value="Contabilidade">Contabilidade</option>
-          </select>
-          <select id="arc-filter-prio" class="arc-filter-select" onchange="_arcPrio=this.value;renderTickets()"
-            title="Filtrar por Prioridade">
-            <option value="">⚡ Todas as Prioridades</option>
-            <option value="urgent">🚨 Urgente</option>
-            <option value="high">🔴 Alta</option>
-            <option value="medium">🟡 Média</option>
-            <option value="low">🟢 Baixa</option>
-          </select>
-          <div class="arc-filter-dates">
-            <label class="arc-filter-label">De</label>
-            <input type="date" id="arc-filter-from" class="arc-filter-date" onclick="event.stopPropagation()"
-              onchange="event.stopPropagation();_arcFrom=this.value;renderTickets()">
-            <label class="arc-filter-label">Até</label>
-            <input type="date" id="arc-filter-to" class="arc-filter-date" onclick="event.stopPropagation()"
-              onchange="event.stopPropagation();_arcTo=this.value;renderTickets()">
-          </div>
-          <button class="arc-filter-clear" id="arc-filter-clear-btn" onclick="clearArcFilters()" style="display:none;">✕
-            Limpar</button>
-          <span class="arc-filter-count" id="arc-filter-count"></span>
-        </div>
-      </div>
-
-      <div class="tickets-board" id="tickets-board"></div>
-      <div class="empty-state" id="empty-state" style="display:none;">
-        <div class="empty-state-icon">📋</div>
-        <div class="empty-state-text">Nenhum chamado encontrado</div>
-        <div class="empty-state-hint">Clique em "+ Novo Chamado" para começar</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL: DETALHE DO TICKET ══ -->
-  <div class="modal-overlay detail-overlay" id="detail-modal" onclick="if(event.target===this)closeTicketDetail()">
-    <div class="detail-modal-wrapper">
-      <div class="detail-modal-content">
-        <div id="detail-modal-body"></div>
-      </div>
-      <div class="hist-panel" id="hist-panel">
-        <div class="hist-panel-header">
-          <span class="hist-panel-title">⏳ Histórico</span>
-          <button class="hist-panel-close" onclick="toggleHistoryPanel()">✕</button>
-        </div>
-        <div class="hist-panel-body">
-          <div class="hist-list" id="hist-panel-body-content"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL: USUÁRIOS ══ -->
-  <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeUserModal()">
-    <div class="modal-content" style="max-width:580px;">
-      <div class="modal-header">
-        <div class="modal-title" id="user-modal-title">Gerenciamento de Usuários</div>
-        <button class="modal-close" onclick="closeUserModal()">✕</button>
-      </div>
-      <div class="modal-body" style="gap:0;padding:1.25rem;">
-        <div id="user-list-container" style="display:none;">
-          <h3
-            style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">
-            Usuários Cadastrados</h3>
-          <div id="users-list"
-            style="max-height:250px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);">
-          </div>
-          <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo
-            Usuário</button>
-        </div>
-        <div id="user-form-container" style="display:flex;flex-direction:column;gap:0.8rem;width:100%;">
-
-          <!-- Linha 1: Nome + Senha -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Nome
-                de Usuário</label>
-              <input type="text" class="form-input" id="user-name-input" placeholder="Login do usuário">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Senha</label>
-              <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha"
-                autocomplete="new-password">
-            </div>
-          </div>
-
-          <!-- Linha 2: Papel + Setor -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-            <div style="display:flex;flex-direction:column;gap:6px;" id="user-role-group">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Papel
-                do Usuário</label>
-              <select class="form-input" id="user-role-input" onchange="toggleAdminCheckbox()">
-                <option value="requester">Solicitante</option>
-                <option value="attendant">Atendente</option>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🏢
-                Setor</label>
-              <select class="form-input" id="user-setor-input">
-                <option value="">Selecione o Setor</option>
+            <!-- Filtro por Setor — só atendentes/admins -->
+            <div id="setor-filter-wrapper" style="display:none;">
+              <select id="setor-filter-select" class="arc-filter-select"
+                onchange="currentSetorFilter=this.value;renderTickets()">
+                <option value="">Todos os Setores</option>
                 <option value="Engenharia">Engenharia</option>
                 <option value="Comercial">Comercial</option>
                 <option value="Financeiro">Financeiro</option>
@@ -504,318 +471,641 @@
                 <option value="Contabilidade">Contabilidade</option>
               </select>
             </div>
+
           </div>
 
-          <!-- Admin + VIP lado a lado — wrapper só para layout, sem estilo visual -->
-          <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
-            <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
-              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-              <input type="checkbox" id="user-admin-input"
-                style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
-              <div style="display:flex;flex-direction:column;gap:3px;">
-                <label
-                  style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
-                  for="user-admin-input">É Administrador?</label>
-                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Gerencia usuários e
-                  chamados</span>
+          <div class="tickets-header-right">
+            <button id="view-toggle-btn" onclick="toggleViewMode()" title="Alternar visualização" style="display:none;width:36px;height:36px;border:1px solid var(--border2);border-radius:10px;
+              background:var(--surface);color:var(--muted);cursor:pointer;font-size:1rem;
+              align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;">☰</button>
+            <div class="search-widget" id="search-widget">
+              <button class="search-toggle-btn" id="search-toggle-btn" onclick="toggleSearch()"
+                title="Pesquisar chamados"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg></button>
+              <input type="text" id="ticket-search" class="search-expand-input" placeholder="Título ou #número..."
+                oninput="renderTickets()" onblur="collapseSearchIfEmpty()">
+            </div>
+            <button class="new-ticket-btn" id="new-ticket-btn" onclick="openTicketModal()">+ Novo Chamado</button>
+
+            <!-- Dropdown de Ações — visível apenas para atendentes/admins -->
+            <div id="actions-dropdown-wrapper" style="position:relative;display:none;">
+              <button id="actions-dropdown-btn" onclick="toggleActionsDropdown()" style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+                color:var(--muted);padding:0.6rem 1rem;font-size:0.82rem;font-family:var(--font-display);
+                cursor:pointer;transition:all 0.2s;white-space:nowrap;display:flex;align-items:center;gap:0.4rem;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="19" cy="12" r="1" />
+                  <circle cx="5" cy="12" r="1" />
+                </svg> Ações <span style="font-size:0.6rem;opacity:0.6;">▼</span>
+              </button>
+              <div id="actions-dropdown-menu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;
+              background:var(--surface);border:1px solid var(--border2);border-radius:12px;
+              box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:200;overflow:hidden;
+              color:var(--text);">
+                <button id="merge-mode-btn" onclick="toggleMergeMode()" style="width:100%;text-align:left;padding:0.7rem 1rem;border:none;background:none;
+                  font-size:0.82rem;font-family:var(--font-display);cursor:pointer;color:var(--text);
+                  display:flex;align-items:center;gap:0.6rem;transition:background 0.15s;"
+                  onmouseover="this.style.background='var(--surface2)';this.style.color='var(--text)'"
+                  onmouseout="this.style.background='none';this.style.color='var(--text)'">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg> Mesclar Chamados
+                </button>
+                <div id="test-actions-group" style="display:none;">
+                  <div style="height:1px;background:var(--border2);margin:0 0.75rem;"></div>
+                </div>
               </div>
             </div>
-            <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
-              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
-              <input type="checkbox" id="user-vip-input"
-                style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
-              <div style="display:flex;flex-direction:column;gap:3px;">
-                <label
-                  style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
-                  for="user-vip-input">⭐ Usuário VIP</label>
-                <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Card terá destaque
-                  especial</span>
-              </div>
+          </div>
+        </div>
+
+        <!-- Banner de mesclagem -->
+        <div id="merge-banner" style="display:none;align-items:center;justify-content:space-between;
+        background:var(--accent);color:#fff;border-radius:10px;padding:0.75rem 1.2rem;
+        margin-bottom:1rem;gap:1rem;flex-wrap:wrap;">
+          <div style="font-size:0.85rem;font-weight:700;font-family:var(--font-display);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg> Modo de Mesclagem — <span id="merge-count">0</span> chamado(s) selecionado(s)
+          </div>
+          <div style="font-size:0.78rem;opacity:0.85;">Clique nos cards para selecionar (mínimo 2)</div>
+          <button id="merge-confirm-btn" onclick="openMergeConfirmModal()" disabled style="background:#fff;color:var(--accent);border:none;border-radius:8px;
+            padding:0.5rem 1.2rem;font-size:0.82rem;font-weight:700;
+            font-family:var(--font-display);cursor:pointer;transition:all 0.2s;
+            opacity:0.5;">
+            Mesclar Selecionados
+          </button>
+        </div>
+
+        <!-- Barra de filtros concluídos — fora do board para não ser re-renderizada -->
+        <div id="arc-filter-bar" style="display:none;">
+          <div class="arc-filter-bar">
+            <select id="arc-filter-setor" class="arc-filter-select" onchange="_arcSetor=this.value;renderTickets()"
+              title="Filtrar por Setor">
+              <option value="">Todos os Setores</option>
+              <option value="Engenharia">Engenharia</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="PCP">PCP</option>
+              <option value="Orçamento">Orçamento</option>
+              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+              <option value="Suprimentos">Suprimentos</option>
+              <option value="RH">RH</option>
+              <option value="TI">TI</option>
+              <option value="Contabilidade">Contabilidade</option>
+            </select>
+            <select id="arc-filter-prio" class="arc-filter-select" onchange="_arcPrio=this.value;renderTickets()"
+              title="Filtrar por Prioridade">
+              <option value="">Todas as Prioridades</option>
+              <option value="urgent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff0000"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" x2="12" y1="9" y2="13" />
+                  <line x1="12" x2="12.01" y1="17" y2="17" />
+                </svg> Urgente</option>
+              <option value="high"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff7b00"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Alta</option>
+              <option value="medium"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Média</option>
+              <option value="low"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#36fa00"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Baixa</option>
+            </select>
+            <div class="arc-filter-dates">
+              <label class="arc-filter-label">De</label>
+              <input type="date" id="arc-filter-from" class="arc-filter-date" onclick="event.stopPropagation()"
+                onchange="event.stopPropagation();_arcFrom=this.value;renderTickets()">
+              <label class="arc-filter-label">Até</label>
+              <input type="date" id="arc-filter-to" class="arc-filter-date" onclick="event.stopPropagation()"
+                onchange="event.stopPropagation();_arcTo=this.value;renderTickets()">
             </div>
+            <button class="arc-filter-clear" id="arc-filter-clear-btn" onclick="clearArcFilters()"
+              style="display:none;">✕ Limpar</button>
+            <span class="arc-filter-count" id="arc-filter-count"></span>
           </div>
+        </div>
 
-          <!-- Divisor -->
-          <div
-            style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
-            <span style="flex:1;height:1px;background:#e0e0e8;"></span>
-            <span>Informações de Contato <span
-                style="font-size:0.6rem;text-transform:none;letter-spacing:0;opacity:0.7;">(opcional)</span></span>
-            <span style="flex:1;height:1px;background:#e0e0e8;"></span>
-          </div>
-
-          <!-- Linha: E-mail + WhatsApp -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">✉️
-                E-mail</label>
-              <input type="email" class="form-input" id="user-email-input" placeholder="email@empresa.com">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;">
-              <label
-                style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">📱
-                WhatsApp</label>
-              <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
-            </div>
-          </div>
-
-          <!-- AnyDesk -->
-          <div style="display:flex;flex-direction:column;gap:6px;">
-            <label
-              style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">🖥️
-              AnyDesk</label>
-            <div class="anydesk-toggle">
-              <label class="anydesk-option">
-                <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked
-                  onchange="toggleAnydeskInput()">
-                <span>Não tenho AnyDesk</span>
-              </label>
-              <label class="anydesk-option">
-                <input type="radio" name="anydesk-opt" id="anydesk-yes" value="yes" onchange="toggleAnydeskInput()">
-                <span>Tenho AnyDesk</span>
-              </label>
-            </div>
-            <input type="text" class="form-input" id="user-anydesk-input" placeholder="ID do AnyDesk (ex: 123 456 789)"
-              style="display:none;margin-top:0.4rem;">
-          </div>
-
-          <!-- Botões — dentro do formulário, somem na lista -->
-          <div class="modal-footer" style="padding:1rem 0 0;border-top:1px solid var(--border);margin-top:0.5rem;">
-            <button class="btn-cancel" onclick="cancelUserForm()">Cancelar</button>
-            <button class="btn-save" onclick="saveUser()">Salvar Usuário</button>
-          </div>
-
+        <div class="tickets-board" id="tickets-board"></div>
+        <div class="empty-state" id="empty-state" style="display:none;">
+          <div class="empty-state-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="flex-shrink:0;vertical-align:middle">
+              <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+              <path
+                d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+            </svg></div>
+          <div class="empty-state-text">Nenhum chamado encontrado</div>
+          <div class="empty-state-hint">Clique em "+ Novo Chamado" para começar</div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- ══ MODAL: NOVO CHAMADO ══ -->
-  <div class="modal-overlay" id="ticket-modal" onclick="if(event.target===this)closeTicketModal()">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title" id="modal-title">Novo Chamado</div>
-        <button class="modal-close" onclick="closeTicketModal()">✕</button>
+    <!-- ══ MODAL: DETALHE DO TICKET ══ -->
+    <div class="modal-overlay detail-overlay" id="detail-modal" onclick="if(event.target===this)closeTicketDetail()">
+      <div class="detail-modal-wrapper">
+        <div class="detail-modal-content">
+          <div id="detail-modal-body"></div>
+        </div>
+        <div class="hist-panel" id="hist-panel">
+          <div class="hist-panel-header">
+            <span class="hist-panel-title" style="display:inline-flex;align-items:center;gap:6px;"><svg width="14"
+                height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg> Histórico</span>
+            <button class="hist-panel-close" onclick="toggleHistoryPanel()">✕</button>
+          </div>
+          <div class="hist-panel-body">
+            <div class="hist-list" id="hist-panel-body-content"></div>
+          </div>
+        </div>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="ticket-type-input" value="error">
-        <div class="ticket-type-selector">
-          <button type="button" class="ticket-type-btn active" id="type-btn-error"
-            onclick="setTicketType('error');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
-            ❌ Erro / Problema
-          </button>
-          <button type="button" class="ticket-type-btn" id="type-btn-material"
-            onclick="setTicketType('material');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
-            📦 Solicitação de Material
-          </button>
-          <button type="button" class="ticket-type-btn" id="type-btn-test"
-            style="display:none;border-color:#a855f7;color:#a855f7;"
-            onclick="setTicketType('test');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
-            🧪 Teste
-          </button>
+    </div>
+
+    <!-- ══ MODAL: USUÁRIOS ══ -->
+    <div class="modal-overlay" id="user-modal" onclick="if(event.target===this)closeUserModal()">
+      <div class="modal-content" style="max-width:580px;">
+        <div class="modal-header">
+          <div class="modal-title" id="user-modal-title">Gerenciamento de Usuários</div>
+          <button class="modal-close" onclick="closeUserModal()">✕</button>
         </div>
-        <div class="form-group" id="ticket-onbehalf-group" style="display:none;">
-          <label class="form-label">👤 Abrir em nome de</label>
-          <select class="form-input" id="ticket-onbehalf-input">
-            <option value="">Abrir como eu mesmo</option>
-          </select>
-          <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
-            🔑 Apenas administradores podem abrir chamados em nome de outros usuários
+        <div class="modal-body" style="gap:0;padding:1.25rem;">
+          <div id="user-list-container">
+            <h3
+              style="color:var(--muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;font-size:0.7rem;margin-bottom:10px;">
+              Usuários Cadastrados</h3>
+            <div id="users-list"
+              style="max-height:300px;overflow-y:auto;background:var(--surface2);padding:8px;border-radius:8px;border:1px solid var(--border2);">
+            </div>
+            <button class="new-user-btn" style="margin-top:12px;width:100%;" onclick="showUserForm()">+ Criar Novo
+              Usuário</button>
           </div>
         </div>
-        <div class="form-group" id="ticket-title-group">
-          <label class="form-label">Título</label>
-          <input type="text" class="form-input" id="ticket-title-input" placeholder="Ex: Problema no sistema de login">
+      </div>
+    </div>
+
+
+    <!-- ══ MODAL: CADASTRO DE USUÁRIO ══ -->
+    <div class="modal-overlay" id="user-form-modal" onclick="if(event.target===this)closeUserFormCard()">
+      <div class="modal-content" style="max-width:580px;">
+        <div class="modal-header">
+          <div class="modal-title" id="user-form-modal-title">Novo Usuário</div>
+          <button class="modal-close" onclick="closeUserFormCard()">✕</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">🏢 Setor</label>
-          <select class="form-input" id="ticket-setor-input">
-            <option value="">Selecione o Setor</option>
-            <option value="Engenharia">Engenharia</option>
-            <option value="Comercial">Comercial</option>
-            <option value="Financeiro">Financeiro</option>
-            <option value="PCP">PCP</option>
-            <option value="Orçamento">Orçamento</option>
-            <option value="Segurança do Trabalho">Segurança do Trabalho</option>
-            <option value="Suprimentos">Suprimentos</option>
-            <option value="RH">RH</option>
-            <option value="TI">TI</option>
-            <option value="Contabilidade">Contabilidade</option>
-          </select>
-          <div id="setor-locked-hint"
-            style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
-            🔒 Setor vinculado ao seu cadastro
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" id="ticket-desc-label">Descrição</label>
-          <textarea class="form-textarea" id="ticket-description-input"
-            placeholder="Descreva o chamado em detalhes..."></textarea>
-        </div>
-        <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label class="form-label">📦 Quantidade</label>
-              <div class="material-qty-row">
-                <input type="number" class="form-input" id="ticket-material-qty" placeholder="Ex: 10" min="1" step="1"
-                  style="flex:1;min-width:0;" oninput="updateMaterialUnit(this.value)">
-                <span class="material-unit-badge" id="material-unit-badge">un.</span>
+        <div class="modal-body" style="gap:0;padding:1.25rem;">
+          <div id="user-form-container" style="display:flex;flex-direction:column;gap:0.8rem;width:100%;">
+
+            <!-- Linha 1: Nome + Senha -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label
+                  style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Nome
+                  de Usuário</label>
+                <input type="text" class="form-input" id="user-name-input" placeholder="Login do usuário">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label
+                  style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Senha</label>
+                <input type="password" class="form-input" id="user-pass-input" placeholder="Nova senha"
+                  autocomplete="new-password">
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">📐 Unidade de Medida</label>
-              <select class="form-input" id="ticket-material-unit"
-                onchange="document.getElementById('material-unit-badge').textContent=this.options[this.selectedIndex].text.split(' ')[0]">
-                <option value="un">un. — Unidade</option>
-                <option value="cx">cx. — Caixa</option>
-                <option value="kg">kg — Quilograma</option>
-                <option value="g">g — Grama</option>
-                <option value="l">L — Litro</option>
-                <option value="ml">ml — Mililitro</option>
-                <option value="m">m — Metro</option>
-                <option value="cm">cm — Centímetro</option>
-                <option value="m2">m² — Metro quadrado</option>
-                <option value="pct">pct. — Pacote</option>
-                <option value="rolo">rolo — Rolo</option>
-                <option value="par">par — Par</option>
-              </select>
+
+            <!-- Linha 2: Papel + Setor -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div style="display:flex;flex-direction:column;gap:6px;" id="user-role-group">
+                <label
+                  style="display:block;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;">Papel
+                  do Usuário</label>
+                <select class="form-input" id="user-role-input" onchange="toggleAdminCheckbox()">
+                  <option value="requester">Solicitante</option>
+                  <option value="attendant">Atendente</option>
+                </select>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label
+                  style="display:flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;"><svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                    <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                    <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                    <path d="M10 6h4" />
+                    <path d="M10 10h4" />
+                    <path d="M10 14h4" />
+                    <path d="M10 18h4" />
+                  </svg>Setor</label>
+                <select class="form-input" id="user-setor-input">
+                  <option value="">Selecione o Setor</option>
+                  <option value="Engenharia">Engenharia</option>
+                  <option value="Comercial">Comercial</option>
+                  <option value="Financeiro">Financeiro</option>
+                  <option value="PCP">PCP</option>
+                  <option value="Orçamento">Orçamento</option>
+                  <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+                  <option value="Suprimentos">Suprimentos</option>
+                  <option value="RH">RH</option>
+                  <option value="TI">TI</option>
+                  <option value="Contabilidade">Contabilidade</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Admin + VIP lado a lado — wrapper só para layout, sem estilo visual -->
+            <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+              <div id="user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+                <input type="checkbox" id="user-admin-input"
+                  style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <label
+                    style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
+                    for="user-admin-input">É Administrador?</label>
+                  <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Gerencia usuários e
+                    chamados</span>
+                </div>
+              </div>
+              <div id="user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+              background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+                <input type="checkbox" id="user-vip-input"
+                  style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
+                <div style="display:flex;flex-direction:column;gap:3px;">
+                  <label
+                    style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;line-height:1;"
+                    for="user-vip-input">⭐ Usuário VIP</label>
+                  <span style="font-size:0.68rem;color:var(--muted);line-height:1.4;margin:0;">Card terá destaque
+                    especial</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Divisor -->
+            <div
+              style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
+              <span style="flex:1;height:1px;background:#e0e0e8;"></span>
+              <span>Informações de Contato <span
+                  style="font-size:0.6rem;text-transform:none;letter-spacing:0;opacity:0.7;">(opcional)</span></span>
+              <span style="flex:1;height:1px;background:#e0e0e8;"></span>
+            </div>
+
+            <!-- Linha: E-mail + WhatsApp -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label
+                  style="display:flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;"><svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <rect width="20" height="16" x="2" y="4" rx="2" />
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                  </svg>E-mail</label>
+                <input type="email" class="form-input" id="user-email-input" placeholder="email@empresa.com">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <label
+                  style="display:flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;"><svg
+                    width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                    <rect width="14" height="20" x="5" y="2" rx="2" />
+                    <path d="M12 18h.01" />
+                  </svg>WhatsApp</label>
+                <input type="text" class="form-input" id="user-whatsapp-input" placeholder="(00) 00000-0000">
+              </div>
+            </div>
+
+            <!-- AnyDesk -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <label
+                style="display:flex;align-items:center;gap:4px;font-size:0.7rem;font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;margin:0;"><svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                  <rect width="20" height="14" x="2" y="3" rx="2" />
+                  <path d="M8 21h8" />
+                  <path d="M12 17v4" />
+                </svg>AnyDesk</label>
+              <div class="anydesk-toggle">
+                <label class="anydesk-option">
+                  <input type="radio" name="anydesk-opt" id="anydesk-no" value="no" checked
+                    onchange="toggleAnydeskInput()">
+                  <span>Não tenho AnyDesk</span>
+                </label>
+                <label class="anydesk-option">
+                  <input type="radio" name="anydesk-opt" id="anydesk-yes" value="yes" onchange="toggleAnydeskInput()">
+                  <span>Tenho AnyDesk</span>
+                </label>
+              </div>
+              <input type="text" class="form-input" id="user-anydesk-input"
+                placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
+            </div>
+
+            <!-- Botões — dentro do formulário, somem na lista -->
+            <div class="modal-footer" style="padding:1rem 0 0;border-top:1px solid var(--border);margin-top:0.5rem;">
+              <button class="btn-cancel" onclick="cancelUserForm()">Cancelar</button>
+              <button class="btn-save" onclick="saveUser()">Salvar Usuário</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MODAL: NOVO CHAMADO ══ -->
+    <div class="modal-overlay" id="ticket-modal" onclick="if(event.target===this)closeTicketModal()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title" id="modal-title">Novo Chamado</div>
+          <button class="modal-close" onclick="closeTicketModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="ticket-type-input" value="error">
+          <div class="ticket-type-selector">
+            <button type="button" class="ticket-type-btn active" id="type-btn-error"
+              onclick="setTicketType('error');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+              </svg> Erro / Problema
+            </button>
+            <button type="button" class="ticket-type-btn" id="type-btn-material"
+              onclick="setTicketType('material');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                <path
+                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                <path d="M12 22V12" />
+                <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                <path d="m7.5 4.27 9 5.15" />
+              </svg> Solicitação de Material
+            </button>
+          </div>
+          <div class="form-group" id="ticket-onbehalf-group" style="display:none;">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg> Abrir em nome de</label>
+            <select class="form-input" id="ticket-onbehalf-input">
+              <option value="">Abrir como eu mesmo</option>
+            </select>
+            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z" />
+                <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
+              </svg> Apenas administradores podem abrir chamados em nome de outros usuários
+            </div>
+          </div>
+          <div class="form-group" id="ticket-title-group">
+            <label class="form-label">Título</label>
+            <input type="text" class="form-input" id="ticket-title-input"
+              placeholder="Ex: Problema no sistema de login">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                <path d="M10 6h4" />
+                <path d="M10 10h4" />
+                <path d="M10 14h4" />
+                <path d="M10 18h4" />
+              </svg> Setor</label>
+            <select class="form-input" id="ticket-setor-input">
+              <option value="">Selecione o Setor</option>
+              <option value="Engenharia">Engenharia</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="PCP">PCP</option>
+              <option value="Orçamento">Orçamento</option>
+              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+              <option value="Suprimentos">Suprimentos</option>
+              <option value="RH">RH</option>
+              <option value="TI">TI</option>
+              <option value="Contabilidade">Contabilidade</option>
+            </select>
+            <div id="setor-locked-hint"
+              style="display:none;font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">
+              <span style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg> Setor vinculado ao seu cadastro</span>
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">📅 Data de Necessidade</label>
-            <input type="date" class="form-input" id="ticket-material-date" min="">
-            <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
-              material é necessário?</div>
+            <label class="form-label" id="ticket-desc-label">Descrição</label>
+            <textarea class="form-textarea" id="ticket-description-input"
+              placeholder="Descreva o chamado em detalhes..."></textarea>
+          </div>
+          <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="flex-shrink:0;vertical-align:middle">
+                    <path
+                      d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                    <path d="M12 22V12" />
+                    <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                    <path d="m7.5 4.27 9 5.15" />
+                  </svg> Quantidade</label>
+                <div class="material-qty-row">
+                  <input type="number" class="form-input" id="ticket-material-qty" placeholder="Ex: 10" min="1" step="1"
+                    style="flex:1;min-width:0;" oninput="updateMaterialUnit(this.value)">
+                  <span class="material-unit-badge" id="material-unit-badge">un.</span>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="flex-shrink:0;vertical-align:middle">
+                    <path
+                      d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" />
+                    <path d="m14.5 12.5 2-2" />
+                    <path d="m11.5 9.5 2-2" />
+                    <path d="m8.5 6.5 2-2" />
+                    <path d="m17.5 15.5 2-2" />
+                  </svg> Unidade de Medida</label>
+                <select class="form-input" id="ticket-material-unit"
+                  onchange="document.getElementById('material-unit-badge').textContent=this.options[this.selectedIndex].text.split(' ')[0]">
+                  <option value="un">un. — Unidade</option>
+                  <option value="cx">cx. — Caixa</option>
+                  <option value="kg">kg — Quilograma</option>
+                  <option value="g">g — Grama</option>
+                  <option value="l">L — Litro</option>
+                  <option value="ml">ml — Mililitro</option>
+                  <option value="m">m — Metro</option>
+                  <option value="cm">cm — Centímetro</option>
+                  <option value="m2">m² — Metro quadrado</option>
+                  <option value="pct">pct. — Pacote</option>
+                  <option value="rolo">rolo — Rolo</option>
+                  <option value="par">par — Par</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  style="flex-shrink:0;vertical-align:middle">
+                  <path d="M8 2v4" />
+                  <path d="M16 2v4" />
+                  <rect width="18" height="18" x="3" y="4" rx="2" />
+                  <path d="M3 10h18" />
+                </svg> Data de Necessidade</label>
+              <input type="date" class="form-input" id="ticket-material-date" min="">
+              <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
+                material é necessário?</div>
+            </div>
+          </div>
+          <div class="form-group" id="ticket-priority-group">
+            <label class="form-label">Prioridade</label>
+            <select class="form-input" id="ticket-priority-input">
+              <option value="low"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#36fa00"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Baixa</option>
+              <option value="medium" selected><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                  stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Média</option>
+              <option value="high"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff7b00"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" x2="12" y1="8" y2="12" />
+                  <line x1="12" x2="12.01" y1="16" y2="16" />
+                </svg> Alta</option>
+              <option value="urgent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ff0000"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" x2="12" y1="9" y2="13" />
+                  <line x1="12" x2="12.01" y1="17" y2="17" />
+                </svg> Urgente</option>
+            </select>
+          </div>
+          <div class="form-group" id="ticket-attach-group">
+            <label class="form-label">Anexos</label>
+            <label class="file-upload-btn">
+              <input type="file" id="ticket-files-input" multiple onchange="handleTicketFiles(this)">
+              <div style="display:inline-flex;align-items:center;gap:5px;"><svg width="14" height="14"
+                  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                  <path
+                    d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg> Clique para anexar arquivos</div>
+            </label>
+            <div class="file-list" id="ticket-files-list"></div>
           </div>
         </div>
-        <div class="form-group" id="ticket-priority-group">
-          <label class="form-label">Prioridade</label>
-          <select class="form-input" id="ticket-priority-input">
-            <option value="low">🟢 Baixa</option>
-            <option value="medium" selected>🟡 Média</option>
-            <option value="high">🔴 Alta</option>
-            <option value="urgent">🚨 Urgente</option>
-          </select>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeTicketModal()">Cancelar</button>
+          <button class="btn-save" onclick="saveTicket()">Salvar Chamado</button>
         </div>
-        <div class="form-group" id="ticket-attach-group">
-          <label class="form-label">Anexos</label>
-          <label class="file-upload-btn">
-            <input type="file" id="ticket-files-input" multiple onchange="handleTicketFiles(this)">
-            <div>📎 Clique para anexar arquivos</div>
-          </label>
-          <div class="file-list" id="ticket-files-list"></div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeTicketModal()">Cancelar</button>
-        <button class="btn-save" onclick="saveTicket()">Salvar Chamado</button>
       </div>
     </div>
-  </div>
 
-  <!-- ══ MODAL: SYNC DROPBOX ══ -->
-  <div class="modal-overlay" id="sync-modal" onclick="if(event.target===this)closeSyncModal()">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">☁️ Sincronização Dropbox</div>
-        <button class="modal-close" onclick="closeSyncModal()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="sync-info-box">
-          <strong>Como configurar:</strong><br>
-          1. Acesse <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox App Console</a><br>
-          2. Crie um novo app (Scoped Access, App folder)<br>
-          3. Em "Permissions", ative: <code>files.content.write</code> e <code>files.content.read</code><br>
-          4. Em "Settings", gere um Access Token<br>
-          5. Cole o token abaixo
-        </div>
-        <div class="sync-status" id="sync-status">
-          <div class="sync-status-icon">⚪</div>
-          <div class="sync-status-text">
-            <div style="font-weight:600;">Status: Não Configurado</div>
-            <div style="font-size:0.75rem;color:var(--muted);">Configure o token para habilitar</div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Dropbox Access Token</label>
-          <input type="password" class="form-input" id="dropbox-token-input" placeholder="Cole seu token aqui..."
-            autocomplete="off">
-        </div>
-        <div class="sync-actions">
-          <button class="sync-btn secondary" onclick="testConnection()">🔍 Testar Conexão</button>
-          <button class="sync-btn" onclick="saveToken()">💾 Salvar Token</button>
-        </div>
-        <div class="sync-actions">
-          <button class="sync-btn" onclick="syncToCloud()" id="sync-upload-btn" disabled>⬆️ Enviar para Nuvem</button>
-          <button class="sync-btn secondary" onclick="syncFromCloud()" id="sync-download-btn" disabled>⬇️ Baixar da
-            Nuvem</button>
-        </div>
-        <div class="sync-actions">
-          <button class="sync-btn danger" onclick="disconnectDropbox()">🔌 Desconectar</button>
-        </div>
-        <div class="sync-last-sync" id="sync-last-sync"></div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ══ PAINEL: NOVIDADES ══ -->
-  <div id="changelog-panel" style="display:none;position:fixed;top:56px;right:1rem;
+
+    <!-- ══ PAINEL: NOVIDADES ══ -->
+    <div id="changelog-panel" style="display:none;position:fixed;top:56px;right:1rem;
     width:320px;max-height:70vh;background:var(--surface);border:1px solid var(--border2);
     border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,0.15);z-index:300;
     flex-direction:column;overflow:hidden;
     transform:scaleY(0.8) scaleX(0.95);transform-origin:top right;
     opacity:0;pointer-events:none;transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;">
-    <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);
+      <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);
       display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
-      <span style="font-size:0.88rem;font-weight:700;">📋 Novidades</span>
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades" style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
+        <span style="font-size:0.88rem;font-weight:700;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" />
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          </svg> Novidades</span>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <button id="changelog-manage-btn" onclick="openChangelogManager()" title="Publicar Novidades" style="display:none;font-size:0.72rem;font-family:var(--font-mono);font-weight:700;
             padding:0.3rem 0.65rem;border-radius:6px;cursor:pointer;
             background:var(--accent);color:#fff;border:none;transition:all 0.15s;">
-          ✏️ Publicar
-        </button>
-        <button onclick="toggleChangelog()" style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
+            ✏️ Publicar
+          </button>
+          <button onclick="toggleChangelog()" style="width:28px;height:28px;border:1px solid var(--border2);border-radius:6px;
             background:var(--surface3);color:var(--muted);cursor:pointer;font-size:0.8rem;
             display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
       </div>
-    </div>
-    <div id="changelog-list" style="overflow-y:auto;padding:1rem 1.2rem;flex:1;
+      <div id="changelog-list" style="overflow-y:auto;padding:1rem 1.2rem;flex:1;
       font-family:'Space Mono',monospace;">
-      <div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:2rem;">
-        Carregando...
+        <div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:2rem;">
+          Carregando...
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- ══ MODAL: PUBLICAR NOVIDADES (super admin) ══ -->
-  <div class="modal-overlay" id="changelog-modal" onclick="if(event.target===this)closeChangelogManager()">
-    <div class="modal-content" style="max-width:480px;">
-      <div class="modal-header">
-        <div class="modal-title">📋 Publicar Novidades</div>
-        <button class="modal-close" onclick="closeChangelogManager()">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Versão</label>
-          <input type="text" class="form-input" id="cl-version-input" placeholder="Ex: v1.4.0">
+    <!-- ══ MODAL: PUBLICAR NOVIDADES (super admin) ══ -->
+    <div class="modal-overlay" id="changelog-modal" onclick="if(event.target===this)closeChangelogManager()">
+      <div class="modal-content" style="max-width:480px;">
+        <div class="modal-header">
+          <div class="modal-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="4" x="8" y="2" rx="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            </svg> Publicar Novidades</div>
+          <button class="modal-close" onclick="closeChangelogManager()">✕</button>
         </div>
-        <div class="form-group">
-          <label class="form-label">Data</label>
-          <input type="date" class="form-input" id="cl-date-input">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Versão</label>
+            <input type="text" class="form-input" id="cl-version-input" placeholder="Ex: v1.4.0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input type="date" class="form-input" id="cl-date-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Notas (uma por linha)</label>
+            <textarea class="form-textarea" id="cl-notes-input"
+              placeholder="Nova funcionalidade X&#10;Correção do bug Y&#10;Melhoria no Z"
+              style="min-height:140px;"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Notas (uma por linha)</label>
-          <textarea class="form-textarea" id="cl-notes-input"
-            placeholder="Nova funcionalidade X&#10;Correção do bug Y&#10;Melhoria no Z"
-            style="min-height:140px;"></textarea>
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeChangelogManager()">Cancelar</button>
+          <button class="btn-save" onclick="saveChangelog()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="4" x="8" y="2" rx="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            </svg> Publicar</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" onclick="closeChangelogManager()">Cancelar</button>
-        <button class="btn-save" onclick="saveChangelog()">📋 Publicar</button>
       </div>
     </div>
-  </div>
+
+  </div><!-- /chamados-layout -->
 
   <!-- ═══ JS — Ordem de carregamento ═══ -->
   <script>
