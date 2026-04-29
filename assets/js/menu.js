@@ -200,6 +200,12 @@ async function loadAlertasEstoque() {
   const list = document.getElementById('alertas-estoque-list');
   if (!section || !list) return;
 
+  // Apenas admins, superadmin e atendentes visualizam alertas de estoque
+  const canSee = menuCurrentUser?.isAdmin ||
+    menuCurrentUser?.isSuperAdmin ||
+    menuCurrentUser?.role === 'attendant';
+  if (!canSee) return;
+
   try {
     const snap = await db.collection('insumos').get();
     if (snap.empty) return;
