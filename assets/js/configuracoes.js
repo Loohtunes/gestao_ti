@@ -288,7 +288,7 @@ async function renderSetores() {
         Novo Setor
       </button>` : ''}
     </div>
-    <div id="setores-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:start;"></div>
+    <div id="setores-list" style="display:flex;flex-direction:column;gap:0.5rem;max-width:600px;margin:0 auto;"></div>
   `;
 
   try {
@@ -313,7 +313,8 @@ function renderSetoresList(canManage) {
   }
 
   container.innerHTML = _setores.map(s => {
-    const ramais = (s.ramais || []);
+    const ramais = [...(s.ramais || [])].sort((a, b) =>
+      (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
     const ramaisHtml = ramais.length
       ? ramais.map(r => `
           <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);font-family:var(--font-mono);">

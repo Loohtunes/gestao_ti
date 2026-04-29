@@ -241,7 +241,7 @@ async function loadAlertasEstoque() {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
         Alertas de Estoque
         ${badgeHtml}
-        <a href="inventario.html" class="alertas-ver-btn" title="Ver todos os insumos">
+        <a href="inventario.html?tab=insumos" class="alertas-ver-btn" title="Ver todos os insumos">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </a>`;
     }
@@ -254,7 +254,7 @@ async function loadAlertasEstoque() {
       const bgCor = zerado ? '#fee2e2' : '#fef3c7';
       const label = zerado ? 'Zerado' : 'No limite';
       return `
-        <a href="inventario.html" class="alerta-estoque-item">
+        <a href="inventario.html?tab=insumos&id=${i.id}" class="alerta-estoque-item">
           <div class="alerta-estoque-icon" style="background:${bgCor};">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
           </div>

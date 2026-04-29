@@ -514,6 +514,17 @@
     </div>
   </div>
 
+  <!-- ══ MODAL: DETALHE DO ATIVO ══ -->
+  <div class="modal-overlay" id="ativo-detail-modal" onclick="if(event.target===this)closeAtivoDetail()">
+    <div class="modal-content" style="max-width:460px;">
+      <div class="modal-header">
+        <div class="modal-title" id="ativo-detail-title">Detalhes do Ativo</div>
+        <button class="modal-close" onclick="closeAtivoDetail()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.5rem;gap:0;" id="ativo-detail-body"></div>
+    </div>
+  </div>
+
   <!-- ══ MODAL: AVISO DESCARTE ATIVO ══ -->
   <div class="modal-overlay" id="ativo-discard-warning" style="z-index:10001;">
     <div class="modal-content" style="max-width:380px;text-align:center;">

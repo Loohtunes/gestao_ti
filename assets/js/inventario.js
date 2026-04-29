@@ -40,7 +40,17 @@ function initInventario() {
     if (el) el.style.display = (currentUser?.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
   });
 
-  openInvTab('ativos');
+  // Verificar parâmetros da URL (ex: ?tab=insumos&id=XXX)
+  const urlParams = new URLSearchParams(window.location.search);
+  const tabParam = urlParams.get('tab');
+  const idParam = urlParams.get('id');
+
+  openInvTab(tabParam || 'ativos');
+
+  // Destacar item específico se vier da URL
+  if (idParam && tabParam === 'insumos') {
+    setTimeout(() => highlightInsumo(idParam), 600);
+  }
 }
 
 function invLogout() {
@@ -666,7 +676,7 @@ function renderAtivosList(list, canManage) {
 
 function renderAtivoCard(a, canManage) {
   return `
-    <div class="ativo-card" id="ativo-card-${a.id}">
+    <div class="ativo-card" id="ativo-card-${a.id}" onclick="openAtivoDetail('${a.id}')" style="cursor:pointer;">
       <div class="ativo-card-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
       </div>
@@ -688,8 +698,8 @@ function renderAtivoCard(a, canManage) {
       </div>
       ${canManage ? `
       <div class="ativo-card-actions">
-        <button class="config-user-edit-btn" onclick="openAtivoForm('${a.id}')" title="Editar">✎</button>
-        <button class="config-user-del-btn" onclick="deleteAtivo('${a.id}')" title="Excluir">✕</button>
+        <button class="config-user-edit-btn" onclick="event.stopPropagation();openAtivoForm('${a.id}')" title="Editar">✎</button>
+        <button class="config-user-del-btn" onclick="event.stopPropagation();deleteAtivo('${a.id}')" title="Excluir">✕</button>
       </div>` : ''}
     </div>`;
 }
@@ -851,3 +861,59 @@ async function _initInventarioPage() {
 }
 
 document.addEventListener('DOMContentLoaded', _initInventarioPage);
+
+// ── Modal de detalhe do Ativo ──────────────────────────────────────────────
+function openAtivoDetail(id) {
+  const a = _ativos.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById('ativo-detail-title').textContent = a.nomeAmigavel || a.nome;
+
+  const row = (icon, label, value) => value ? `
+    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
+      <div style="width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);">${icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${label}</div>
+        <div style="font-size:0.92rem;font-weight:700;color:var(--text);margin-top:2px;word-break:break-word;">${value}</div>
+      </div>
+    </div>` : '';
+
+  const ICON_EQUIP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>';
+  const ICON_TAG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/></svg>';
+  const ICON_USER = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  const ICON_BUILD = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>';
+
+  document.getElementById('ativo-detail-body').innerHTML = `
+    <div style="padding-bottom:0.25rem;">
+      ${row(ICON_EQUIP, 'Equipamento', a.nome)}
+      ${a.nomeAmigavel && a.nomeAmigavel !== a.nome ? row(ICON_EQUIP, 'Nome Amigável', a.nomeAmigavel) : ''}
+      ${row(ICON_TAG, 'Patrimônio', a.patrimonio)}
+      ${row(ICON_USER, 'Responsável', a.usuario)}
+      ${row(ICON_BUILD, 'Setor', a.setor)}
+    </div>`;
+
+  document.getElementById('ativo-detail-modal').classList.add('open');
+}
+
+function closeAtivoDetail() {
+  document.getElementById('ativo-detail-modal').classList.remove('open');
+}
+
+// ── Destacar insumo vindo da URL ───────────────────────────────────────────
+function highlightInsumo(id) {
+  // Encontrar o card na grade
+  const cards = document.querySelectorAll('.insumo-card');
+  cards.forEach(card => {
+    const btn = card.querySelector(`[onclick*="${id}"]`);
+    if (btn || card.innerHTML.includes(id)) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+      card.style.boxShadow = '0 0 0 3px var(--accent)';
+      card.style.borderColor = 'var(--accent)';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+        card.style.borderColor = '';
+      }, 2500);
+    }
+  });
+}
