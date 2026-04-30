@@ -77,8 +77,9 @@ function openTab(tab) {
   if (tab === 'acessos') renderAccessTable();
   if (tab === 'administracao') renderAdministracao();
   if (tab === 'setores') renderSetores();
-  if (tab === 'sla') renderSlaPanel();        // compatibilidade
-  if (tab === 'firebase') renderFirebaseInfo();    // compatibilidade
+  if (tab === 'sla') renderSlaPanel();
+  if (tab === 'firebase') renderFirebaseInfo();
+  if (tab === 'templates') renderTemplates();
 }
 
 async function renderAdministracao() {
@@ -288,7 +289,8 @@ async function renderSetores() {
         Novo Setor
       </button>` : ''}
     </div>
-    <div id="setores-list" style="display:flex;flex-direction:column;gap:0.5rem;max-width:600px;margin:0 auto;"></div>
+    <div id="setores-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:start;"></div>
+    <div id="setores-pagination" style="margin-top:0.75rem;"></div>
   `;
 
   try {
@@ -303,33 +305,56 @@ async function renderSetores() {
   }
 }
 
+const SETORES_PER_PAGE = 6; // 3 por coluna × 2 colunas
+let _setoresPage = 1;
+
 function renderSetoresList(canManage) {
   const container = document.getElementById('setores-list');
+  const pagEl = document.getElementById('setores-pagination');
   if (!container) return;
 
   if (_setores.length === 0) {
-    container.innerHTML = `<div style="color:var(--muted);font-size:0.82rem;padding:1rem 0;">Nenhum setor cadastrado ainda.</div>`;
+    container.innerHTML = `<div style="grid-column:1/-1;color:var(--muted);font-size:0.82rem;padding:1rem 0;">Nenhum setor cadastrado ainda.</div>`;
+    if (pagEl) pagEl.innerHTML = '';
     return;
   }
 
-  container.innerHTML = _setores.map(s => {
+  const totalPages = Math.ceil(_setores.length / SETORES_PER_PAGE);
+  if (_setoresPage > totalPages) _setoresPage = 1;
+  const start = (_setoresPage - 1) * SETORES_PER_PAGE;
+  const paged = _setores.slice(start, start + SETORES_PER_PAGE);
+
+  const RAMAIS_VISIVEIS = 3; // máx de ramais visíveis no card
+
+  container.innerHTML = paged.map(s => {
     const ramais = [...(s.ramais || [])].sort((a, b) =>
       (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
-    const ramaisHtml = ramais.length
-      ? ramais.map(r => `
-          <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);font-family:var(--font-mono);">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z"/></svg>
-            <span style="flex:1">${r.nome}</span>
-            <span style="font-weight:700;color:var(--text)">${r.ramal}</span>
-          </div>`).join('')
+
+    const ramaisVisiveis = ramais.slice(0, RAMAIS_VISIVEIS);
+    const temMais = ramais.length > RAMAIS_VISIVEIS;
+
+    const ramalRow = r => `
+      <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.72rem;color:var(--muted);font-family:var(--font-mono);">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z"/></svg>
+        <span style="flex:1">${r.nome}</span>
+        <span style="font-weight:700;color:var(--text)">${r.ramal}</span>
+      </div>`;
+
+    const ramaisHtml = ramaisVisiveis.length
+      ? ramaisVisiveis.map(ramalRow).join('')
       : `<div style="font-size:0.7rem;color:var(--muted);">Sem ramais cadastrados</div>`;
 
+    const verMaisBtn = temMais ? `
+      <button onclick="openSetorDetail('${s.id}')" class="setor-ver-mais">
+        +${ramais.length - RAMAIS_VISIVEIS} ver todos
+      </button>` : '';
+
     const badgeAtivo = s.ativo === false
-      ? `<span style="font-size:0.6rem;font-family:var(--font-mono);font-weight:700;padding:0.1rem 0.35rem;border-radius:4px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;">Inativo</span>`
-      : `<span style="font-size:0.6rem;font-family:var(--font-mono);font-weight:700;padding:0.1rem 0.35rem;border-radius:4px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;">Ativo</span>`;
+      ? `<span class="setor-badge setor-badge--inativo">Inativo</span>`
+      : `<span class="setor-badge setor-badge--ativo">Ativo</span>`;
 
     return `
-      <div class="setor-card${s.ativo === false ? ' setor-card--inactive' : ''}">
+      <div class="setor-card${s.ativo === false ? ' setor-card--inactive' : ''}" onclick="openSetorDetail('${s.id}')" style="cursor:pointer;">
         <div class="setor-card-header">
           <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--accent)"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
@@ -337,12 +362,10 @@ function renderSetoresList(canManage) {
             ${badgeAtivo}
           </div>
           ${canManage ? `
-          <div style="display:flex;gap:0.25rem;flex-shrink:0;">
+          <div style="display:flex;gap:0.25rem;flex-shrink:0;" onclick="event.stopPropagation()">
             <button class="config-user-edit-btn" onclick="openSetorForm('${s.id}')" title="Editar setor">✎</button>
             <button class="config-user-del-btn" onclick="toggleSetorAtivo('${s.id}', ${s.ativo !== false})" title="${s.ativo === false ? 'Ativar' : 'Desativar'} setor" style="${s.ativo === false ? 'border-color:#16a34a;color:#16a34a;' : ''}">
-              ${s.ativo === false
-          ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>'
-          : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>'}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>
             </button>
           </div>` : ''}
         </div>
@@ -350,12 +373,79 @@ function renderSetoresList(canManage) {
           ${s.responsavel ? `
           <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Responsável: <strong style="color:var(--text)">${s.responsavel}</strong>
+            <strong style="color:var(--text)">${s.responsavel}</strong>
           </div>` : ''}
           <div class="setor-ramais-list">${ramaisHtml}</div>
+          ${verMaisBtn}
         </div>
       </div>`;
   }).join('');
+
+  // Paginação
+  if (pagEl) {
+    if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+    const prev = _setoresPage > 1;
+    const next = _setoresPage < totalPages;
+    pagEl.innerHTML = `
+      <div class="config-users-pagination">
+        <span class="config-page-info">${start + 1}–${Math.min(start + SETORES_PER_PAGE, _setores.length)} de ${_setores.length} setores</span>
+        <div class="config-page-btns">
+          <button class="config-page-btn" onclick="changeSetoresPage(${_setoresPage - 1})" ${!prev ? 'disabled' : ''}>‹</button>
+          ${Array.from({ length: totalPages }, (_, i) => `
+            <button class="config-page-btn ${i + 1 === _setoresPage ? 'active' : ''}" onclick="changeSetoresPage(${i + 1})">${i + 1}</button>`).join('')}
+          <button class="config-page-btn" onclick="changeSetoresPage(${_setoresPage + 1})" ${!next ? 'disabled' : ''}>›</button>
+        </div>
+      </div>`;
+  }
+}
+
+function changeSetoresPage(page) {
+  const totalPages = Math.ceil(_setores.length / SETORES_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  _setoresPage = page;
+  renderSetoresList(configCurrentUser?.isAdmin || configCurrentUser?.isSuperAdmin);
+}
+
+// ── Modal de detalhe do Setor ──────────────────────────────────────────────
+function openSetorDetail(id) {
+  const s = _setores.find(x => x.id === id);
+  if (!s) return;
+  const ramais = [...(s.ramais || [])].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
+  document.getElementById('setor-detail-title').textContent = s.nome;
+  document.getElementById('setor-detail-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0;">
+      ${s.responsavel ? `
+      <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
+        <div style="width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Responsável</div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);">${s.responsavel}</div>
+        </div>
+      </div>` : ''}
+      <div style="padding:0.75rem 0;">
+        <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;">
+          Ramais (${ramais.length})
+        </div>
+        ${ramais.length ? `
+        <div style="display:flex;flex-direction:column;gap:0.3rem;max-height:360px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;">
+          ${ramais.map(r => `
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0.6rem;background:var(--surface2);border-radius:7px;font-size:0.78rem;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--accent)"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z"/></svg>
+            <span style="flex:1;color:var(--text);font-weight:500;">${r.nome}</span>
+            <span style="font-family:var(--font-mono);font-weight:700;color:var(--accent);">${r.ramal}</span>
+          </div>`).join('')}
+        </div>` : `<div style="font-size:0.78rem;color:var(--muted);">Nenhum ramal cadastrado.</div>`}
+      </div>
+    </div>`;
+
+  document.getElementById('setor-detail-modal').classList.add('open');
+}
+
+function closeSetorDetail() {
+  document.getElementById('setor-detail-modal').classList.remove('open');
 }
 
 
@@ -876,4 +966,312 @@ function toggleMenuSidebar() {
   const isCollapsed = sidebar.classList.toggle('collapsed');
   if (icon) icon.textContent = isCollapsed ? '›' : '‹';
   localStorage.setItem('chamados-sidebar-collapsed', isCollapsed ? '1' : '0');
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ABA TEMPLATES
+// ══════════════════════════════════════════════════════════════════
+const TEMPLATES_PER_PAGE = 8; // 4 por coluna × 2 colunas
+let _templatesPage = 1;
+let _templateEditingId = null;
+let _templateFormDirty = false;
+let _templates = [];
+let _setoresTmpl = [];
+
+const TIPO_LABEL = { error: 'Erro / Suporte', material: 'Material' };
+const PRIO_LABEL = { none: 'Nenhuma', low: 'Baixa', medium: 'Média', high: 'Alta', urgent: 'Urgente' };
+const PRIO_COLOR = { none: '#9ca3af', low: '#36fa00', medium: '#f59e0b', high: '#ff7b00', urgent: '#ff0000' };
+
+async function renderTemplates() {
+  const panel = document.getElementById('panel-templates');
+  if (!panel) return;
+
+  const canManage = configCurrentUser?.isAdmin || configCurrentUser?.isSuperAdmin;
+
+  panel.innerHTML = `
+    <div class="config-users-header">
+      <div class="config-users-title">Templates de Chamado</div>
+      ${canManage ? `
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <div style="position:relative;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="tmpl-search" class="form-input" placeholder="Buscar template..."
+            oninput="filterTemplates(this.value)"
+            style="padding-left:28px;font-size:0.8rem;width:200px;">
+        </div>
+        <button class="config-new-user-btn" onclick="openTemplateForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
+          Novo Template
+        </button>
+      </div>` : ''}
+    </div>
+    <div id="templates-list" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;align-items:start;"></div>
+    <div id="templates-pagination" style="margin-top:0.75rem;"></div>`;
+
+  try {
+    const snap = await db.collection('setores').get();
+    _setoresTmpl = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(s => s.ativo !== false)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+  } catch (e) { _setoresTmpl = []; }
+
+  await loadTemplates(canManage);
+}
+
+async function loadTemplates(canManage) {
+  try {
+    const snap = await db.collection('templates').get();
+    _templates = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+    renderTemplatesList(_templates, canManage);
+  } catch (e) {
+    const el = document.getElementById('templates-list');
+    if (el) el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;padding:1rem 0;">Erro ao carregar templates.</div>';
+  }
+}
+
+function renderTemplatesList(list, canManage) {
+  const container = document.getElementById('templates-list');
+  const pagEl = document.getElementById('templates-pagination');
+  if (!container) return;
+
+  if (!list.length) {
+    container.innerHTML = `<div style="grid-column:1/-1;color:var(--muted);font-size:0.82rem;padding:1rem 0;">Nenhum template cadastrado ainda.</div>`;
+    if (pagEl) pagEl.innerHTML = '';
+    return;
+  }
+
+  const totalPages = Math.ceil(list.length / TEMPLATES_PER_PAGE);
+  if (_templatesPage > totalPages) _templatesPage = 1;
+  const start = (_templatesPage - 1) * TEMPLATES_PER_PAGE;
+  const paged = list.slice(start, start + TEMPLATES_PER_PAGE);
+
+  container.innerHTML = paged.map(t => {
+    const prioColor = PRIO_COLOR[t.prioridade] || '#9ca3af';
+    const badgeAtivo = t.ativo === false
+      ? `<span class="tmpl-badge tmpl-badge--inativo">Inativo</span>`
+      : `<span class="tmpl-badge tmpl-badge--ativo">Ativo</span>`;
+    const badgeTipo = `<span class="tmpl-badge" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border2);">${TIPO_LABEL[t.tipo] || t.tipo}</span>`;
+    const badgePrio = `<span class="tmpl-badge" style="background:${prioColor}22;color:${prioColor};border:1px solid ${prioColor}44;">${PRIO_LABEL[t.prioridade] || t.prioridade}</span>`;
+
+    return `
+      <div class="tmpl-card${t.ativo === false ? ' tmpl-card--inativo' : ''}" onclick="openTemplateDetail('${t.id}')" style="cursor:pointer;">
+        <div class="tmpl-card-header">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;flex-wrap:wrap;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--accent)"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8"/><path d="M8 17h5"/></svg>
+            <span class="tmpl-card-nome">${t.nome}</span>
+            ${badgeAtivo}${badgeTipo}${badgePrio}
+          </div>
+          ${canManage ? `
+          <div style="display:flex;gap:0.25rem;flex-shrink:0;" onclick="event.stopPropagation()">
+            <button class="config-user-edit-btn" onclick="openTemplateForm('${t.id}')" title="Editar">✎</button>
+            <button class="config-user-edit-btn" onclick="toggleTemplateAtivo('${t.id}',${t.ativo !== false})"
+              title="${t.ativo === false ? 'Ativar' : 'Desativar'}"
+              style="${t.ativo === false ? 'border-color:#16a34a;color:#16a34a;' : 'border-color:#f59e0b;color:#f59e0b;'}">
+              ${t.ativo === false ? '▶' : '⏸'}
+            </button>
+            <button class="config-user-del-btn" onclick="deleteTemplate('${t.id}')" title="Excluir">✕</button>
+          </div>` : ''}
+        </div>
+        <div class="tmpl-card-body">
+          <div class="tmpl-card-row">
+            <span class="tmpl-label">Título:</span>
+            <span class="tmpl-value">${t.titulo || '—'}</span>
+          </div>
+          ${t.ativoVinculado && t.ativoVinculado !== 'none' ? `<div class="tmpl-card-row">
+            <span class="tmpl-label">Ativo:</span>
+            <span class="tmpl-value">Setor do solicitante</span>
+          </div>` : `<div class="tmpl-card-row">
+            <span class="tmpl-label">Ativo:</span>
+            <span class="tmpl-value" style="color:var(--muted);">Nenhum</span>
+          </div>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Paginação
+  if (pagEl) {
+    if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+    const prev = _templatesPage > 1;
+    const next = _templatesPage < totalPages;
+    pagEl.innerHTML = `
+      <div class="config-users-pagination">
+        <span class="config-page-info">${start + 1}–${Math.min(start + TEMPLATES_PER_PAGE, list.length)} de ${list.length} templates</span>
+        <div class="config-page-btns">
+          <button class="config-page-btn" onclick="changeTemplatesPage(${_templatesPage - 1})" ${!prev ? 'disabled' : ''}>‹</button>
+          ${Array.from({ length: totalPages }, (_, i) => `
+            <button class="config-page-btn ${i + 1 === _templatesPage ? 'active' : ''}" onclick="changeTemplatesPage(${i + 1})">${i + 1}</button>`).join('')}
+          <button class="config-page-btn" onclick="changeTemplatesPage(${_templatesPage + 1})" ${!next ? 'disabled' : ''}>›</button>
+        </div>
+      </div>`;
+  }
+}
+
+function changeTemplatesPage(page) {
+  const canManage = configCurrentUser?.isAdmin || configCurrentUser?.isSuperAdmin;
+  const q = document.getElementById('tmpl-search')?.value || '';
+  const list = q ? _templates.filter(t =>
+    (t.nome || '').toLowerCase().includes(q.toLowerCase()) ||
+    (t.titulo || '').toLowerCase().includes(q.toLowerCase())) : _templates;
+  const totalPages = Math.ceil(list.length / TEMPLATES_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  _templatesPage = page;
+  renderTemplatesList(list, canManage);
+}
+
+function filterTemplates(q) {
+  const query = (q || '').toLowerCase().trim();
+  const canManage = configCurrentUser?.isAdmin || configCurrentUser?.isSuperAdmin;
+  _templatesPage = 1;
+  const filtered = !query ? _templates : _templates.filter(t =>
+    (t.nome || '').toLowerCase().includes(query) ||
+    (t.titulo || '').toLowerCase().includes(query));
+  renderTemplatesList(filtered, canManage);
+}
+
+function openTemplateForm(id = null) {
+  _templateEditingId = id;
+  _templateFormDirty = false;
+  const t = id ? _templates.find(x => x.id === id) : null;
+  document.getElementById('template-form-title').textContent = id ? 'Editar Template' : 'Novo Template';
+  document.getElementById('tmpl-nome-input').value = t?.nome || '';
+  document.getElementById('tmpl-tipo-input').value = t?.tipo || 'error';
+  document.getElementById('tmpl-prioridade-input').value = t?.prioridade || 'medium';
+  document.getElementById('tmpl-ativo-tipo-input').value = t?.ativoVinculado || 'none';
+  document.getElementById('tmpl-titulo-input').value = t?.titulo || '';
+  document.getElementById('tmpl-descricao-input').value = t?.descricao || '';
+  document.getElementById('tmpl-ativo-input').checked = t ? t.ativo !== false : true;
+  document.getElementById('template-form-modal').classList.add('open');
+  const overlay = document.getElementById('template-form-modal');
+  overlay.onclick = (e) => { if (e.target === overlay) tryCloseTemplateForm(); };
+  setTimeout(_watchTemplateForm, 100);
+}
+
+function _watchTemplateForm() {
+  ['tmpl-nome-input', 'tmpl-tipo-input', 'tmpl-prioridade-input', 'tmpl-ativo-tipo-input',
+    'tmpl-titulo-input', 'tmpl-descricao-input', 'tmpl-ativo-input'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => { _templateFormDirty = true; });
+        el.addEventListener('change', () => { _templateFormDirty = true; });
+      }
+    });
+}
+
+function tryCloseTemplateForm() {
+  if (_templateFormDirty) {
+    document.getElementById('template-discard-warning').classList.add('open');
+  } else {
+    closeTemplateForm();
+  }
+}
+function closeTemplateDiscardWarning() {
+  document.getElementById('template-discard-warning').classList.remove('open');
+}
+function confirmTemplateDiscard() {
+  closeTemplateDiscardWarning();
+  closeTemplateForm();
+}
+function closeTemplateForm() {
+  document.getElementById('template-form-modal').classList.remove('open');
+  _templateEditingId = null;
+  _templateFormDirty = false;
+}
+
+async function saveTemplate() {
+  const nome = document.getElementById('tmpl-nome-input').value.trim();
+  const tipo = document.getElementById('tmpl-tipo-input').value;
+  const prioridade = document.getElementById('tmpl-prioridade-input').value;
+  const ativoVinculado = document.getElementById('tmpl-ativo-tipo-input').value;
+  const titulo = document.getElementById('tmpl-titulo-input').value.trim();
+  const descricao = document.getElementById('tmpl-descricao-input').value.trim();
+  const ativo = document.getElementById('tmpl-ativo-input').checked;
+
+  if (!nome) { showConfigNotification('Informe o nome do template.', 'error'); return; }
+  if (!titulo) { showConfigNotification('Informe o título do template.', 'error'); return; }
+
+  const data = {
+    nome, tipo, prioridade, ativoVinculado, titulo, descricao, ativo,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    if (_templateEditingId) {
+      await db.collection('templates').doc(_templateEditingId).update(data);
+      showConfigNotification('Template atualizado! ✅', 'success');
+    } else {
+      data.createdAt = new Date().toISOString();
+      await db.collection('templates').add(data);
+      showConfigNotification('Template criado! ✅', 'success');
+    }
+    closeTemplateForm();
+    await renderTemplates();
+  } catch (e) {
+    showConfigNotification('Erro ao salvar template.', 'error');
+  }
+}
+
+async function toggleTemplateAtivo(id, currentAtivo) {
+  try {
+    await db.collection('templates').doc(id).update({ ativo: !currentAtivo });
+    showConfigNotification(`Template ${currentAtivo ? 'desativado' : 'ativado'}! ✅`, 'success');
+    await renderTemplates();
+  } catch (e) {
+    showConfigNotification('Erro ao atualizar template.', 'error');
+  }
+}
+
+async function deleteTemplate(id) {
+  const t = _templates.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(`Excluir o template "${t.nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await db.collection('templates').doc(id).delete();
+    showConfigNotification('Template excluído.', 'success');
+    await renderTemplates();
+  } catch (e) {
+    showConfigNotification('Erro ao excluir template.', 'error');
+  }
+}
+
+// ── Modal de detalhe do Template ──────────────────────────────────────────
+function openTemplateDetail(id) {
+  const t = _templates.find(x => x.id === id);
+  if (!t) return;
+
+  const prioColor = PRIO_COLOR[t.prioridade] || '#9ca3af';
+
+  const row = (label, value, mono) => value ? `
+    <div class="tmpl-detail-row">
+      <span class="tmpl-detail-label">${label}</span>
+      <span class="tmpl-detail-value${mono ? ' tmpl-detail-mono' : ''}">${value}</span>
+    </div>` : '';
+
+  document.getElementById('template-detail-title').textContent = t.nome;
+  document.getElementById('template-detail-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.25rem;">
+        ${t.ativo === false
+      ? '<span class="tmpl-badge tmpl-badge--inativo">Inativo</span>'
+      : '<span class="tmpl-badge tmpl-badge--ativo">Ativo</span>'}
+        <span class="tmpl-badge" style="background:var(--surface2);color:var(--muted);border:1px solid var(--border2);">${TIPO_LABEL[t.tipo] || t.tipo}</span>
+        <span class="tmpl-badge" style="background:${prioColor}22;color:${prioColor};border:1px solid ${prioColor}44;">${PRIO_LABEL[t.prioridade] || t.prioridade}</span>
+      </div>
+      ${row('Título', t.titulo)}
+      ${t.ativoVinculado && t.ativoVinculado !== 'none'
+      ? row('Ativo', 'Usa ativo do setor do solicitante') : ''}
+      ${t.descricao ? `
+      <div class="tmpl-detail-row" style="align-items:flex-start;">
+        <span class="tmpl-detail-label" style="padding-top:2px;">Descrição</span>
+        <span class="tmpl-detail-value" style="white-space:pre-wrap;line-height:1.5;">${t.descricao}</span>
+      </div>` : ''}
+    </div>`;
+
+  document.getElementById('template-detail-modal').classList.add('open');
+}
+
+function closeTemplateDetail() {
+  document.getElementById('template-detail-modal').classList.remove('open');
 }

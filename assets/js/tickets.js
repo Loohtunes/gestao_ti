@@ -89,12 +89,16 @@ const PRIO_ORDER = { urgent: 0, high: 1, medium: 2, low: 3, none: 4 };
 let _filterDropdownOpen = false;
 
 function toggleFilterDropdown() {
+  const wAtt = document.getElementById('filter-dropdown-wrapper');
+  const wReq = document.getElementById('filter-requester-wrapper');
   const menuAtt = document.getElementById('filter-dropdown-menu');
   const menuReq = document.getElementById('filter-requester-menu');
-  const menu = menuAtt?.style.display !== 'none' ? menuAtt :
-    menuReq?.style.display !== 'none' ? menuReq :
-      (menuAtt || menuReq);
+
+  // Determinar qual menu usar baseado no wrapper visível
+  const attVisible = wAtt && wAtt.style.display !== 'none';
+  const menu = attVisible ? menuAtt : menuReq;
   if (!menu) return;
+
   const isOpen = menu.style.display === 'block';
   if (menuAtt) menuAtt.style.display = 'none';
   if (menuReq) menuReq.style.display = 'none';
@@ -120,10 +124,19 @@ function selectFilter(filter, label) {
   const mReq = document.getElementById('filter-requester-menu');
   if (mAtt) mAtt.style.display = 'none';
   if (mReq) mReq.style.display = 'none';
+
   const labelAtt = document.getElementById('filter-dropdown-label');
   const labelReq = document.getElementById('filter-requester-label');
-  if (labelAtt && document.getElementById('filter-dropdown-wrapper')?.style.display !== 'none') labelAtt.textContent = label;
-  if (labelReq && document.getElementById('filter-requester-wrapper')?.style.display !== 'none') labelReq.textContent = label;
+  const isReqVisible = document.getElementById('filter-requester-wrapper')?.style.display !== 'none';
+  const isAttVisible = document.getElementById('filter-dropdown-wrapper')?.style.display !== 'none';
+
+  // Buscar o botão selecionado para pegar o innerHTML (com SVG)
+  const selectedBtn = document.querySelector(`.filter-dd-item[data-filter="${filter}"]`);
+  const btnHTML = selectedBtn ? selectedBtn.innerHTML : label;
+
+  if (labelAtt && isAttVisible) labelAtt.innerHTML = btnHTML;
+  if (labelReq && isReqVisible) labelReq.innerHTML = btnHTML;
+
   document.querySelectorAll('.filter-dd-item').forEach(b => {
     b.classList.toggle('active', b.dataset.filter === filter);
   });
@@ -277,6 +290,12 @@ function renderTickets() {
       (t.requester === currentUser.username || isMentionedIn(t)) &&
       t.status !== 'archived' && t.status !== 'completed'
     );
+  } else if (currentFilter === 'my-completed') {
+    // Meus chamados concluídos — disponível para solicitantes
+    list = tickets.filter(t =>
+      t.requester === currentUser.username &&
+      (t.status === 'completed' || t.status === 'archived')
+    );
   } else if (isRequester && currentFilter === 'completed') {
     // Solicitante vendo seus concluídos — inclui archived (auto-arquivados)
     list = tickets.filter(t => t.requester === currentUser.username && (t.status === 'completed' || t.status === 'archived'));
@@ -308,7 +327,7 @@ function renderTickets() {
   }
 
   // Filtro por setor — nunca para solicitantes, nunca na aba Concluídos
-  const isCompletedFilter = currentFilter === 'archived' || currentFilter === 'completed';
+  const isCompletedFilter = currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed';
   const isAttendantUser = currentUser.role !== 'requester';
   const setorWrapper = document.getElementById('setor-filter-wrapper');
   if (setorWrapper) {
@@ -320,14 +339,14 @@ function renderTickets() {
 
   // Controlar visibilidade da barra de filtros — só na aba Concluídos
   const _filterBar = document.getElementById('arc-filter-bar');
-  const _isArc = currentFilter === 'archived' || currentFilter === 'completed';
+  const _isArc = currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed';
   if (_filterBar) _filterBar.style.display = _isArc ? 'block' : 'none';
 
   if (!list.length) { board.style.display = 'none'; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
   // Forçar lista se viewMode = list (exceto filtros que já são lista)
   const forceList = (typeof viewMode !== 'undefined') && viewMode === 'list';
-  const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed';
+  const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed';
 
   if (useList) {
     renderTicketsList(board, list);
@@ -423,7 +442,7 @@ function buildArchivedRow(ticket) {
 }
 
 function renderTicketsList(board, list) {
-  const isArchived = currentFilter === 'archived' || currentFilter === 'completed';
+  const isArchived = currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed';
   board.style.display = 'block';
   board.className = isArchived ? 'tickets-board list-view archived-list' : 'tickets-board list-view';
   if (isArchived) {
@@ -459,7 +478,8 @@ function renderTicketsList(board, list) {
     const dateBlock = [ticket.date ? `<span class="tl-date-text" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>${ticket.date}</span>` : '', ticket.startedAt ? `<span class="tl-date-sub" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>${ticket.startedAt}</span>` : '', ticket.completedAt ? `<span class="tl-date-done" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>${ticket.completedAt}</span>` : ''].filter(Boolean).join('');
     const tlMentionBadge = hasPendingMention(ticket) ? `<span class="card-mention-badge" style="top:-8px;left:-8px;">@</span>` : '';
     const isFollowing = isMentionedIn(ticket) && ticket.requester !== currentUser.username;
-    return `<div class="tl-row-wrapper" style="position:relative;display:block;" data-ticket-id="${ticket.id}">${tlMentionBadge}<div class="tl-row ${status} prio-${ticket.priority || 'medium'}${isFollowing ? ' tl-following' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
+    const isDoneRow = status === 'completed' || status === 'archived';
+    return `<div class="tl-row-wrapper" style="position:relative;display:block;" data-ticket-id="${ticket.id}">${tlMentionBadge}<div class="tl-row ${status}${isDoneRow ? '' : ' prio-' + (ticket.priority || 'medium')}${isFollowing ? ' tl-following' : ''}" onclick="openTicketDetail('${ticket.id}')" style="cursor:pointer">
       <span class="tl-col tl-num"><span class="tl-num-badge">${num}</span></span>
       <span class="tl-col tl-title"><span class="tl-title-text">${ticket.title}</span>${ticket.description ? `<span class="tl-desc">${ticket.description}</span>` : ''}${ticket.attachments?.length ? `<span class="tl-attach" style="display:inline-flex;align-items:center;gap:3px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${ticket.attachments.length} anexo(s)</span>` : ''}</span>
       <span class="tl-col tl-setor">${ticket.setor ? `<span class="tl-setor-tag">${ticket.setor}</span>` : '<span class="tl-empty">—</span>'}</span>

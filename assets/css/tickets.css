@@ -822,6 +822,24 @@ body.dark-mode .tl-row.tl-following {
   background: #f0fdf4;
 }
 
+/* Linhas concluídas/arquivadas — borda verde independente da prioridade */
+.tl-row.completed,
+.tl-row.archived {
+  border-left: 4px solid #22c55e !important;
+  opacity: 0.88;
+}
+
+.tl-row.completed:hover,
+.tl-row.archived:hover {
+  opacity: 1;
+  background: #f0fdf4;
+}
+
+body.dark-mode .tl-row.completed:hover,
+body.dark-mode .tl-row.archived:hover {
+  background: #0d2818;
+}
+
 .tl-col.tl-arc-actions {
   flex-direction: row !important;
   align-items: center;

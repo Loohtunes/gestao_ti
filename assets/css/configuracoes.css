@@ -836,6 +836,54 @@ body.dark-mode .config-user-badge.admin {
 
 .setor-card-body {
   padding: 0.65rem 0.9rem;
+  height: 110px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.setor-ver-mais {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.9rem;
+  font-size: 0.65rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 0.1rem 0.45rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.setor-ver-mais:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.setor-badge {
+  font-size: 0.6rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.setor-badge--ativo {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.setor-badge--inativo {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
 }
 
 .setor-ramais-list {
@@ -1004,4 +1052,128 @@ body.dark-mode .setor-card:hover {
   padding: 0.75rem 0;
   text-align: center;
   font-family: 'Space Mono', monospace;
+}
+
+/* ── ABA TEMPLATES ── */
+.tmpl-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.tmpl-card:hover {
+  border-color: var(--accent);
+}
+
+.tmpl-card--inativo {
+  opacity: 0.55;
+}
+
+.tmpl-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+
+.tmpl-card-nome {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tmpl-badge {
+  font-size: 0.6rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.tmpl-badge--ativo {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.tmpl-badge--inativo {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.tmpl-card-body {
+  padding: 0.65rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Modal de detalhe do template */
+.tmpl-detail-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+  font-size: 0.82rem;
+}
+
+.tmpl-detail-row:last-child {
+  border-bottom: none;
+}
+
+.tmpl-detail-label {
+  font-size: 0.68rem;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+  min-width: 80px;
+}
+
+.tmpl-detail-value {
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.tmpl-detail-mono {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78rem;
+}
+
+.tmpl-card-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+
+.tmpl-label {
+  font-size: 0.7rem;
+  font-family: 'Space Mono', monospace;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 70px;
+}
+
+.tmpl-value {
+  color: var(--text);
+  flex: 1;
+  word-break: break-word;
+}
+
+.tmpl-desc {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: italic;
 }
