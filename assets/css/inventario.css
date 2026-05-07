@@ -290,7 +290,7 @@ body.dark-mode .ativo-card-icon {
   transition: width 0.4s ease, background 0.3s;
 }
 
-/* Movimentações inline */
+/* Movimentações — sumário 15 dias */
 .insumo-movs-label {
   font-size: 0.65rem;
   font-family: 'Space Mono', monospace;
@@ -299,41 +299,48 @@ body.dark-mode .ativo-card-icon {
   color: var(--muted);
 }
 
-.insumo-movs-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.insumo-mov-row {
+.insumo-mov-summary {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
-.insumo-mov-badge {
+.insumo-mov-sum-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
   font-family: 'Space Mono', monospace;
   font-weight: 700;
-  font-size: 0.7rem;
-  padding: 0.05rem 0.4rem;
+  padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  flex-shrink: 0;
 }
 
-.insumo-mov-desc {
-  flex: 1;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.insumo-mov-sum-item.entrada {
+  background: #dcfce7;
+  color: #15803d;
 }
 
-.insumo-mov-date {
+.insumo-mov-sum-item.saida {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.insumo-mov-sum-sep {
+  font-size: 0.65rem;
+  color: var(--border2);
+}
+
+.insumo-mov-sum-periodo {
   font-size: 0.65rem;
   color: var(--muted);
   font-family: 'Space Mono', monospace;
-  flex-shrink: 0;
+}
+
+.insumo-mov-vazio {
+  font-size: 0.7rem;
+  color: var(--muted);
 }
 
 /* Botão de ação inline */

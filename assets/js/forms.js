@@ -57,14 +57,8 @@ function openTicketModal(ticketId = null, isTest = false) {
     // Ativa botão de tipo correspondente
     document.querySelectorAll('.ticket-type-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('type-btn-error')?.classList.add('active');
-    const qtyInput = document.getElementById('ticket-material-qty');
-    const unitInput = document.getElementById('ticket-material-unit');
-    const dateInput = document.getElementById('ticket-material-date');
-    const unitBadge = document.getElementById('material-unit-badge');
-    if (qtyInput) qtyInput.value = '';
-    if (unitInput) unitInput.value = 'un';
-    if (dateInput) dateInput.value = '';
-    if (unitBadge) unitBadge.textContent = 'un.';
+    // Carregar templates disponíveis
+    loadTicketTemplates();
     const userSetor = currentUser?.setor || '';
     const setorInput = document.getElementById('ticket-setor-input');
     const setorHint = document.getElementById('setor-locked-hint');
@@ -78,36 +72,26 @@ function openTicketModal(ticketId = null, isTest = false) {
 
 function setTicketType(type) {
   const isError = type === 'error' || type === 'test';
-  const isMaterial = type === 'material';
   const titleGroup = document.getElementById('ticket-title-group');
   const prioGroup = document.getElementById('ticket-priority-group');
   const attachGroup = document.getElementById('ticket-attach-group');
-  const materialGroup = document.getElementById('ticket-material-fields');
   const typeInput = document.getElementById('ticket-type-input');
   const descLabel = document.getElementById('ticket-desc-label');
   if (titleGroup) titleGroup.style.display = isError ? 'flex' : 'none';
-  if (prioGroup) prioGroup.style.display = 'none'; // prioridade definida pelo atendente
+  if (prioGroup) prioGroup.style.display = 'none';
   if (attachGroup) attachGroup.style.display = isError ? 'flex' : 'none';
-  if (materialGroup) materialGroup.style.display = isMaterial ? 'flex' : 'none';
   if (typeInput) typeInput.value = type;
-  if (descLabel) descLabel.textContent = isMaterial ? 'Material(is) a solicitar' : 'Descrição';
-  document.getElementById('ticket-description-input').placeholder = isMaterial
-    ? 'Ex: Resma de papel A4, cartucho HP 664...'
-    : 'Descreva o chamado em detalhes...';
-  if (isMaterial) {
-    const dateInput = document.getElementById('ticket-material-date');
-    if (dateInput) {
-      const today = new Date().toISOString().split('T')[0];
-      dateInput.min = today;
-      if (!dateInput.value) dateInput.value = today;
-    }
-  }
+  if (descLabel) descLabel.textContent = 'Descrição';
+  document.getElementById('ticket-description-input').placeholder = 'Descreva o chamado em detalhes...';
 }
 
-function updateMaterialUnit(val) { }
 
 function closeTicketModal() {
   document.getElementById('ticket-modal').classList.remove('open');
+  const tmplSelect = document.getElementById('ticket-template-input');
+  if (tmplSelect) tmplSelect.value = '';
+  const tmplGroup = document.getElementById('ticket-template-group');
+  if (tmplGroup) tmplGroup.style.display = 'none';
   const setorInput = document.getElementById('ticket-setor-input');
   if (setorInput) setorInput.disabled = false;
   editingTicketId = null;
@@ -132,16 +116,8 @@ async function saveTicket() {
   const isRequester = currentUser?.role === 'requester';
   const prio = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
   const rawType = document.getElementById('ticket-type-input')?.value || 'error';
-  const ticketType = rawType === 'test' ? 'error' : rawType; // Tipo teste removido
-  const isMaterial = ticketType === 'material';
-  const matQty = isMaterial ? (document.getElementById('ticket-material-qty')?.value || '') : '';
-  const matUnit = isMaterial ? (document.getElementById('ticket-material-unit')?.value || 'un') : '';
-  const matUnitText = isMaterial
-    ? (document.getElementById('ticket-material-unit')?.options[document.getElementById('ticket-material-unit')?.selectedIndex]?.text?.split(' — ')[0] || matUnit)
-    : '';
-  const matDate = isMaterial ? (document.getElementById('ticket-material-date')?.value || '') : '';
-  if (!isMaterial && !title) { alert('Por favor, adicione um título ao chamado'); return; }
-  if (isMaterial && !desc) { alert('Descreva os materiais a solicitar'); return; }
+  const ticketType = rawType === 'test' ? 'error' : rawType;
+  if (!title) { alert('Por favor, adicione um título ao chamado'); return; }
 
   // Solicitante: admin pode abrir em nome de outro usuário
   const onBehalfVal = document.getElementById('ticket-onbehalf-input')?.value?.trim();
@@ -172,12 +148,10 @@ async function saveTicket() {
     }
   } else {
     const number = await getNextTicketNumber(ticketType);
-    const finalTitle = isMaterial ? ('Solicitação de material — ' + (effectiveSetor || 'Geral')) : title;
-    const materialData = isMaterial ? { qty: matQty, unit: matUnit, unitText: matUnitText, needByDate: matDate } : null;
     const newTicket = {
-      id: Date.now().toString(), number, title: finalTitle, description: desc,
-      priority: isMaterial ? 'low' : 'none', setor, ticketType, materialData,
-      attachments: isMaterial ? [] : ticketFiles, date: now, createdAt: now,
+      id: Date.now().toString(), number, title, description: desc,
+      priority: 'none', setor, ticketType, materialData: null,
+      attachments: ticketFiles, date: now, createdAt: now,
       status: 'available', requester: effectiveRequester,
       attendant: null, startedAt: null, completedAt: null, messages: [], history: []
     };
@@ -281,5 +255,91 @@ function openAttachmentData(dataUrl, name, type) {
     a.href = dataUrl;
     a.download = name;
     a.click();
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TEMPLATES NO FORMULÁRIO DE CHAMADO
+// ══════════════════════════════════════════════════════════════════
+let _ticketTemplates = [];
+
+async function loadTicketTemplates() {
+  try {
+    const snap = await db.collection('templates').get();
+    _ticketTemplates = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .filter(t => t.ativo !== false)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+    updateTemplateSelector();
+  } catch (e) {
+    _ticketTemplates = [];
+    const group = document.getElementById('ticket-template-group');
+    if (group) group.style.display = 'none';
+  }
+}
+
+function updateTemplateSelector() {
+  const group = document.getElementById('ticket-template-group');
+  const select = document.getElementById('ticket-template-input');
+  if (!group || !select) return;
+
+  // Tipo atual do chamado
+  const currentType = document.getElementById('ticket-type-input')?.value || 'error';
+
+  // Filtrar templates compatíveis com o tipo atual
+  const compatíveis = _ticketTemplates.filter(t => t.tipo === currentType);
+
+  if (!compatíveis.length) {
+    group.style.display = 'none';
+    return;
+  }
+
+  group.style.display = 'flex';
+  select.innerHTML = `<option value="">Nenhum — preencher manualmente</option>` +
+    compatíveis.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+  select.value = '';
+}
+
+function applyTemplate(templateId) {
+  if (!templateId) {
+    // Limpar campos se "Nenhum" for selecionado
+    document.getElementById('ticket-title-input').value = '';
+    document.getElementById('ticket-description-input').value = '';
+    return;
+  }
+
+  const t = _ticketTemplates.find(x => x.id === templateId);
+  if (!t) return;
+
+  // Resolver variáveis
+  const setor = document.getElementById('ticket-setor-input')?.value || currentUser?.setor || '';
+  const solicitante = currentUser?.username || '';
+  const data = new Date().toLocaleDateString('pt-BR');
+  const ativo = ''; // será preenchido manualmente pelo usuário se necessário
+
+  const resolve = (str) => (str || '')
+    .replace(/\[setor\]/gi, setor)
+    .replace(/\[solicitante\]/gi, solicitante)
+    .replace(/\[data\]/gi, data)
+    .replace(/\[ativo\]/gi, ativo);
+
+  // Preencher título e descrição
+  const titleInput = document.getElementById('ticket-title-input');
+  const descInput = document.getElementById('ticket-description-input');
+
+  if (titleInput) titleInput.value = resolve(t.titulo);
+  if (descInput) descInput.value = resolve(t.descricao || '');
+
+  // Aplicar prioridade do template se definida
+  const prioInput = document.getElementById('ticket-priority-input');
+  if (prioInput && t.prioridade && t.prioridade !== 'none') {
+    prioInput.value = t.prioridade;
+  }
+
+  // Feedback visual — piscar o campo título
+  if (titleInput) {
+    titleInput.style.transition = 'box-shadow 0.3s';
+    titleInput.style.boxShadow = '0 0 0 3px var(--accent)';
+    setTimeout(() => { titleInput.style.boxShadow = ''; }, 1200);
   }
 }

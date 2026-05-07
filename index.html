@@ -29,7 +29,6 @@
   <link rel="stylesheet" href="assets/css/auth.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/tickets.css">
-  <link rel="stylesheet" href="assets/css/materials.css">
   <link rel="stylesheet" href="assets/css/modals.css">
   <link rel="stylesheet" href="assets/css/users.css">
   <link rel="stylesheet" href="assets/css/detail.css">
@@ -231,7 +230,7 @@
             </svg></span>
           <span class="chamados-sidebar-name">Chamados</span>
         </a>
-        <span class="chamados-sidebar-item chamados-sidebar-disabled" id="cs-mod-materiais" style="display:none;">
+        <a class="chamados-sidebar-item" id="cs-mod-materiais" href="materiais.html" style="display:none;">
           <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path
@@ -241,8 +240,7 @@
               <path d="m7.5 4.27 9 5.15" />
             </svg></span>
           <span class="chamados-sidebar-name">Materiais</span>
-          <span class="chamados-sidebar-soon">Em breve</span>
-        </span>
+        </a>
         <a class="chamados-sidebar-item" id="cs-mod-inventario" href="inventario.html" style="display:none;">
           <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -397,15 +395,7 @@
                     <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
                     <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
                   </svg> Abertos</button>
-                <button class="filter-dd-item" data-filter="material" id="filter-dd-material" data-label="Materiais"
-                  onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path
-                      d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-                    <path d="M12 22V12" />
-                    <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
-                    <path d="m7.5 4.27 9 5.15" />
-                  </svg> Materiais</button>
+
                 <button class="filter-dd-item" data-filter="in-progress" data-label="Em Atendimento"
                   onclick="selectFilterBtn(this)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -841,7 +831,7 @@
           <input type="hidden" id="ticket-type-input" value="error">
           <div class="ticket-type-selector">
             <button type="button" class="ticket-type-btn active" id="type-btn-error"
-              onclick="setTicketType('error');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
+              onclick="setTicketType('error');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');updateTemplateSelector()">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
                 <circle cx="12" cy="12" r="10" />
@@ -849,17 +839,25 @@
                 <path d="m9 9 6 6" />
               </svg> Erro / Problema
             </button>
-            <button type="button" class="ticket-type-btn" id="type-btn-material"
-              onclick="setTicketType('material');document.querySelectorAll('.ticket-type-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
-                <path
-                  d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-                <path d="M12 22V12" />
-                <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
-                <path d="m7.5 4.27 9 5.15" />
-              </svg> Solicitação de Material
-            </button>
+
+          </div>
+
+          <!-- Seletor de Template -->
+          <div class="form-group" id="ticket-template-group" style="display:none;">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                <path d="M8 13h8" />
+                <path d="M8 17h5" />
+              </svg>
+              Usar Template
+              <span class="form-optional">— opcional</span>
+            </label>
+            <select class="form-input" id="ticket-template-input" onchange="applyTemplate(this.value)">
+              <option value="">Nenhum — preencher manualmente</option>
+            </select>
           </div>
           <div class="form-group" id="ticket-onbehalf-group" style="display:none;">
             <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
@@ -923,66 +921,6 @@
             <label class="form-label" id="ticket-desc-label">Descrição</label>
             <textarea class="form-textarea" id="ticket-description-input"
               placeholder="Descreva o chamado em detalhes..."></textarea>
-          </div>
-          <div id="ticket-material-fields" style="display:none;flex-direction:column;gap:1rem;">
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    style="flex-shrink:0;vertical-align:middle">
-                    <path
-                      d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
-                    <path d="M12 22V12" />
-                    <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
-                    <path d="m7.5 4.27 9 5.15" />
-                  </svg> Quantidade</label>
-                <div class="material-qty-row">
-                  <input type="number" class="form-input" id="ticket-material-qty" placeholder="Ex: 10" min="1" step="1"
-                    style="flex:1;min-width:0;" oninput="updateMaterialUnit(this.value)">
-                  <span class="material-unit-badge" id="material-unit-badge">un.</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    style="flex-shrink:0;vertical-align:middle">
-                    <path
-                      d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.4 2.4 0 0 1 0-3.4l2.6-2.6a2.4 2.4 0 0 1 3.4 0Z" />
-                    <path d="m14.5 12.5 2-2" />
-                    <path d="m11.5 9.5 2-2" />
-                    <path d="m8.5 6.5 2-2" />
-                    <path d="m17.5 15.5 2-2" />
-                  </svg> Unidade de Medida</label>
-                <select class="form-input" id="ticket-material-unit"
-                  onchange="document.getElementById('material-unit-badge').textContent=this.options[this.selectedIndex].text.split(' ')[0]">
-                  <option value="un">un. — Unidade</option>
-                  <option value="cx">cx. — Caixa</option>
-                  <option value="kg">kg — Quilograma</option>
-                  <option value="g">g — Grama</option>
-                  <option value="l">L — Litro</option>
-                  <option value="ml">ml — Mililitro</option>
-                  <option value="m">m — Metro</option>
-                  <option value="cm">cm — Centímetro</option>
-                  <option value="m2">m² — Metro quadrado</option>
-                  <option value="pct">pct. — Pacote</option>
-                  <option value="rolo">rolo — Rolo</option>
-                  <option value="par">par — Par</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  style="flex-shrink:0;vertical-align:middle">
-                  <path d="M8 2v4" />
-                  <path d="M16 2v4" />
-                  <rect width="18" height="18" x="3" y="4" rx="2" />
-                  <path d="M3 10h18" />
-                </svg> Data de Necessidade</label>
-              <input type="date" class="form-input" id="ticket-material-date" min="">
-              <div style="font-size:0.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px;">Quando o
-                material é necessário?</div>
-            </div>
           </div>
           <div class="form-group" id="ticket-priority-group">
             <label class="form-label">Prioridade</label>
@@ -1138,6 +1076,105 @@
   <script src="assets/js/forms.js"></script>
   <script src="assets/js/detail.js"></script>
   <script src="assets/js/init.js"></script>
+
+  <!-- ══ MODAL INTERVENÇÃO SLA ══ -->
+  <div class="modal-overlay" id="sla-intervir-modal">
+    <div class="modal-content" style="max-width:460px;">
+      <div class="modal-header">
+        <span class="modal-title" style="display:flex;align-items:center;gap:8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" />
+            <line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+          Intervenção — Chamado Bloqueado
+        </span>
+        <button class="modal-close" onclick="closeSlaIntervir()">✕</button>
+      </div>
+
+      <!-- Etapa 1: Escolha da ação -->
+      <div id="sla-intervir-step1">
+        <div class="modal-body">
+          <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">
+            O chamado <strong id="sla-intervir-num" style="color:var(--text);"></strong> está bloqueado por
+            estouro de SLA. Escolha como deseja intervir:
+          </p>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;">
+            <button class="btn-primary" style="justify-content:flex-start;gap:10px;padding:0.85rem 1rem;"
+              onclick="slaIntervir_goReatribuir()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" x2="19" y1="8" y2="14" />
+                <line x1="22" x2="16" y1="11" y2="11" />
+              </svg>
+              <div style="text-align:left;">
+                <div style="font-weight:800;">Reatribuir</div>
+                <div style="font-size:0.75rem;opacity:0.8;font-weight:400;">Passar para outro atendente com SLA
+                  reiniciado</div>
+              </div>
+            </button>
+            <button onclick="slaIntervir_goFechar()" class="btn-secondary" style="justify-content:flex-start;gap:10px;padding:0.85rem 1rem;
+                  border-color:#ef4444;color:#ef4444;width:100%;text-align:left;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+              <div>
+                <div style="font-weight:800;">Fechar Forçadamente</div>
+                <div style="font-size:0.75rem;opacity:0.8;font-weight:400;">Concluir o chamado agora mesmo</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Etapa 2A: Reatribuir -->
+      <div id="sla-intervir-step2a" style="display:none;">
+        <div class="modal-body">
+          <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.75rem;">
+            Selecione o atendente que assumirá o chamado:
+          </p>
+          <input type="text" class="form-input" id="sla-intervir-search" placeholder="Buscar por nome..."
+            oninput="slaIntervir_filterUsers(this.value)" style="margin-bottom:0.75rem;">
+          <div id="sla-intervir-userlist" style="max-height:220px;overflow-y:auto;border:1px solid var(--border2);
+                border-radius:8px;background:var(--surface2);">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="slaIntervir_back()">Voltar</button>
+        </div>
+      </div>
+
+      <!-- Etapa 2B: Fechar -->
+      <div id="sla-intervir-step2b" style="display:none;">
+        <div class="modal-body">
+          <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;
+              padding:1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:10px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+              <line x1="12" x2="12" y1="9" y2="13" />
+              <line x1="12" x2="12.01" y1="17" y2="17" />
+            </svg>
+            <p style="font-size:0.82rem;color:#b91c1c;margin:0;line-height:1.6;">
+              O chamado <strong id="sla-intervir-num2"></strong> será encerrado imediatamente.
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" onclick="slaIntervir_back()">Voltar</button>
+          <button class="btn-primary" style="background:#ef4444;" onclick="slaIntervir_confirmarFechar()">
+            Confirmar Fechamento
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
 </body>
 

@@ -119,10 +119,25 @@ let _insumosPage = 1;
 
 async function loadInsumos(canManage) {
   try {
-    const snap = await db.collection('insumos').get();
-    _insumos = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
+    const [insSnap, movSnap] = await Promise.all([
+      db.collection('insumos').get(),
+      db.collection('insumos_mov').get()
+    ]);
+
+    // Agrupar movimentações por insumoId, ordenadas por data desc
+    const movMap = {};
+    movSnap.docs.forEach(d => {
+      const m = { id: d.id, ...d.data() };
+      if (!movMap[m.insumoId]) movMap[m.insumoId] = [];
+      movMap[m.insumoId].push(m);
+    });
+    Object.values(movMap).forEach(arr =>
+      arr.sort((a, b) => (b.data || '').localeCompare(a.data || '')));
+
+    _insumos = insSnap.docs
+      .map(d => ({ id: d.id, ...d.data(), _movRecentes: movMap[d.id] || [] }))
       .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+
     renderInsumosList(_insumos, canManage);
   } catch (e) {
     console.error('[Inventário] Erro ao carregar insumos:', e);
@@ -160,16 +175,24 @@ function renderInsumosList(list, canManage) {
     const pct = minimo > 0 ? Math.min(100, Math.round((qtd / minimo) * 100)) : 100;
     const barColor = zerado ? '#ef4444' : alerta ? '#f59e0b' : '#22c55e';
 
-    // Últimas movimentações inline
-    const movs = (i._movRecentes || []).slice(0, 3);
-    const movsHtml = movs.length ? movs.map(m => `
-      <div class="insumo-mov-row">
-        <span class="insumo-mov-badge" style="background:${m.tipo === 'entrada' ? '#dcfce7' : '#fee2e2'};color:${m.tipo === 'entrada' ? '#15803d' : '#b91c1c'};">
-          ${m.tipo === 'entrada' ? '+' : '-'}${m.qtd}
+    // Resumo últimos 15 dias
+    const quinze = Date.now() - 15 * 24 * 3600000;
+    const movs15 = (i._movRecentes || []).filter(m => m.data && new Date(m.data).getTime() >= quinze);
+    const totalEntradas = movs15.filter(m => m.tipo === 'entrada').reduce((s, m) => s + (m.qtd || 0), 0);
+    const totalSaidas = movs15.filter(m => m.tipo !== 'entrada').reduce((s, m) => s + (m.qtd || 0), 0);
+    const movSummaryHtml = `<div class="insumo-mov-summary">
+        <span class="insumo-mov-sum-item entrada">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          ${totalEntradas} entrada${totalEntradas !== 1 ? 's' : ''}
         </span>
-        <span class="insumo-mov-desc">${m.desc || (m.tipo === 'entrada' ? 'Entrada' : 'Saída')}</span>
-        <span class="insumo-mov-date">${m.data ? new Date(m.data).toLocaleDateString('pt-BR') : '—'}</span>
-      </div>`).join('') : `<div style="font-size:0.7rem;color:var(--muted);">Sem movimentações ainda</div>`;
+        <span class="insumo-mov-sum-sep">·</span>
+        <span class="insumo-mov-sum-item saida">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+          ${totalSaidas} saída${totalSaidas !== 1 ? 's' : ''}
+        </span>
+        <span class="insumo-mov-sum-sep">·</span>
+        <span class="insumo-mov-sum-periodo">últimos 15 dias</span>
+      </div>`;
 
     return `
       <div class="insumo-card${alerta ? ' insumo-card--alerta' : ''}${zerado ? ' insumo-card--zerado' : ''}">
@@ -219,8 +242,8 @@ function renderInsumosList(list, canManage) {
             <div class="insumo-bar-fill" style="width:${Math.min(100, qtd <= 0 ? 100 : (minimo > 0 ? Math.min(100, Math.round(qtd / minimo * 100)) : 100))}%;background:${barColor};"></div>
           </div>
           <!-- Movimentações recentes -->
-          <div class="insumo-movs-label">Movimentações recentes</div>
-          <div class="insumo-movs-list">${movsHtml}</div>
+          <div class="insumo-movs-label">Movimentações — 15 dias</div>
+          ${movSummaryHtml}
         </div>
       </div>`;
   }).join('');

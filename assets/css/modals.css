@@ -362,3 +362,84 @@ body.dark-mode .ticket-type-btn.active {
   background: var(--accent);
   color: #fff;
 }
+
+/* ── Botões globais (btn-primary / btn-secondary) ── */
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: var(--accent2);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-secondary:hover {
+  background: var(--surface3);
+  border-color: var(--muted);
+}
+
+body.dark-mode .btn-primary {
+  background: var(--accent);
+}
+
+body.dark-mode .btn-secondary {
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+
+/* ── Botão de fechar do modal de intervenção ── */
+#sla-intervir-modal .modal-close {
+  font-size: 0.85rem;
+}
+
+/* ── Lista de usuários no modal de reatribuição ── */
+#sla-intervir-userlist::-webkit-scrollbar {
+  width: 4px;
+}
+
+#sla-intervir-userlist::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 2px;
+}

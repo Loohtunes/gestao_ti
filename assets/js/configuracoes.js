@@ -57,7 +57,7 @@ async function initConfiguracoes() {
   if (syncFab) syncFab.style.display = user.isSuperAdmin ? 'inline-flex' : 'none';
 
   // Aba Administração — apenas SuperAdmin
-  const adminTab = document.querySelector('[data-tab="administracao"]');
+  const adminTab = document.getElementById('tab-administracao');
   if (adminTab) adminTab.style.display = user.isSuperAdmin ? 'flex' : 'none';
 
   openTab('usuarios');
@@ -207,47 +207,102 @@ async function renderSlaPanel() {
   if (isAdmin) renderSlaJustificativas();
 }
 
+// Estado de paginação das justificativas
+let _slaJustPage = 1;
+const _SLA_JUST_PER_PAGE = 6; // 2 colunas x 3 linhas
+let _slaJustDocs = [];
+
 async function renderSlaJustificativas() {
   const container = document.getElementById('sla-justificativas-list');
   if (!container) return;
   try {
-    let snap;
-    try {
-      snap = await db.collection('sla_justificativas')
-        .orderBy('createdAt', 'desc').limit(30).get();
-    } catch (e) {
-      // Coleção ainda não existe ou sem índice — busca sem ordenação
-      snap = await db.collection('sla_justificativas').limit(30).get();
-    }
+    // Busca sem orderBy para compatibilidade com registros antigos (campo createdAt)
+    // e novos (campo data) — ordenação feita no cliente
+    const snap = await db.collection('sla_justificativas').limit(100).get();
 
     if (snap.empty) {
       container.innerHTML = `<div class="sla-empty">Nenhum estouro registrado.</div>`;
       return;
     }
 
-    container.innerHTML = snap.docs.map(d => {
-      const j = d.data();
-      const dt = j.createdAt ? new Date(j.createdAt).toLocaleString('pt-BR') : '—';
-      const def = SLA_DEFAULTS[j.priority] || {};
-      const tipo = j.tipo === 'sobrevida' ? '⏱️ Sobrevida' : '🔴 SLA';
-      return `
-        <div class="sla-just-card">
-          <div class="sla-just-header">
-            <span class="sla-just-ticket">#${j.ticketNum || j.ticketId}</span>
-            <span class="sla-just-prio" style="color:${def.color || 'var(--muted)'};">${def.label || j.priority}</span>
-            <span class="sla-just-tipo">${tipo}</span>
-            <span class="sla-just-date">${dt}</span>
-          </div>
-          <div class="sla-just-atendente">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            ${j.attendantName || '—'}
-          </div>
-          <div class="sla-just-text">"${j.justificativa}"</div>
-        </div>`;
-    }).join('');
+    _slaJustDocs = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => {
+        // Suporta campo 'data' (novo) e 'createdAt' (antigo)
+        const da = a.data || a.createdAt || '';
+        const db_ = b.data || b.createdAt || '';
+        return db_.localeCompare(da);
+      });
+
+    _slaJustPage = 1;
+    _renderSlaJustPage(container);
   } catch (e) {
+    console.error('[SLA] Erro ao carregar justificativas:', e);
     container.innerHTML = `<div class="sla-empty">Erro ao carregar justificativas.</div>`;
   }
+}
+
+function _renderSlaJustPage(container) {
+  const total = _slaJustDocs.length;
+  const totalPages = Math.max(1, Math.ceil(total / _SLA_JUST_PER_PAGE));
+  if (_slaJustPage > totalPages) _slaJustPage = totalPages;
+
+  const start = (_slaJustPage - 1) * _SLA_JUST_PER_PAGE;
+  const paged = _slaJustDocs.slice(start, start + _SLA_JUST_PER_PAGE);
+
+  const cards = paged.map(j => {
+    const dt = j.data ? new Date(j.data).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    }) : '—';
+    const def = SLA_DEFAULTS[j.priority] || {};
+    const tipo = j.tipo === 'sobrevida' ? '⏱️ Sobrevida'
+      : j.tipo === 'escalacao_admin' ? '⬆️ Escalação'
+        : j.tipo === 'bloqueio_superadmin' ? '🔒 Bloqueio'
+          : j.tipo === 'vencimento_admin' ? '🔴 SLA Admin'
+            : '🔴 SLA';
+    return `
+      <div class="sla-just-card">
+        <div class="sla-just-header">
+          <span class="sla-just-ticket">#${j.ticketNumber || j.ticketNum || j.ticketId || '—'}</span>
+          <span class="sla-just-prio" style="color:${def.color || 'var(--muted)'};">${def.label || j.priority || '—'}</span>
+          <span class="sla-just-tipo">${tipo}</span>
+          <span class="sla-just-date">${dt}</span>
+        </div>
+        <div class="sla-just-atendente">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          ${j.responsavel || j.attendantName || '—'}
+        </div>
+        <div class="sla-just-text">"${j.justificativa}"</div>
+      </div>`;
+  }).join('');
+
+  const hasPrev = _slaJustPage > 1;
+  const hasNext = _slaJustPage < totalPages;
+  const pagination = totalPages > 1 ? `
+    <div class="sla-just-pagination">
+      <button class="sla-just-page-btn" onclick="_slaJustGoTo(${_slaJustPage - 1})" ${hasPrev ? '' : 'disabled'}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="sla-just-page-info">${start + 1}–${Math.min(start + _SLA_JUST_PER_PAGE, total)} de ${total}</span>
+      <button class="sla-just-page-btn" onclick="_slaJustGoTo(${_slaJustPage + 1})" ${hasNext ? '' : 'disabled'}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>` : '';
+
+  container.innerHTML = `<div class="sla-just-grid">${cards}</div>${pagination}`;
+}
+
+function _slaJustGoTo(page) {
+  const container = document.getElementById('sla-justificativas-list');
+  if (!container) return;
+  _slaJustPage = page;
+  _renderSlaJustPage(container);
 }
 
 async function saveSlaConfig() {

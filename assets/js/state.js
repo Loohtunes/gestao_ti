@@ -50,9 +50,11 @@ const CARDS_PER_PAGE = 8;
 // Labels de status
 const STATUS_LABEL = {
   available: 'Aberto',
+  assigned: 'Atribuído',
   'in-progress': 'Em Atendimento',
   completed: 'Concluído',
   archived: 'Concluído',
+  'force-closed': 'Fechado',
   'waiting': 'Em Espera',
   'waiting-info': 'Aguardando Informações',
   'requested': 'Solicitado',

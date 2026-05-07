@@ -243,6 +243,93 @@ function renderDetailContent(ticket) {
     </div>
 
     <div class="detail-chat-full">
+      ${ticket.status === 'force-closed' ? `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;padding:2.5rem 2rem;gap:1.25rem;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:14px;background:#7f1d1d20;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#991b1b"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="11" height="11" x="11" y="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:800;color:#991b1b;margin-bottom:0.35rem;">
+            Chamado Fechado pelo SuperAdmin
+          </div>
+          <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;max-width:360px;">
+            ${ticket.forceCloseReason || 'Fechado forçadamente por estouro de SLA.'}
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+          padding:0.85rem 1.25rem;display:flex;flex-direction:column;gap:0.4rem;width:100%;max-width:360px;">
+          ${ticket.forceClosedBy ? `
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--muted);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Fechado por <strong style="color:var(--text);">${capitalizeName(ticket.forceClosedBy)}</strong></span>
+          </div>` : ''}
+          ${ticket.forceClosedAt ? `
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--muted);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+            <span>Em <strong style="color:var(--text);">${ticket.forceClosedAt}</strong></span>
+          </div>` : ''}
+        </div>
+      </div>
+      ` : (ticket.status === 'completed' || ticket.status === 'archived') ? `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+        height:100%;padding:2.5rem 2rem;gap:1.25rem;text-align:center;">
+        <div style="width:56px;height:56px;border-radius:14px;background:#14532d20;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#15803d"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:1rem;font-weight:800;color:#15803d;margin-bottom:0.35rem;">
+            Chamado Concluído
+          </div>
+          <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;max-width:360px;">
+            Este chamado foi encerrado com sucesso.
+          </div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+          padding:0.85rem 1.25rem;display:flex;flex-direction:column;gap:0.4rem;width:100%;max-width:360px;">
+          ${ticket.attendant ? `
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--muted);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span>Concluído por <strong style="color:var(--text);">${capitalizeName(ticket.attendant)}</strong></span>
+          </div>` : ''}
+          ${ticket.completedAt || ticket.archivedAt ? `
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--muted);">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+              <line x1="16" x2="16" y1="2" y2="6"/>
+              <line x1="8" x2="8" y1="2" y2="6"/>
+              <line x1="3" x2="21" y1="10" y2="10"/>
+            </svg>
+            <span>Em <strong style="color:var(--text);">${ticket.completedAt || ticket.archivedAt}</strong></span>
+          </div>` : ''}
+        </div>
+      </div>
+      ` : `
       <div class="detail-chat-messages" id="detail-chat-messages">
         ${renderMessagesHTML(ticket)}
       </div>
@@ -265,6 +352,7 @@ function renderDetailContent(ticket) {
         ></div>
         <button class="detail-chat-send" onclick="sendChatMessage()" title="Ctrl+Enter para enviar">Comentar ↵</button>
       </div>
+      `}
     </div>
   `;
 

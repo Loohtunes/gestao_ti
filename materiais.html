@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão T.I — Materiais</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/configuracoes.css">
+  <link rel="stylesheet" href="assets/css/materials_page.css">
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav>
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;"
+      title="Voltar ao Menu Principal">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span
+          style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown"
+          style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track"
+        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill"
+          style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema"
+        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
+        <div
+          style="position:relative;width:28px;height:16px;background:var(--surface3);border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb"
+            style="position:absolute;top:1px;left:1px;width:12px;height:12px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
+          </div>
+        </div>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
+      </div>
+
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ LAYOUT ══ -->
+  <div class="config-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <a class="chamados-sidebar-item" href="index.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" />
+              <path d="M13 17v2" />
+              <path d="M13 11v2" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Chamados</span>
+        </a>
+
+        <a class="chamados-sidebar-item active" href="materiais.html" id="cs-mod-materiais" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+              <path d="M12 22V12" />
+              <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+              <path d="m7.5 4.27 9 5.15" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Materiais</span>
+        </a>
+
+        <a class="chamados-sidebar-item" href="inventario.html" id="cs-mod-inventario" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path
+                d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+              <path d="m7 16.5-4.74-2.85" />
+              <path d="m7 16.5 5-3" />
+              <path d="M7 16.5v5.17" />
+              <path
+                d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+              <path d="m17 16.5-5-3" />
+              <path d="m17 16.5 4.74-2.85" />
+              <path d="M17 16.5v5.17" />
+              <path
+                d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+              <path d="M12 8 7.26 5.15" />
+              <path d="m12 8 4.74-2.85" />
+              <path d="M12 13.5V8" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Inventário</span>
+        </a>
+
+        <div class="chamados-sidebar-divider"></div>
+
+        <a class="chamados-sidebar-item" href="menu.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Menu Principal</span>
+        </a>
+
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" title="Configurações" id="sidebar-config-btn"
+            style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="mat-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="mat-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="mat-sidebar-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="matLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="config-main">
+      <div class="config-header">
+        <div class="config-header-title" style="display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+            <path d="M12 22V12" />
+            <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+          </svg>
+          Materiais
+        </div>
+        <div class="config-header-sub">// Solicitações e pedidos de materiais</div>
+      </div>
+
+      <div class="config-content">
+
+        <!-- Stats -->
+        <div class="mat-stats">
+          <div class="mat-stat-card">
+            <div class="mat-stat-num" id="mat-stat-solicitados">0</div>
+            <div class="mat-stat-label">Solicitados</div>
+          </div>
+          <div class="mat-stat-card">
+            <div class="mat-stat-num amber" id="mat-stat-andamento">0</div>
+            <div class="mat-stat-label">Em Andamento</div>
+          </div>
+          <div class="mat-stat-card">
+            <div class="mat-stat-num blue" id="mat-stat-em-compra">0</div>
+            <div class="mat-stat-label">Em Compra</div>
+          </div>
+          <div class="mat-stat-card">
+            <div class="mat-stat-num green" id="mat-stat-entregues">0</div>
+            <div class="mat-stat-label">Entregues</div>
+          </div>
+          <div class="mat-stat-card">
+            <div class="mat-stat-num gray" id="mat-stat-cancelados">0</div>
+            <div class="mat-stat-label">Recusados/Cancelados</div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="mat-filter-bar">
+          <div class="mat-filter-actions">
+
+            <!-- Dropdown de Status -->
+            <div class="mat-status-dropdown-wrap" id="mat-status-dropdown-wrap">
+              <button class="mat-status-dropdown-btn" id="mat-status-dropdown-btn" onclick="matToggleStatusDropdown()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                  <line x1="11" y1="18" x2="13" y2="18" />
+                </svg>
+                <span id="mat-status-dropdown-label">Todos os status</span>
+                <svg class="mat-dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </button>
+
+              <div class="mat-status-dropdown-menu" id="mat-status-dropdown-menu">
+                <div class="mat-status-dropdown-item active" onclick="matSetFilter('all', this)"
+                  data-label="Todos os status">
+                  <span class="mat-dropdown-dot" style="background:var(--muted);"></span>Todos
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('solicitado', this)"
+                  data-label="Solicitado">
+                  <span class="mat-dropdown-dot" style="background:#3b82f6;"></span>Solicitado
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('visto', this)" data-label="Visto">
+                  <span class="mat-dropdown-dot" style="background:#a855f7;"></span>Visto
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('reservado', this)" data-label="Reservado">
+                  <span class="mat-dropdown-dot" style="background:#f97316;"></span>Reservado
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('em-compra', this)" data-label="Em Compra">
+                  <span class="mat-dropdown-dot" style="background:#eab308;"></span>Em Compra
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('ag-confirm', this)"
+                  data-label="Ag. Confirmação">
+                  <span class="mat-dropdown-dot" style="background:#22c55e;"></span>Ag. Confirmação
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('entregue', this)" data-label="Entregue">
+                  <span class="mat-dropdown-dot" style="background:#16a34a;"></span>Entregue
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('cancelado', this)" data-label="Cancelado">
+                  <span class="mat-dropdown-dot" style="background:#ef4444;"></span>Cancelado
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('recusado', this)" data-label="Recusado">
+                  <span class="mat-dropdown-dot" style="background:#f43f5e;"></span>Recusado
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('proc-troca', this)"
+                  data-label="Proc. de Troca">
+                  <span class="mat-dropdown-dot" style="background:#06b6d4;"></span>Proc. de Troca
+                </div>
+                <div class="mat-status-dropdown-item" onclick="matSetFilter('garantia', this)" data-label="Garantia">
+                  <span class="mat-dropdown-dot" style="background:#7c3aed;"></span>Garantia
+                </div>
+              </div>
+            </div>
+
+            <!-- Busca -->
+            <div class="mat-search-wrap" id="mat-search-wrap">
+              <button class="mat-search-toggle" onclick="matToggleSearch()" title="Pesquisar">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </button>
+              <input type="text" class="mat-search-input" id="mat-search-input" placeholder="Título ou #número..."
+                oninput="matOnSearch(this.value)" onblur="if(!this.value){matToggleSearch()}">
+            </div>
+
+            <!-- Nova Solicitação -->
+            <button class="mat-new-btn" id="mat-new-btn" onclick="matOpenNew()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Nova Solicitação
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="mat-grid" id="mat-grid">
+          <div class="mat-empty">
+            <div class="mat-empty-text">Carregando solicitações...</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ══ MODAL NOVA SOLICITAÇÃO ══ -->
+  <div class="modal-overlay" id="mat-new-modal">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <span class="modal-title">Nova Solicitação de Material</span>
+        <button class="modal-close" onclick="matCloseNew()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Título do material <span style="color:var(--accent)">*</span></label>
+          <input type="text" class="form-input" id="mat-new-title" placeholder="Ex: Cabo de rede Cat6 — 25m">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descrição / Justificativa</label>
+          <textarea class="form-input" id="mat-new-desc" rows="3" placeholder="Descreva o motivo ou especificações..."
+            style="resize:vertical;min-height:72px;"></textarea>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Quantidade <span style="color:var(--accent)">*</span></label>
+            <input type="number" class="form-input" id="mat-new-qty" placeholder="1" min="1" step="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unidade</label>
+            <select class="form-input" id="mat-new-unit">
+              <option value="un">Unidade (un.)</option>
+              <option value="m">Metro (m)</option>
+              <option value="pct">Pacote (pct.)</option>
+              <option value="cx">Caixa (cx.)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Setor</label>
+            <input type="text" class="form-input" id="mat-new-setor" placeholder="Seu setor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Necessário até</label>
+            <input type="date" class="form-input" id="mat-new-date">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="matCloseNew()">Cancelar</button>
+        <button class="btn-primary" id="mat-new-save-btn" onclick="matSaveNew()">Enviar Solicitação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL JUSTIFICATIVA ══ -->
+  <div class="modal-overlay" id="mat-justif-modal">
+    <div class="modal-content" style="max-width:440px;">
+      <div class="modal-header">
+        <span class="modal-title" id="mat-justif-title">Justificativa</span>
+        <button class="modal-close" onclick="matCloseJustif()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="mat-justif-desc" style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem;"></p>
+        <div class="form-group">
+          <label class="form-label">Motivo <span style="color:var(--accent)">*</span></label>
+          <textarea class="form-input" id="mat-justif-input" rows="4" placeholder="Descreva o motivo..."
+            style="resize:vertical;min-height:88px;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="matCloseJustif()">Cancelar</button>
+        <button class="btn-primary" id="mat-justif-confirm" onclick="matConfirmJustif()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DETALHE ══ -->
+  <div class="modal-overlay" id="mat-detail-modal">
+    <div class="modal-content mat-detail-content">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span class="mat-detail-num" id="mat-detail-num">—</span>
+          <span class="mat-status-badge" id="mat-detail-status-badge">—</span>
+        </div>
+        <button class="modal-close" onclick="matCloseDetail()">✕</button>
+      </div>
+      <div class="mat-detail-body">
+        <div class="mat-detail-main">
+          <div class="mat-detail-title" id="mat-detail-title">—</div>
+          <div class="mat-detail-desc" id="mat-detail-desc" style="display:none;"></div>
+          <div class="mat-detail-meta-grid" id="mat-detail-meta"></div>
+
+          <div id="mat-insumo-link-section" style="display:none;">
+            <div class="mat-insumo-link-label">Vínculo com Inventário</div>
+            <div id="mat-insumo-linked" style="display:none;">
+              <div class="mat-insumo-card">
+                <div class="mat-insumo-card-info">
+                  <div class="mat-insumo-card-nome" id="mat-linked-nome">—</div>
+                  <div class="mat-insumo-card-meta">
+                    <span id="mat-linked-cat">—</span>
+                    <span class="mat-insumo-sep">·</span>
+                    <span>Disponível: <strong id="mat-linked-disp">—</strong></span>
+                    <span class="mat-insumo-sep">·</span>
+                    <span>Físico: <strong id="mat-linked-fis">—</strong></span>
+                  </div>
+                </div>
+                <button class="mat-insumo-unlink-btn" onclick="matUnlinkInsumo()" title="Desvincular">✕</button>
+              </div>
+            </div>
+            <div id="mat-insumo-search-wrap">
+              <div class="mat-insumo-search-row">
+                <input type="text" class="form-input" id="mat-insumo-search-input"
+                  placeholder="Buscar insumo no inventário..." oninput="matSearchInsumos(this.value)"
+                  autocomplete="off">
+              </div>
+              <div id="mat-insumo-results" class="mat-insumo-results" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div class="mat-detail-actions" id="mat-detail-actions"></div>
+        </div>
+        <div class="mat-detail-hist">
+          <div class="mat-detail-hist-title">Histórico</div>
+          <div class="mat-detail-hist-body" id="mat-detail-hist-body">
+            <div class="hist-empty">Sem registros ainda.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ JS ═══ -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/materials_new.js"></script>
+
+</body>
+
+</html>

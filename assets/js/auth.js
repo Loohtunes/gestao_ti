@@ -380,6 +380,9 @@ async function checkLoginStatus() {
   document.getElementById('current-attendant').textContent = capitalizeName(currentUser.username);
   applyRoleUI();
   loadTickets();
+  // Inicializar SLA
+  if (typeof loadSlaConfig === 'function') loadSlaConfig();
+  if (typeof initSlaChecker === 'function') initSlaChecker();
 
   // Mostrar setor na navbar
   const setorBadge = document.getElementById('current-setor-badge');

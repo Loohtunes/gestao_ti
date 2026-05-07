@@ -218,6 +218,46 @@
   border-color: #22c55e30;
 }
 
+.ticket-status-badge.force-closed {
+  background: #7f1d1d20;
+  color: #991b1b;
+  border-color: #b91c1c30;
+}
+
+.ticket-card.force-closed {
+  opacity: 0.88;
+  background: #fff5f5 !important;
+  border-color: #991b1b40 !important;
+}
+
+.ticket-card.force-closed .ticket-prio-stripe {
+  background: #b91c1c !important;
+  animation: none !important;
+}
+
+.ticket-card.force-closed .ticket-status-badge {
+  background: #7f1d1d20;
+  color: #991b1b;
+  border-color: #b91c1c30;
+}
+
+body.dark-mode .ticket-card.force-closed {
+  background: #2d0a0a !important;
+  border-color: #991b1b60 !important;
+}
+
+body.dark-mode .ticket-status-badge.force-closed {
+  background: #7f1d1d30;
+  color: #fca5a5;
+  border-color: #b91c1c40;
+}
+
+body.dark-mode .ticket-card.force-closed .ticket-status-badge {
+  background: #7f1d1d30;
+  color: #fca5a5;
+  border-color: #b91c1c40;
+}
+
 /* ── Legados / Materiais ── */
 .ticket-status-badge.in-analysis {
   background: #dbeafe;
@@ -757,6 +797,12 @@ body.dark-mode .tl-row.tl-following {
   font-family: var(--font-mono);
 }
 
+.tl-date-force-closed {
+  font-size: 0.68rem;
+  color: #991b1b;
+  font-family: var(--font-mono);
+}
+
 .tl-attendant-tag {
   font-size: 0.7rem;
   font-family: var(--font-mono);
@@ -833,6 +879,25 @@ body.dark-mode .tl-row.tl-following {
 .tl-row.archived:hover {
   opacity: 1;
   background: #f0fdf4;
+}
+
+.tl-row.tl-force-closed {
+  border-left: 4px solid #991b1b !important;
+  opacity: 0.88;
+  background: #fff5f5;
+}
+
+.tl-row.tl-force-closed:hover {
+  opacity: 1;
+  background: #fef2f2;
+}
+
+body.dark-mode .tl-row.tl-force-closed {
+  background: #2d0a0a;
+}
+
+body.dark-mode .tl-row.tl-force-closed:hover {
+  background: #3d0f0f;
 }
 
 body.dark-mode .tl-row.completed:hover,
@@ -1531,4 +1596,93 @@ body.dark-mode .arc-filter-date::-webkit-calendar-picker-indicator:hover {
   background: var(--surface2);
   color: var(--accent);
   font-weight: 700;
+}
+
+/* ── SLA Bar ── */
+.sla-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0 0 8px 8px;
+  margin: 0 -1px;
+}
+
+.sla-bar-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sla-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s linear, background 0.3s;
+}
+
+.sla-bar-label {
+  font-size: 0.6rem;
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@keyframes slaPulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ── Card Bloqueado — SLA escalado ── */
+.ticket-card.sla-blocked-card {
+  border-color: #b91c1c !important;
+  background: #fff5f5;
+}
+
+body.dark-mode .ticket-card.sla-blocked-card {
+  background: #2d0a0a;
+  border-color: #991b1b !important;
+}
+
+.ticket-card.sla-blocked-card .ticket-title,
+.ticket-card.sla-blocked-card .ticket-number {
+  color: var(--text);
+}
+
+/* ── Botão Atribuir ── */
+.ticket-assign-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #3b82f6;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ticket-assign-btn:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* ── Badge Atribuído ── */
+.ticket-status-badge.assigned {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
 }

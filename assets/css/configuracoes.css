@@ -977,6 +977,53 @@ body.dark-mode .setor-card:hover {
 }
 
 /* Justificativas */
+/* ── Grid 2 colunas de justificativas ── */
+.sla-just-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Paginação das justificativas ── */
+.sla-just-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+
+.sla-just-page-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.sla-just-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.sla-just-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sla-just-page-info {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
 .sla-just-card {
   background: var(--surface);
   border: 1px solid var(--border2);
