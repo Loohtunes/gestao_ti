@@ -395,7 +395,6 @@ function stopSessionTimer() {
   document.removeEventListener('focus', onDocumentFocus, true);
   window.removeEventListener('blur', onWindowBlur);
   window.removeEventListener('focus', onWindowFocus);
-
   clearTimeout(_sessionFocusCheck);
   dismissSessionWarning();
   hideVisualTimer();
@@ -403,6 +402,9 @@ function stopSessionTimer() {
   _sessionWarning = false;
   _sessionLastHide = 0;
   _sessionLastFocus = 0;
+  // Limpar timestamps do localStorage
+  localStorage.removeItem('premovale-session-hide-at');
+  localStorage.removeItem('premovale-session-timeout');
 }
 
 function onVisibilityChange() {
@@ -468,33 +470,55 @@ function startBackgroundTimer() {
   // Não iniciar se já está rodando
   if (_sessionBgStart) return;
   _sessionBgStart = Date.now();
+
+  // Salva timestamp no localStorage — funciona mesmo com JS suspenso pelo browser
+  localStorage.setItem('premovale-session-hide-at', String(_sessionBgStart));
+  localStorage.setItem('premovale-session-timeout', String(_sessionBgTimeout));
+
   console.log('[Session] timer iniciado —', new Date().toLocaleTimeString('pt-BR'));
   showVisualTimer();
 
   clearTimeout(_sessionWarnTimer);
   clearTimeout(_sessionBgTimer);
 
-  // Aviso antes do logout
+  // Aviso antes do logout (funciona se a aba ficar ativa durante o período)
   _sessionWarnTimer = setTimeout(() => {
     showAfkWarning();
   }, _sessionBgTimeout - _sessionWarnBefore);
 
-  // Logout automático
+  // Logout automático como fallback (pode ser suspenso pelo browser)
   _sessionBgTimer = setTimeout(() => {
     triggerAfkLogout();
   }, _sessionBgTimeout);
 }
 
 function onReturnToTab() {
-  const elapsed = _sessionBgStart ? Date.now() - _sessionBgStart : 0;
-  console.log('[Session] voltou — ausente por', Math.round(elapsed / 1000) + 's');
+  // Verificar pelo localStorage — garante funcionamento mesmo com JS suspenso pelo browser
+  const savedHideAt = parseInt(localStorage.getItem('premovale-session-hide-at') || '0');
+  const savedTimeout = parseInt(localStorage.getItem('premovale-session-timeout') || '0');
+
+  const referenceTime = savedHideAt || _sessionBgStart;
+  const referenceTimeout = savedTimeout || _sessionBgTimeout;
+  const elapsed = referenceTime ? Date.now() - referenceTime : 0;
+
+  console.log('[Session] voltou — ausente por', Math.round(elapsed / 1000) + 's',
+    '/ limite:', Math.round(referenceTimeout / 1000) + 's');
 
   clearTimeout(_sessionBgTimer);
   clearTimeout(_sessionWarnTimer);
   hideVisualTimer();
 
-  if (elapsed >= _sessionBgTimeout) {
+  // Limpar localStorage independente do resultado
+  localStorage.removeItem('premovale-session-hide-at');
+  localStorage.removeItem('premovale-session-timeout');
+
+  if (elapsed >= referenceTimeout) {
+    // Tempo esgotado — logout obrigatório
     triggerAfkLogout();
+  } else if (elapsed >= referenceTimeout - _sessionWarnBefore) {
+    // Ainda dentro do prazo mas no período de aviso — mostrar warning
+    showAfkWarning();
+    _sessionBgStart = null;
   } else {
     dismissSessionWarning();
     _sessionBgStart = null;
@@ -788,5 +812,64 @@ function exportRamaisXLS() {
     a.href = url; a.download = 'ramais_premovale.csv'; a.click();
     URL.revokeObjectURL(url);
     showNotification('Exportado como CSV! ✅', 'success');
+  }
+}
+// ── Módulos Pai — funções globais (usadas em todas as páginas) ──
+function toggleModPai(id) {
+  const isCollapsed = document.getElementById('chamados-sidebar')?.classList.contains('collapsed');
+  if (isCollapsed) {
+    _toggleModPaiFloat(id);
+  } else {
+    _openModPai(id);
+  }
+}
+
+function _openModPai(id) {
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
+  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
+  if (!btn || !submenu) return;
+  const isOpen = submenu.classList.contains('open');
+  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open'));
+  document.querySelectorAll('.mod-pai-btn').forEach(b => b.classList.remove('open'));
+  if (!isOpen) {
+    submenu.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+
+function _toggleModPaiFloat(id) {
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
+  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
+  if (!btn || !submenu) return;
+  const rect = btn.getBoundingClientRect();
+  submenu.style.top = rect.top + 'px';
+  const isOpen = submenu.classList.contains('open-float');
+  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open-float'));
+  if (!isOpen) submenu.classList.add('open-float');
+}
+
+function initModPai(activeSubmod) {
+  // Fecha submenu ao clicar fora
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.chamados-sidebar')) {
+      document.querySelectorAll('.mod-pai-submenu').forEach(s => {
+        s.classList.remove('open-float');
+        s.classList.remove('open');
+      });
+      document.querySelectorAll('.mod-pai-btn').forEach(b => b.classList.remove('open'));
+    }
+  });
+  // Determinar qual módulo pai abrir com base no submódulo ativo
+  const comercialSubs = ['comercial'];
+  const tiSubs = ['chamados', 'materiais', 'inventario', 'rotinas'];
+  if (activeSubmod && comercialSubs.includes(activeSubmod)) {
+    _openModPai('comercial');
+  } else {
+    _openModPai('ti');
+  }
+  // Marcar submódulo ativo
+  if (activeSubmod) {
+    const el = document.getElementById('sub-' + activeSubmod);
+    if (el) el.classList.add('active');
   }
 }

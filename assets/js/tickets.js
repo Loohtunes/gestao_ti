@@ -427,15 +427,18 @@ function buildArchivedRow(ticket) {
   const setorHtml = ticket.setor ? '<span class="tl-setor-tag">' + ticket.setor + '</span>' : '<span class="tl-empty">—</span>';
   const dateHtml = ticket.completedAt || ticket.forceClosedAt || ticket.archivedAt || '—';
   const isForceClosed = ticket.status === 'force-closed';
-  const rowClass = isForceClosed ? 'tl-row tl-force-closed' : 'tl-row archived arc-row';
-  const dateClass = isForceClosed ? 'tl-date-force-closed' : 'tl-date-done';
+  const rowClass    = isForceClosed ? 'tl-row tl-force-closed' : 'tl-row archived arc-row';
+  const dateClass   = isForceClosed ? 'tl-date-force-closed' : 'tl-date-done';
   const borderStyle = isForceClosed ? 'border-left:3px solid #991b1b;cursor:pointer' : 'cursor:pointer';
-  const statusLabel = isForceClosed
-    ? '<br><span style="font-size:0.65rem;font-family:var(--font-mono);color:#991b1b;font-weight:700;letter-spacing:0.04em;">Fechado</span>'
-    : '<br><span style="font-size:0.65rem;font-family:var(--font-mono);color:#15803d;font-weight:700;letter-spacing:0.04em;">Concluído</span>';
+  const labelColor  = isForceClosed ? '#991b1b' : '#15803d';
+  const labelText   = isForceClosed ? 'Fechado' : 'Concluído';
+  const titleHtml   = '<span style="display:flex;flex-direction:column;gap:1px;">'
+    + '<span class="tl-title-text">' + ticket.title + '</span>'
+    + '<span style="font-size:0.62rem;font-family:var(--font-mono);color:' + labelColor + ';font-weight:700;letter-spacing:0.04em;line-height:1;">' + labelText + '</span>'
+    + '</span>';
   return '<div class="' + rowClass + '" onclick="openTicketDetail(\'' + ticket.id + '\')" style="' + borderStyle + '">' +
     '<span class="tl-col tl-num"><span class="tl-num-badge">' + num + '</span></span>' +
-    '<span class="tl-col tl-title"><span class="tl-title-text">' + ticket.title + '</span>' + statusLabel + '</span>' +
+    '<span class="tl-col tl-title">' + titleHtml + '</span>' +
     '<span class="tl-col tl-setor">' + setorHtml + '</span>' +
     '<span class="tl-col tl-prio"><span class="tl-prio-tag ' + prio + '">' + (PRIORITY_LABEL[prio] || '—') + '</span></span>' +
     '<span class="tl-col tl-date"><span class="' + dateClass + '">' + dateHtml + '</span></span>' +
@@ -738,7 +741,7 @@ function setTicketPriority(id, priority) {
 function setSubStatus(id, subStatus) {
   const t = tickets.find(t => t.id === id); if (!t) return;
   t.status = subStatus;
-  if (!t.startedAt) t.startedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  if (!t.startedAt) t.startedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   if (!t.attendant) t.attendant = currentUser.username;
   logTicketEvent(t, 'Status alterado para "' + (STATUS_LABEL[subStatus] || subStatus) + '" por ' + capitalizeName(currentUser.username));
   saveTickets(); if (activeDetailId === id) openTicketDetail(id);
@@ -847,7 +850,7 @@ function completeTicket(id) {
   if (!t) return;
   if (!canActOnTicket(t)) { showNotification('Você não tem permissão para concluir este chamado.', 'error'); return; }
   if (!confirm(`Concluir o chamado "${t.title}"?`)) return;
-  const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const now = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   t.status = 'archived';
   t.completedAt = now;
   t.archivedAt = now;
@@ -886,7 +889,7 @@ function reopenTicket(id) {
 
 function archiveTicket(id) {
   const t = tickets.find(t => t.id === id); if (!t || !confirm(`Arquivar o chamado "${t.title}"?`)) return;
-  t.status = 'archived'; t.archivedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  t.status = 'archived'; t.archivedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
   logTicketEvent(t, `Chamado arquivado por ${capitalizeName(currentUser.username)}`);
   saveTickets(); closeTicketDetail();
   showNotification(`Chamado "${t.title}" arquivado. 📦`, 'success');
@@ -1062,7 +1065,7 @@ function executeMerge() {
   // Arquiva os chamados secundários
   otherTickets.forEach(t => {
     t.status = 'archived';
-    t.archivedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    t.archivedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
     logTicketEvent(t,
       `Chamado arquivado por mesclagem — incorporado ao chamado ${mainNum} por ${capitalizeName(currentUser.username)}`);
   });
@@ -1396,15 +1399,15 @@ async function escalateToAdmin(t) {
 
     // Reinicia SLA com prazo cheio, sem direito a sobrevida
     await loadSlaConfig();
-    const hours = getSlaHours(t.priority);
-    const now = Date.now();
+    const hours   = getSlaHours(t.priority);
+    const now     = Date.now();
     const prevAtt = t.attendant;
 
-    t.attendant = nextAdmin.username;
-    t.slaStartedAt = new Date(now).toISOString();
-    t.slaDeadline = new Date(now + hours * 3600000).toISOString();
-    t.slaOverdue = false;
-    t.slaSobrevida = false;
+    t.attendant      = nextAdmin.username;
+    t.slaStartedAt   = new Date(now).toISOString();
+    t.slaDeadline    = new Date(now + hours * 3600000).toISOString();
+    t.slaOverdue     = false;
+    t.slaSobrevida   = false;
     t.slaSemSobrevida = true; // flag: admin não tem direito a sobrevida
 
     logTicketEvent(t,
@@ -1434,10 +1437,10 @@ async function escalateToAdmin(t) {
 
 // Bloqueia o chamado — só superAdmin pode intervir
 async function blockTicket(t, justificativa) {
-  t.sloBloqueado = true;
-  t.slaBloqueado = true;
-  t.slaBlockedAt = new Date().toISOString();
-  t.slaBlockedBy = t.attendant;
+  t.sloBloqueado  = true;
+  t.slaBloqueado  = true;
+  t.slaBlockedAt  = new Date().toISOString();
+  t.slaBlockedBy  = t.attendant;
 
   logTicketEvent(t,
     `🔒 Chamado bloqueado — SLA do admin vencido sem resolução. Intervenção do SuperAdmin necessária.`
@@ -1554,17 +1557,17 @@ async function slaIntervir_confirmarReatribuir(userId) {
 
   await loadSlaConfig();
   const hours = getSlaHours(t.priority);
-  const now = Date.now();
+  const now   = Date.now();
 
-  t.attendant = found.username;
-  t.slaBloqueado = false;
-  t.sloBloqueado = false;
+  t.attendant       = found.username;
+  t.slaBloqueado    = false;
+  t.sloBloqueado    = false;
   t.slaEscaladoAdmin = false;
-  t.slaOverdue = false;
-  t.slaSobrevida = false;
+  t.slaOverdue      = false;
+  t.slaSobrevida    = false;
   t.slaSemSobrevida = false;
-  t.slaStartedAt = new Date(now).toISOString();
-  t.slaDeadline = new Date(now + hours * 3600000).toISOString();
+  t.slaStartedAt    = new Date(now).toISOString();
+  t.slaDeadline     = new Date(now + hours * 3600000).toISOString();
 
   logTicketEvent(t,
     `🔓 Desbloqueado por SuperAdmin ${capitalizeName(currentUser.username)} — reatribuído para "${capitalizeName(found.username)}", SLA reiniciado (${hours}h)`
@@ -1582,12 +1585,12 @@ function slaIntervir_confirmarFechar() {
 
   const reason = `Fechado forçadamente por SuperAdmin ${capitalizeName(currentUser.username)} após estouro de SLA hierárquico.`;
 
-  t.status = 'force-closed';
-  t.slaBloqueado = false;
-  t.sloBloqueado = false;
-  t.forceClosedBy = currentUser.username;
-  t.forceClosedAt = new Date().toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  t.status           = 'force-closed';
+  t.slaBloqueado     = false;
+  t.sloBloqueado     = false;
+  t.forceClosedBy    = currentUser.username;
+  t.forceClosedAt    = new Date().toLocaleString('pt-BR', {
+    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
   });
   t.forceCloseReason = reason;
 
@@ -1603,10 +1606,10 @@ function openSlaOverdueModal(ticket, fase) {
   // Evita abrir dois modais para o mesmo ticket
   if (document.getElementById('sla-overdue-modal')) return;
 
-  const isFaseAdmin = fase === 'admin';
+  const isFaseAdmin  = fase === 'admin';
   const semSobrevida = ticket.slaSemSobrevida || isFaseAdmin;
-  const btnLabel = semSobrevida ? 'Confirmar Justificativa e Bloquear Chamado' : 'Confirmar e Ativar Sobrevida';
-  const subtext = semSobrevida
+  const btnLabel     = semSobrevida ? 'Confirmar Justificativa e Bloquear Chamado' : 'Confirmar e Ativar Sobrevida';
+  const subtext      = semSobrevida
     ? `O chamado será <strong style="color:#ef4444">bloqueado</strong> e exigirá intervenção do <strong>SuperAdmin</strong>.`
     : `Informe a justificativa para continuar com <strong>sobrevida de 50%</strong> do tempo original.`;
 
@@ -1644,7 +1647,7 @@ async function confirmSlaOverdue(ticketId, fase) {
   if (!t) return;
   document.getElementById('sla-overdue-modal')?.remove();
 
-  const isFaseAdmin = fase === 'admin';
+  const isFaseAdmin  = fase === 'admin';
   const semSobrevida = t.slaSemSobrevida || isFaseAdmin;
 
   // Salva justificativa no Firestore
@@ -1663,10 +1666,10 @@ async function confirmSlaOverdue(ticketId, fase) {
     await blockTicket(t, just);
   } else {
     // Atendente venceu → ativar sobrevida 50%
-    const original = new Date(t.slaDeadline).getTime() - new Date(t.slaStartedAt || t.startedAt).getTime();
+    const original  = new Date(t.slaDeadline).getTime() - new Date(t.slaStartedAt || t.startedAt).getTime();
     const sobrevida = original * 0.5;
     t.slaSobrevida = true;
-    t.slaDeadline = new Date(Date.now() + sobrevida).toISOString();
+    t.slaDeadline  = new Date(Date.now() + sobrevida).toISOString();
     logTicketEvent(t,
       `SLA vencido — sobrevida ativada (${Math.round(sobrevida / 3600000 * 10) / 10}h) por ${capitalizeName(currentUser.username)}`
     );
@@ -1674,3 +1677,4 @@ async function confirmSlaOverdue(ticketId, fase) {
     showNotification('Sobrevida ativada. Resolva o chamado o mais rápido possível! ⚠️', 'error');
   }
 }
+

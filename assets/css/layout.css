@@ -401,6 +401,7 @@ body.dark-mode .empty-state-text {
   overflow: hidden;
   flex: 1;
   height: calc(100vh - 48px);
+  align-items: stretch;
 }
 
 .chamados-sidebar-label {
@@ -659,3 +660,103 @@ body.dark-mode .chamados-sidebar-logout:hover {
   background: #2a0808;
   color: var(--accent);
 }
+/* ══ MÓDULOS PAI — estilos globais (todas as páginas) ══ */
+.mod-pai-wrap {
+  position: relative;
+  width: 100%;
+}
+.mod-pai-btn {
+  width: 100%;
+  justify-content: flex-start;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+}
+.mod-pai-soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.mod-pai-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+.mod-pai-btn.open .mod-pai-chevron { transform: rotate(90deg); }
+
+.mod-pai-submenu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid var(--border2);
+  margin-left: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  align-items: flex-start !important;
+  align-self: stretch;
+  width: calc(100% - 12px);
+  box-sizing: border-box;
+}
+.mod-pai-submenu.open { display: flex; }
+
+.chamados-sidebar-items .mod-pai-submenu,
+.chamados-sidebar-items .mod-pai-submenu.open {
+  align-items: flex-start !important;
+}
+
+.chamados-sidebar.collapsed .mod-pai-submenu { display: none !important; }
+.chamados-sidebar.collapsed .mod-pai-submenu.open-float {
+  display: flex !important;
+  position: fixed;
+  left: 60px;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 6px;
+  gap: 2px;
+  z-index: 300;
+  width: 180px;
+  max-width: 200px;
+  margin: 0;
+  border-left: none;
+  align-items: flex-start;
+}
+.chamados-sidebar.collapsed .mod-pai-chevron { display: none; }
+
+.mod-sub-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Seletor específico para vencer herança do chamados-sidebar */
+.chamados-sidebar-items .mod-pai-submenu .mod-sub-item {
+  align-self: stretch !important;
+  justify-content: flex-start !important;
+}
+.mod-sub-item:hover { background: var(--surface2); color: var(--text); }
+.mod-sub-item.active { background: #fef2f2; color: var(--accent); }
+body.dark-mode .mod-sub-item.active { background: #7f1d1d20; }
+.mod-sub-icon { display: flex; align-items: center; flex-shrink: 0; color: currentColor; }

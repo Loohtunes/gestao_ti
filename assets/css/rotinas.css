@@ -1,0 +1,1179 @@
+/* ===== ROTINAS CSS v2 ===== */
+
+/* ── Sub-abas ── */
+.rotinas-subtabs {
+  display: flex;
+  gap: 0;
+  margin: -1.5rem -2.5rem 0;
+  padding: 0 2.5rem;
+  border-bottom: 1px solid var(--border2);
+}
+
+.rotinas-subtab {
+  padding: 0.6rem 1.1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: -1px;
+}
+
+.rotinas-subtab:hover {
+  color: var(--text);
+}
+
+.rotinas-subtab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: none;
+}
+
+.rotinas-subpanel {
+  display: none;
+}
+
+.rotinas-subpanel.active {
+  display: block;
+}
+
+/* ── Cartão ── */
+.rotinas-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.rotinas-form-card-title {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── Grid servidores ── */
+.servidores-grid {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  min-height: 120px;
+}
+
+.servidores-grid>.rotinas-empty {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── Barra de progresso ── */
+.rotinas-bar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rotinas-bar-field label {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.rotinas-bar-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.rotinas-bar-input-row input[type="number"] {
+  width: 80px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rotinas-bar-input-row input[type="number"]:focus {
+  border-color: var(--accent);
+}
+
+.rotinas-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--surface3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rotinas-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease, background-color 0.3s;
+}
+
+.rotinas-bar-pct {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  min-width: 68px;
+  text-align: right;
+}
+
+/* ── Tabela impressoras ── */
+.imp-table-header,
+.imp-row-wrap {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  align-items: center;
+}
+
+.imp-table-header {
+  grid-template-columns: 2.5fr 1.4fr 1fr 1fr;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+}
+
+.imp-table-header>div {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+/* Wrapper externo — clips o slide */
+.imp-table-row {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 0.35rem;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+
+.imp-table-row:hover {
+  background: var(--surface2);
+}
+
+/* Conteúdo interno — desliza para a esquerda no hover */
+.imp-row-wrap {
+  display: grid;
+  grid-template-columns: 2.5fr 1.4fr 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  align-items: center;
+  width: 100%;
+  transition: transform 0.22s ease;
+}
+
+.imp-table-row.has-slide:hover .imp-row-wrap {
+  transform: translateX(-48px);
+}
+
+/* Botão — começa fora da borda direita, entra no hover */
+.imp-slide-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  transition: transform 0.22s ease, background 0.15s;
+  transform: translateX(100%);
+  border-radius: 0 7px 7px 0;
+}
+
+.imp-table-row.has-slide:hover .imp-slide-btn {
+  transform: translateX(0);
+}
+
+.imp-slide-btn:hover {
+  background: var(--accent2);
+}
+
+.imp-slide-btn svg {
+  flex-shrink: 0;
+}
+
+.imp-col-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.imp-col-num {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.imp-anterior {
+  color: var(--muted);
+}
+
+.imp-paginas {
+  font-weight: 700;
+}
+
+.imp-tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.imp-tipo-badge.color {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+.imp-tipo-badge.mono {
+  background: var(--surface3);
+  color: var(--muted);
+}
+
+body.dark-mode .imp-tipo-badge.color {
+  background: #4a0020;
+  color: #f9a8d4;
+}
+
+.imp-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.imp-nome {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.imp-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+}
+
+.imp-input {
+  width: 100%;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.imp-input:focus {
+  border-color: var(--accent);
+}
+
+.imp-totais-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.imp-total-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.imp-total-item span {
+  color: var(--muted);
+}
+
+.imp-total-item strong {
+  font-family: var(--font-mono);
+}
+
+.imp-total-item.total strong {
+  color: var(--accent);
+}
+
+/* ── Faturamento ── */
+.imp-faturamento-section {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin-top: 1.25rem;
+}
+
+.imp-faturamento-title {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.imp-fat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.imp-fat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.imp-fat-field label {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.imp-fat-field input {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.imp-fat-field input:focus {
+  border-color: var(--accent);
+}
+
+/* ── CFTV ── */
+.cftv-dvr-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+
+.cftv-dvr-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+  font-size: 0.85rem;
+  font-weight: 700;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cftv-dvr-count {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  padding: 0.15rem 0.45rem;
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.cftv-dvr-counters {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.cftv-counter {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.cftv-counter.ativo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.cftv-counter.inativo {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.cftv-counter.intermitente {
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.cftv-counter.nao-inst {
+  background: var(--surface3);
+  color: var(--muted);
+}
+
+body.dark-mode .cftv-counter.ativo {
+  background: #052e16;
+  color: #86efac;
+}
+
+body.dark-mode .cftv-counter.inativo {
+  background: #2a0808;
+  color: #fecaca;
+}
+
+body.dark-mode .cftv-counter.intermitente {
+  background: #2a1800;
+  color: #fde68a;
+}
+
+.cftv-cam-table {
+  padding: 0.5rem 0;
+}
+
+.cftv-cam-table-header {
+  display: grid;
+  grid-template-columns: 50px 1fr 70px 2fr 1fr;
+  gap: 0.5rem;
+  padding: 0.4rem 1.25rem;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.cftv-cam-row {
+  display: grid;
+  grid-template-columns: 50px 1fr 70px 2fr 1fr;
+  gap: 0.5rem;
+  padding: 0.45rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+  transition: background 0.12s;
+}
+
+.cftv-cam-row:last-child {
+  border-bottom: none;
+}
+
+.cftv-cam-row:hover {
+  background: var(--surface2);
+}
+
+.cftv-cam-canal {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding-top: 0.3rem;
+}
+
+.cftv-cam-nome {
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding-top: 0.3rem;
+}
+
+.cftv-cam-rack {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  padding-top: 0.3rem;
+}
+
+.cftv-cam-status-group {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.cftv-cam-obs textarea {
+  width: 100%;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.78rem;
+  font-family: var(--font-display);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text);
+  resize: none;
+  outline: none;
+  margin-top: 0.25rem;
+  rows: 1;
+  overflow: hidden;
+  min-height: 28px;
+}
+
+.cftv-cam-obs textarea:focus {
+  border-color: var(--accent);
+}
+
+.cftv-status-btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: var(--surface3);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.cftv-status-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cftv-status-btn.ativo.selected {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.cftv-status-btn.inativo.selected {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.cftv-status-btn.intermitente.selected {
+  background: #fef9c3;
+  border-color: #fde047;
+  color: #713f12;
+}
+
+.cftv-status-btn.nao-instalado.selected {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+body.dark-mode .cftv-status-btn.ativo.selected {
+  background: #052e16;
+  border-color: #166534;
+  color: #86efac;
+}
+
+body.dark-mode .cftv-status-btn.inativo.selected {
+  background: #2a0808;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+body.dark-mode .cftv-status-btn.intermitente.selected {
+  background: #2a1800;
+  border-color: #854d0e;
+  color: #fde68a;
+}
+
+body.dark-mode .cftv-status-btn.nao-instalado.selected {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #d1d5db;
+}
+
+/* ── Histórico ── */
+.rotinas-hist-filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.rotinas-hist-filters select,
+.rotinas-hist-filters input[type="month"] {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-family: var(--font-display);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.rotinas-hist-filters select:focus,
+.rotinas-hist-filters input[type="month"]:focus {
+  border-color: var(--accent);
+}
+
+.rotinas-hist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.rotinas-hist-table th {
+  text-align: left;
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border2);
+}
+
+.rotinas-hist-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.hist-main-row {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.hist-main-row:hover td {
+  background: var(--surface2);
+}
+
+.hist-main-row.expanded td {
+  background: var(--surface2);
+}
+
+.hist-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+  display: flex;
+}
+
+.hist-expand-btn:hover {
+  color: var(--accent);
+}
+
+.hist-detail-row td {
+  padding: 0;
+  background: var(--surface2) !important;
+  border-bottom: 2px solid var(--border2);
+}
+
+.hist-detail-box {
+  padding: 1rem 1.25rem;
+}
+
+.hist-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.hist-detail-table th {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border2);
+  text-align: left;
+}
+
+.hist-detail-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.hist-detail-table tr:last-child td {
+  border-bottom: none;
+}
+
+.hist-faturamento {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border2);
+  padding-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hist-fat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.hist-fat-item span:first-child {
+  color: var(--muted);
+}
+
+.hist-fat-item.total {
+  background: var(--surface3);
+  margin-top: 0.25rem;
+}
+
+.hist-fat-item.total span {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.hist-fat-item.total strong {
+  font-size: 0.92rem;
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.rotinas-modulo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.rotinas-modulo-badge.servidor {
+  background: #e0f2fe;
+  color: #0c4a6e;
+}
+
+.rotinas-modulo-badge.impressoras {
+  background: #f3e8ff;
+  color: #4c1d95;
+}
+
+.rotinas-modulo-badge.cftv {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+body.dark-mode .rotinas-modulo-badge.servidor {
+  background: #0c2a3e;
+  color: #7dd3fc;
+}
+
+body.dark-mode .rotinas-modulo-badge.impressoras {
+  background: #1e0a3c;
+  color: #c4b5fd;
+}
+
+body.dark-mode .rotinas-modulo-badge.cftv {
+  background: #2a1800;
+  color: #fcd34d;
+}
+
+.cftv-hist-status {
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cftv-hist-status.ativo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.cftv-hist-status.inativo {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.cftv-hist-status.intermitente {
+  background: #fef9c3;
+  color: #713f12;
+}
+
+.cftv-hist-status.nao-instalado {
+  background: var(--surface3);
+  color: var(--muted);
+}
+
+.rotinas-hist-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* ── Ação ── */
+.rotinas-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border2);
+}
+
+.rotinas-last-reg {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.rotinas-last-reg strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+/* ── Toast ── */
+.rotinas-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 4px 20px #00000018;
+  z-index: 9999;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.rotinas-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.rotinas-toast.success {
+  border-left: 3px solid #22c55e;
+}
+
+.rotinas-toast.error {
+  border-left: 3px solid #ef4444;
+}
+
+/* ── Vazio ── */
+.rotinas-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rotinas-empty svg {
+  opacity: 0.3;
+}
+
+/* ── Gerenciamento (colapsável) ── */
+.rotinas-manage-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  border: none;
+  background: none;
+  transition: color 0.15s;
+  user-select: none;
+}
+
+.rotinas-manage-toggle:hover {
+  color: var(--accent);
+}
+
+.rotinas-manage-area {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.rotinas-manage-area.open {
+  display: block;
+}
+
+.rotinas-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.rotinas-manage-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.rotinas-manage-item-name {
+  font-weight: 600;
+  flex: 1;
+}
+
+.rotinas-manage-item-meta {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.rotinas-manage-item-del {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+  line-height: 1;
+  display: flex;
+}
+
+.rotinas-manage-item-del:hover {
+  color: #ef4444;
+}
+
+.rotinas-manage-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.rotinas-manage-add-row input,
+.rotinas-manage-add-row select {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  font-family: var(--font-display);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.rotinas-manage-add-row input:focus,
+.rotinas-manage-add-row select:focus {
+  border-color: var(--accent);
+}
+
+/* ── Admin servidor row ── */
+.admin-servidor-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+}
+
+.admin-servidor-row>div:first-child {
+  flex: 1;
+}
+
+/* ── Disco por servidor ── */
+.srv-disco-block {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.srv-disco-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.srv-disco-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+/* ── Leitura anterior — exibição e input ── */
+.imp-ant-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.imp-ant-display {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+.imp-ant-input {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+/* ── Paginação modal ── */
+.imp-page-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.9rem;
+  transition: all 0.15s;
+  line-height: 1;
+}
+
+.imp-page-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.imp-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Fix dropdown tipo ── */
+#new-imp-tipo {
+  text-align: left;
+  min-width: 110px;
+}
+
+/* ── Status do DVR ── */
+.cftv-dvr-status-btn {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: var(--surface3);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.cftv-dvr-status-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.cftv-dvr-status-btn.ativo.selected {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  color: #065f46;
+}
+
+.cftv-dvr-status-btn.inativo.selected {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #7f1d1d;
+}
+
+.cftv-dvr-status-btn.intermitente.selected {
+  background: #fef9c3;
+  border-color: #fde047;
+  color: #713f12;
+}
+
+body.dark-mode .cftv-dvr-status-btn.ativo.selected {
+  background: #052e16;
+  border-color: #166534;
+  color: #86efac;
+}
+
+body.dark-mode .cftv-dvr-status-btn.inativo.selected {
+  background: #2a0808;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+body.dark-mode .cftv-dvr-status-btn.intermitente.selected {
+  background: #2a1800;
+  border-color: #854d0e;
+  color: #fde68a;
+}

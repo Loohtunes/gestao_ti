@@ -418,17 +418,38 @@ function initChamadosSidebar() {
   }
   if (!currentUser) return;
   const acessos = currentUser.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario', 'configuracoes']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas', 'comercial', 'configuracoes']
     : (currentUser.acessos || ['chamados']);
 
-  ['materiais', 'inventario'].forEach(mod => {
-    const el = document.getElementById('cs-mod-' + mod);
-    if (el) el.style.display = acessos.includes(mod) ? 'flex' : 'none';
+  // Visibilidade dos submódulos T.I (novo sistema mod-pai)
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
+    const elOld = document.getElementById('cs-mod-' + mod);
+    if (elOld) elOld.style.display = acessos.includes(mod) ? 'flex' : 'none';
+    const elNew = document.getElementById('sub-' + mod);
+    if (elNew) elNew.style.display = acessos.includes(mod) ? 'flex' : 'none';
   });
+
+  // Visibilidade módulo Comercial
+  const canComercial = currentUser.isSuperAdmin || currentUser.isAdminComercial ||
+    currentUser.isComercial || acessos.includes('comercial') || acessos.includes('adminComercial');
+  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
+  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
 
   const configItem = document.getElementById('cs-mod-config');
   if (configItem) {
     configItem.style.display = (currentUser.isAdmin || currentUser.isSuperAdmin) ? 'flex' : 'none';
+  }
+
+  // Inicializa módulos pai e marca submódulo ativo da página atual
+  if (typeof initModPai === 'function') {
+    const path = window.location.pathname;
+    const active = path.includes('materiais') ? 'materiais'
+      : path.includes('inventario') ? 'inventario'
+        : path.includes('rotinas') ? 'rotinas'
+          : path.includes('comercial') ? 'comercial'
+            : path.includes('configuracoes') ? null
+              : 'chamados';
+    initModPai(active);
   }
 
   // Preencher rodapé da sidebar

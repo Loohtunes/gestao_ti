@@ -97,15 +97,29 @@ function applyMenuUI(user) {
   const changelogManageBtn = document.getElementById('changelog-manage-btn');
   if (changelogManageBtn) changelogManageBtn.style.display = user.isSuperAdmin ? 'flex' : 'none';
 
-  // Módulos — ocultar sem acesso
+  // Submódulos do T.I — controla visibilidade por acessos
   const acessos = user.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas']
     : (user.acessos || ['chamados']);
 
-  ['chamados', 'materiais', 'inventario'].forEach(mod => {
-    const el = document.getElementById('sidebar-mod-' + mod);
-    if (el) el.style.display = acessos.includes(mod) ? 'flex' : 'none';
+  // Chamados — sempre visível se no T.I
+  const subChamados = document.getElementById('sub-chamados');
+  if (subChamados) subChamados.style.display = 'flex';
+
+  // Materiais, Inventário e Rotinas — conforme acessos
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
+    const el = document.getElementById('sub-' + mod);
+    if (el) el.style.display = (user.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
   });
+
+  // Módulo Comercial
+  const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
+    acessos.includes('comercial') || acessos.includes('adminComercial');
+  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
+  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
+
+  // Abrir submenu T.I automaticamente ao carregar
+  _openModPai('ti');
 }
 
 function updateGreetingClock() {
@@ -119,6 +133,55 @@ function updateGreetingClock() {
   // Capitalizar primeira letra
   subEl.textContent = '// ' + now.charAt(0).toUpperCase() + now.slice(1);
 }
+
+// ── Módulos Pai ──
+function toggleModPai(id) {
+  const isCollapsed = document.getElementById('chamados-sidebar')?.classList.contains('collapsed');
+  if (isCollapsed) {
+    _toggleModPaiFloat(id);
+  } else {
+    _openModPai(id);
+  }
+}
+
+function _openModPai(id) {
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
+  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
+  if (!btn || !submenu) return;
+  const isOpen = submenu.classList.contains('open');
+  // Fecha todos os outros
+  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open'));
+  document.querySelectorAll('.mod-pai-btn').forEach(b => b.classList.remove('open'));
+  if (!isOpen) {
+    submenu.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+
+function _toggleModPaiFloat(id) {
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
+  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
+  if (!btn || !submenu) return;
+  // Posiciona o float ao lado do botão
+  const rect = btn.getBoundingClientRect();
+  submenu.style.top = rect.top + 'px';
+  const isOpen = submenu.classList.contains('open-float');
+  // Fecha todos
+  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open-float'));
+  if (!isOpen) submenu.classList.add('open-float');
+}
+
+// Fecha submenu flutuante ao clicar fora
+document.addEventListener('click', e => {
+  const inSidebar = e.target.closest('.chamados-sidebar');
+  if (!inSidebar) {
+    document.querySelectorAll('.mod-pai-submenu').forEach(s => {
+      s.classList.remove('open-float');
+      s.classList.remove('open');
+    });
+    document.querySelectorAll('.mod-pai-btn').forEach(b => b.classList.remove('open'));
+  }
+});
 
 function goToChamados() {
   window.location.href = 'index.html';
@@ -170,12 +233,12 @@ function initMenuSidebar(user) {
 
   // Módulos por acessos
   const acessos = user.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario', 'configuracoes']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas', 'configuracoes']
     : (user.acessos || ['chamados']);
 
-  ['materiais', 'inventario'].forEach(mod => {
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
     const el = document.getElementById('sidebar-mod-' + mod);
-    if (el) el.style.display = acessos.includes(mod) ? 'flex' : 'none';
+    if (el) el.style.display = (user.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
   });
 
   // Configurações — só admins

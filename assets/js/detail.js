@@ -190,9 +190,15 @@ function renderDetailContent(ticket) {
   const reqName = capitalizeName(ticket.requester || '—');
   const attName = ticket.attendant ? capitalizeName(ticket.attendant) : null;
 
-  const isTestTicket = ticket.ticketType === 'test';
+  const isTestTicket   = ticket.ticketType === 'test';
+  const isForceClosed  = ticket.status === 'force-closed';
+  const isCompleted    = ticket.status === 'completed' || ticket.status === 'archived';
+  const headerStripClass = isTestTicket     ? 'test-strip'
+    : isForceClosed  ? 'force-closed-strip'
+    : isCompleted    ? 'completed-strip'
+    : 'prio-' + prio;
   document.getElementById('detail-modal-body').innerHTML = `
-    <div class="detail-header-strip ${isTestTicket ? 'test-strip' : 'prio-' + prio}">
+    <div class="detail-header-strip ${headerStripClass}">
       <div class="detail-header-left">
         <div class="detail-num-badge">${num}</div>
         <div>

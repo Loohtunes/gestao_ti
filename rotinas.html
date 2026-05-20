@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão T.I — Rotinas</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/configuracoes.css">
+  <link rel="stylesheet" href="assets/css/rotinas.css">
+
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav>
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;"
+      title="Voltar ao Menu Principal">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+
+    <!-- Timer de sessão -->
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span
+          style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown"
+          style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track"
+        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill"
+          style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <!-- Ramais -->
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+      <!-- Switch Tema -->
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema"
+        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
+        <div
+          style="position:relative;width:28px;height:16px;background:var(--surface3);border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb"
+            style="position:absolute;top:1px;left:1px;width:12px;height:12px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
+          </div>
+        </div>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
+      </div>
+      <!-- Firebase — só superadmin -->
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ LAYOUT ══ -->
+  <div class="config-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <!-- ── MÓDULO PAI: T.I ── -->
+        <div class="mod-pai-wrap" id="mod-pai-ti">
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-ti-btn"
+            onclick="toggleModPai('ti')" title="T.I">
+            <span class="chamados-sidebar-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="12" x="3" y="4" rx="2"/>
+                <path d="M8 20h8M12 16v4"/>
+              </svg>
+            </span>
+            <span class="chamados-sidebar-name">T.I</span>
+            <span class="mod-pai-chevron" id="mod-pai-ti-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </span>
+          </button>
+          <div class="mod-pai-submenu" id="mod-pai-ti-submenu">
+            <a class="mod-sub-item" href="index.html" id="sub-chamados">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg></span>
+              <span>Chamados</span>
+            </a>
+            <a class="mod-sub-item" href="materiais.html" id="sub-materiais" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></svg></span>
+              <span>Materiais</span>
+            </a>
+            <a class="mod-sub-item" href="inventario.html" id="sub-inventario" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg></span>
+              <span>Inventário</span>
+            </a>
+            <a class="mod-sub-item" href="rotinas.html" id="sub-rotinas" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+              <span>Rotinas</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ── MÓDULO PAI: Engenharia (Em breve) ── -->
+        <div class="mod-pai-wrap">
+          <span class="chamados-sidebar-item mod-pai-btn mod-pai-soon" title="Engenharia — Em breve">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg></span>
+            <span class="chamados-sidebar-name">Engenharia</span>
+            <span class="chamados-sidebar-soon">Em breve</span>
+          </span>
+        </div>
+
+        <!-- ── MÓDULO PAI: Comercial ── -->
+        <div class="mod-pai-wrap" id="mod-pai-comercial">
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-comercial-btn"
+            onclick="toggleModPai('comercial')" title="Comercial" style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+            <span class="chamados-sidebar-name">Comercial</span>
+            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+          </button>
+          <div class="mod-pai-submenu" id="mod-pai-comercial-submenu">
+            <a class="mod-sub-item" href="comercial.html" id="sub-comercial">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+              <span>Controle de Obras</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="chamados-sidebar-divider"></div>
+
+        <a class="chamados-sidebar-item" href="menu.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Menu Principal</span>
+        </a>
+
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" title="Configurações" id="sidebar-config-btn"
+            style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="cs-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="cs-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="cs-sidebar-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="performLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="config-main">
+      <div class="config-header">
+        <div class="config-header-title" style="display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>
+          Rotinas
+        </div>
+        <div class="config-header-sub">// Checklists diários e mensais de T.I</div>
+        <div class="config-tabs">
+          <button class="config-tab active" data-tab="checklist" onclick="openRotinaTab('checklist')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Checklist
+          </button>
+          <button class="config-tab" data-tab="historico" onclick="openRotinaTab('historico')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg> Histórico
+          </button>
+        </div>
+      </div>
+
+      <div class="config-content">
+
+        <!-- ══ PAINEL CHECKLIST ══ -->
+        <div class="config-panel active" id="panel-checklist">
+          <div class="rotinas-subtabs">
+            <button class="rotinas-subtab active" data-sub="servidor" onclick="openChecklistSubTab('servidor')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg> Servidor
+            </button>
+            <button class="rotinas-subtab" data-sub="impressoras" onclick="openChecklistSubTab('impressoras')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg> Impressoras
+            </button>
+            <button class="rotinas-subtab" data-sub="cftv" onclick="openChecklistSubTab('cftv')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg> CFTV
+            </button>
+          </div>
+
+          <!-- ── SERVIDOR ── -->
+          <div class="rotinas-subpanel active" id="subpanel-servidor" style="padding-top:1.5rem;">
+            <div class="rotinas-last-reg" id="ultimo-reg-servidor">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Carregando...
+            </div>
+            <div class="servidores-grid" id="servidores-grid"></div>
+            <div class="rotinas-action-row">
+              <button class="btn-secondary" onclick="openRotinaTab('historico')">Ver Histórico</button>
+              <button class="btn-primary" id="btn-save-servidor" onclick="saveServidorRegisto()">Salvar Registro</button>
+            </div>
+          </div>
+
+          <!-- ── IMPRESSORAS ── -->
+          <div class="rotinas-subpanel" id="subpanel-impressoras" style="padding-top:1.5rem;">
+            <div class="rotinas-last-reg" id="ultimo-reg-impressoras">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Carregando...
+            </div>
+
+            <!-- Gerenciamento via modal -->
+            <div class="rotinas-form-card">
+              <div class="rotinas-form-card-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+                Leitura de Contadores
+              </div>
+              <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+                <label style="font-size:0.72rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);">Mês/Ano de referência</label>
+                <input type="month" id="imp-mes-ano" class="form-input" style="width:auto;padding:0.4rem 0.75rem;font-size:0.85rem;" onchange="loadLeituraAnterior(this.value)">
+              </div>
+              <div id="impressoras-checklist-rows"></div>
+              <div class="imp-totais-row" id="imp-totais" style="margin-top:0.5rem;"></div>
+            </div>
+
+
+            <div class="rotinas-action-row">
+              <button class="btn-secondary" id="btn-gerenciar-impressoras" onclick="openImpressorasModal()" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                Gerenciamento
+              </button>
+              <button class="btn-secondary" onclick="openRotinaTab('historico')">Ver Histórico</button>
+              <button class="btn-primary" id="btn-save-impressoras" onclick="saveImpressorasRegisto()">Salvar Registro</button>
+            </div>
+          </div>
+
+          <!-- ── CFTV ── -->
+          <div class="rotinas-subpanel" id="subpanel-cftv" style="padding-top:1.5rem;">
+            <div class="rotinas-last-reg" id="ultimo-reg-cftv">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Carregando...
+            </div>
+            <div class="rotinas-form-card">
+              <div class="rotinas-form-card-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+                Status das Câmeras — <span id="cftv-data-hoje" style="font-weight:400;font-size:0.72rem;color:var(--muted);"></span>
+              </div>
+              <div id="cftv-dvrs-container"></div>
+              <div class="form-group" style="margin-top:1rem;">
+                <label class="form-label">Observação geral</label>
+                <textarea id="cftv-obs-geral" class="form-input" rows="2" placeholder="Manutenção programada, troca de cabos..." style="resize:none;"></textarea>
+              </div>
+            </div>
+            <div class="rotinas-action-row">
+              <button class="btn-secondary" id="btn-gerenciar-cftv" onclick="openCFTVModal()" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                Gerenciamento
+              </button>
+              <button class="btn-secondary" onclick="openRotinaTab('historico')">Ver Histórico</button>
+              <button class="btn-primary" id="btn-save-cftv" onclick="saveCFTVRegisto()">Salvar Registro</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ PAINEL HISTÓRICO ══ -->
+        <div class="config-panel" id="panel-historico">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
+            <div class="rotinas-hist-filters">
+              <select onchange="setHistFiltroModulo(this.value)">
+                <option value="todos">Todos os módulos</option>
+                <option value="servidor">🖥️ Servidor</option>
+                <option value="impressoras">🖨️ Impressoras</option>
+                <option value="cftv">📷 CFTV</option>
+              </select>
+              <input type="month" id="hist-filtro-mes" onchange="setHistFiltroMes(this.value)">
+              <button class="btn-secondary" onclick="loadHistorico()" style="padding:0.45rem 0.9rem;font-size:0.8rem;display:flex;align-items:center;gap:0.4rem;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg> Atualizar
+              </button>
+            </div>
+            <button class="btn-primary" onclick="exportHistoricoXLS()" style="padding:0.45rem 0.9rem;font-size:0.8rem;display:flex;align-items:center;gap:0.4rem;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg> Exportar XLS
+            </button>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;">
+            <table class="rotinas-hist-table">
+              <thead>
+                <tr>
+                  <th>Módulo</th><th>Data / Período</th><th>Resumo</th><th>Registrado por</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="historico-tbody">
+                <tr><td colspan="5"><div class="rotinas-hist-empty">Selecione um módulo e período para visualizar.</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/rotinas.js"></script>
+  <!-- ══ MODAL GERENCIAMENTO ══ -->
+  <div id="rotinas-imp-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(700px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0;">
+        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Gerenciamento
+        </div>
+        <button onclick="closeImpressorasModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;border-radius:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Abas internas -->
+      <div style="display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;padding:0 1.5rem;">
+        <button class="modal-tab active" id="modal-tab-impressoras" onclick="switchModalTab('impressoras')"
+          style="padding:0.65rem 1.1rem;font-size:0.8rem;font-weight:700;font-family:var(--font-display);color:var(--accent);background:none;border:none;border-bottom:2px solid var(--accent);cursor:pointer;margin-bottom:-1px;display:flex;align-items:center;gap:0.35rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
+          Impressoras
+        </button>
+        <button class="modal-tab" id="modal-tab-faturamento" onclick="switchModalTab('faturamento')"
+          style="padding:0.65rem 1.1rem;font-size:0.8rem;font-weight:700;font-family:var(--font-display);color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;margin-bottom:-1px;display:flex;align-items:center;gap:0.35rem;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Faturamento
+        </button>
+      </div>
+
+      <!-- Painel Impressoras -->
+      <div id="modal-panel-impressoras" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;display:flex;flex-direction:column;gap:1.25rem;">
+        <div>
+          <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.6rem;">Impressoras cadastradas</div>
+          <div id="modal-impressoras-list" style="display:flex;flex-direction:column;gap:0.35rem;min-height:60px;"></div>
+          <div id="modal-imp-paginacao" style="display:none;align-items:center;justify-content:center;gap:0.75rem;margin-top:0.6rem;"></div>
+        </div>
+        <div style="border-top:1px solid var(--border2);padding-top:1rem;">
+          <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:0.75rem;">Adicionar nova impressora</div>
+          <div style="display:grid;grid-template-columns:110px 1fr 1fr;gap:0.6rem;margin-bottom:0.6rem;">
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">Tipo</label>
+              <select id="new-imp-tipo" class="form-input" style="width:100%;padding:0.4rem 0.5rem;margin-top:0.25rem;text-align:left;min-width:110px;">
+                <option value="MONO">⬛ MONO</option>
+                <option value="COLOR">🎨 COLOR</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">Marca</label>
+              <input type="text" id="new-imp-marca" class="form-input" placeholder="Ex: Brother" style="width:100%;margin-top:0.25rem;">
+            </div>
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">Modelo</label>
+              <input type="text" id="new-imp-modelo" class="form-input" placeholder="Ex: DCP-8152DN" style="width:100%;margin-top:0.25rem;">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;margin-bottom:0.85rem;">
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">IP</label>
+              <input type="text" id="new-imp-ip" class="form-input" placeholder="Ex: 192.168.1.10" style="width:100%;margin-top:0.25rem;">
+            </div>
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">Departamento</label>
+              <input type="text" id="new-imp-depto" class="form-input" placeholder="Ex: Financeiro" style="width:100%;margin-top:0.25rem;">
+            </div>
+            <div>
+              <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);">Nº Ativo</label>
+              <input type="text" id="new-imp-ativo" class="form-input" placeholder="Ex: MAATV75671" style="width:100%;margin-top:0.25rem;">
+            </div>
+          </div>
+          <button class="btn-primary" onclick="addImpressora()" style="width:100%;">+ Adicionar Impressora</button>
+        </div>
+      </div>
+
+      <!-- Painel Faturamento -->
+      <div id="modal-panel-faturamento" style="display:none;overflow-y:auto;padding:1.25rem 1.5rem;flex:1;">
+        <div id="modal-faturamento-body"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ MODAL GERENCIAMENTO CFTV ══ -->
+  <div id="rotinas-cftv-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0;">
+        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+          Gerenciamento de CFTV
+        </div>
+        <button onclick="closeCFTVModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;border-radius:6px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;display:grid;grid-template-columns:220px 1fr;gap:1.25rem;">
+
+        <!-- DVRs -->
+        <div>
+          <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem;letter-spacing:0.1em;">DVRs</div>
+          <div id="cftv-modal-dvrs-list" style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.75rem;max-height:280px;overflow-y:auto;"></div>
+          <div style="border-top:1px solid var(--border);padding-top:0.65rem;">
+            <div style="font-size:0.62rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;">Novo DVR</div>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;">
+              <input type="text" id="new-dvr-nome" class="form-input" placeholder="Nome (ex: DVR 1 ADM)" style="font-size:0.78rem;padding:0.35rem 0.6rem;">
+              <button class="btn-primary" onclick="addDvr()" style="font-size:0.78rem;padding:0.4rem;">+ Adicionar DVR</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Câmeras -->
+        <div id="cftv-modal-cameras-section" style="display:none;">
+          <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem;letter-spacing:0.1em;" id="cftv-modal-cameras-title">Câmeras</div>
+          <div id="cftv-modal-cameras-list" style="display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.75rem;max-height:200px;overflow-y:auto;"></div>
+          <div style="border-top:1px solid var(--border);padding-top:0.65rem;">
+            <div style="font-size:0.62rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;">Nova câmera</div>
+            <div style="display:grid;grid-template-columns:1fr 60px 70px;gap:0.4rem;margin-bottom:0.4rem;">
+              <input type="text" id="new-cam-nome" class="form-input" placeholder="Nome da câmera" style="font-size:0.78rem;padding:0.35rem 0.6rem;">
+              <input type="number" id="new-cam-canal" class="form-input" placeholder="CH" min="1" style="font-size:0.78rem;padding:0.35rem 0.5rem;text-align:center;">
+              <input type="text" id="new-cam-rack" class="form-input" placeholder="Rack" style="font-size:0.78rem;padding:0.35rem 0.5rem;">
+            </div>
+            <button class="btn-primary" onclick="addCamera()" style="font-size:0.78rem;padding:0.4rem;width:100%;">+ Adicionar Câmera</button>
+          </div>
+        </div>
+        <div id="cftv-modal-cameras-placeholder" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.82rem;text-align:center;">
+          ← Selecione um DVR para gerenciar suas câmeras
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL OBS DVR ══ -->
+  <div id="cftv-dvr-obs-modal" style="display:none;position:fixed;inset:0;z-index:1100;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="cftv-dvr-obs-title" style="font-size:0.9rem;font-weight:700;margin-bottom:0.25rem;"></div>
+        <div style="font-size:0.75rem;color:var(--muted);">Todas as câmeras deste DVR serão marcadas com o mesmo status.</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);letter-spacing:0.08em;">Observação (obrigatória)</label>
+        <textarea id="cftv-dvr-obs-input" class="form-input" rows="3"
+          placeholder="Descreva o motivo do DVR inativo ou intermitente..."
+          style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="cancelDVRStatus(document.getElementById('cftv-dvr-obs-modal').dataset.dvrId)">Cancelar</button>
+        <button class="btn-primary" onclick="confirmDVRStatus()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL HISTÓRICO ══ -->
+  <div id="rotinas-hist-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(860px,95vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="rotinas-hist-modal-title" style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;"></div>
+        <button onclick="closeHistModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;border-radius:6px;transition:color 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="rotinas-hist-modal-body" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
+    </div>
+  </div>
+
+</body>
+</html>

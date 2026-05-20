@@ -861,6 +861,20 @@ body.dark-mode .tl-row.tl-following {
   padding: 0.6rem 1.2rem;
   opacity: 0.88;
   border-left: 4px solid #22c55e !important;
+  align-items: center;
+}
+
+.archived-list .tl-row.tl-force-closed {
+  grid-template-columns: 68px 1fr 130px 130px 150px 72px !important;
+  padding: 0.6rem 1.2rem;
+  align-items: center;
+}
+
+.archived-list .tl-row .tl-setor,
+.archived-list .tl-row .tl-prio {
+  justify-content: center;
+  align-self: center;
+  align-items: center;
 }
 
 .archived-list .tl-row.arc-row:hover {

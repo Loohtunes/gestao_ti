@@ -434,3 +434,128 @@ body.dark-mode .menu-sidebar {
   border-color: var(--accent);
   color: var(--accent);
 }
+/* ══ MÓDULOS PAI ══ */
+
+.mod-pai-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.mod-pai-btn {
+  width: 100%;
+  justify-content: flex-start;
+  position: relative;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mod-pai-soon {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.mod-pai-chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s;
+}
+
+.mod-pai-btn.open .mod-pai-chevron {
+  transform: rotate(90deg);
+}
+
+/* Submenu expandido inline */
+.mod-pai-submenu {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 4px 12px;
+  border-left: 2px solid var(--border2);
+  margin-left: 12px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  align-items: flex-start !important;
+  align-self: stretch;
+  width: calc(100% - 12px);
+  box-sizing: border-box;
+}
+
+.mod-pai-submenu.open {
+  display: flex;
+}
+
+/* Submenu flutuante quando sidebar recolhida */
+.chamados-sidebar.collapsed .mod-pai-submenu {
+  display: none !important;
+}
+
+.chamados-sidebar.collapsed .mod-pai-submenu.open-float {
+  display: flex !important;
+  position: fixed;
+  left: 60px;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  padding: 6px;
+  gap: 2px;
+  z-index: 300;
+  min-width: 160px;
+  margin: 0;
+  border-left: none;
+}
+
+/* Item do submenu */
+.mod-sub-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+}
+
+.mod-sub-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.mod-sub-item.active {
+  background: #fef2f2;
+  color: var(--accent);
+}
+
+body.dark-mode .mod-sub-item.active {
+  background: #7f1d1d20;
+}
+
+.mod-sub-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+/* Sidebar recolhida — esconde texto do módulo pai */
+.chamados-sidebar.collapsed .mod-pai-chevron {
+  display: none;
+}

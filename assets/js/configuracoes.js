@@ -28,6 +28,9 @@ const MODULOS = [
   { key: 'materiais', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg> Materiais` },
   { key: 'inventario', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg> Inventário` },
   { key: 'pub_comunicados', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Publicar Comunicados` },
+  { key: 'rotinas', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Rotinas` },
+  { key: 'comercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comercial` },
+  { key: 'adminComercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><circle cx="17" cy="7" r="3" fill="currentColor" stroke="none" opacity="0.6"/></svg> Admin Comercial` },
 ];
 
 // ── Inicializar ──
@@ -87,40 +90,174 @@ async function renderAdministracao() {
   if (!panel) return;
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:2.5rem;">
+      <div id="admin-servidores-section"></div>
       <div id="admin-sla-section"></div>
       <div style="border-top:1px solid var(--border);padding-top:2rem;" id="admin-firebase-section"></div>
     </div>`;
 
-  // Reutilizar renderizações existentes
+  renderServidoresAdmin();
+
   const origSla = document.getElementById('panel-sla');
   const origFb = document.getElementById('panel-firebase');
-
-  // Temporariamente apontar para os novos containers
-  if (!origSla) {
-    const fakeSla = document.createElement('div');
-    fakeSla.id = 'panel-sla';
-    fakeSla.style.display = 'none';
-    document.body.appendChild(fakeSla);
-  }
-  if (!origFb) {
-    const fakeFb = document.createElement('div');
-    fakeFb.id = 'panel-firebase';
-    fakeFb.style.display = 'none';
-    document.body.appendChild(fakeFb);
-  }
-
+  if (!origSla) { const f = document.createElement('div'); f.id = 'panel-sla'; f.style.display = 'none'; document.body.appendChild(f); }
+  if (!origFb) { const f = document.createElement('div'); f.id = 'panel-firebase'; f.style.display = 'none'; document.body.appendChild(f); }
   await renderSlaPanel();
   await renderFirebaseInfo();
-
-  // Mover conteúdo para os containers corretos
   const slaEl = document.getElementById('panel-sla');
   const fbEl = document.getElementById('panel-firebase');
   const slaTarget = document.getElementById('admin-sla-section');
   const fbTarget = document.getElementById('admin-firebase-section');
-
   if (slaEl && slaTarget) slaTarget.innerHTML = slaEl.innerHTML;
   if (fbEl && fbTarget) fbTarget.innerHTML = fbEl.innerHTML;
 }
+
+// ── Gerenciamento de Servidores (SuperAdmin) ──
+let _adminServidores = [];
+
+async function loadServidoresAdmin() {
+  try {
+    const snap = await db.collection('rotinas_config').doc('servidores').get();
+    _adminServidores = snap.exists ? (snap.data().lista || []) : [];
+  } catch (e) { _adminServidores = []; }
+}
+
+function renderServidoresAdmin() {
+  const el = document.getElementById('admin-servidores-section');
+  if (!el) return;
+  el.innerHTML = `
+    <div>
+      <div style="font-size:0.72rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/></svg>
+        Servidores Monitorados
+      </div>
+      <div id="admin-servidores-list" style="display:flex;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;"></div>
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:1rem;">
+        <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem;">Novo servidor</div>
+        <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="new-srv-nome" class="form-input" style="flex:1;min-width:140px;padding:0.4rem 0.7rem;" placeholder="Nome (ex: Servidor Produção)">
+          <button class="btn-primary" onclick="addServidorAdmin()" style="padding:0.4rem 1rem;font-size:0.82rem;white-space:nowrap;">+ Adicionar</button>
+        </div>
+      </div>
+    </div>`;
+  renderServidoresAdminList();
+  loadServidoresAdmin().then(renderServidoresAdminList);
+}
+
+function renderServidoresAdminList() {
+  const el = document.getElementById('admin-servidores-list');
+  if (!el) return;
+  if (!_adminServidores.length) {
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.4rem 0;width:100%;">Nenhum servidor cadastrado.</div>';
+    return;
+  }
+  el.innerHTML = _adminServidores.map(s => {
+    const discos = s.discos || [];
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:1rem;width:100%;max-width:380px;display:flex;flex-direction:column;gap:0.75rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+          <input id="srv-edit-nome-${s.id}" value="${s.nome}" class="form-input"
+            style="font-weight:700;font-size:0.85rem;padding:0.2rem 0.5rem;border:1px solid transparent;background:transparent;flex:1;"
+            onfocus="this.style.borderColor='var(--accent)';this.style.background='var(--surface2)'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent';saveServidorNome('${s.id}')">
+        </div>
+        <button onclick="removeServidorAdmin('${s.id}')" title="Remover servidor"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.2rem;border-radius:4px;flex-shrink:0;"
+          onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.35rem;">
+        ${discos.map(d => `
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.6rem;background:var(--surface2);border-radius:6px;font-size:0.78rem;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="5"/><path d="M2 12c0 2.76 4.48 5 10 5s10-2.24 10-5"/></svg>
+          <span style="font-weight:600;font-family:var(--font-mono);min-width:28px;">${d.nome}</span>
+          <span style="color:var(--muted);">${d.total} ${d.unidade || "GB"}</span>
+          <button onclick="removeDiscoAdmin('${s.id}','${d.id}')"
+            style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;padding:0.1rem;line-height:1;"
+            onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'" title="Remover disco">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`).join("")}
+        ${!discos.length ? '<div style="font-size:0.72rem;color:var(--muted);">Nenhum disco cadastrado.</div>' : ""}
+      </div>
+      <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:0.6rem;">
+        <select id="new-disco-nome-${s.id}"
+          style="width:75px;padding:0.3rem 0.4rem;font-size:0.75rem;font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
+          ${['A:', 'B:', 'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:', 'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:'].map(l => `<option value="${l}"${l === 'C:' ? ' selected' : ''}>${l}</option>`).join('')}
+        </select>
+        <input type="number" placeholder="Capacidade" id="new-disco-total-${s.id}"
+          style="width:90px;padding:0.3rem 0.5rem;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
+        <select id="new-disco-unidade-${s.id}"
+          style="padding:0.3rem 0.4rem;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
+          <option value="GB">GB</option>
+          <option value="TB">TB</option>
+        </select>
+        <button onclick="addDiscoAdmin('${s.id}')"
+          style="padding:0.3rem 0.6rem;font-size:0.72rem;background:var(--accent);color:#fff;border:none;border-radius:5px;cursor:pointer;white-space:nowrap;">+ Disco</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveServidorNome(id) {
+  const el = document.getElementById(`srv-edit-nome-${id}`);
+  if (!el) return;
+  const nome = el.value.trim();
+  if (!nome) return;
+  const srv = _adminServidores.find(s => s.id === id);
+  if (srv && srv.nome !== nome) {
+    srv.nome = nome;
+    await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
+    showConfigNotification('Nome atualizado! ✅', 'success');
+  }
+}
+
+async function addDiscoAdmin(srvId) {
+  const nome = document.getElementById(`new-disco-nome-${srvId}`)?.value.trim();
+  const total = parseFloat(document.getElementById(`new-disco-total-${srvId}`)?.value) || 0;
+  const unidade = document.getElementById(`new-disco-unidade-${srvId}`)?.value || 'GB';
+  if (!nome || !total) { showConfigNotification('Preencha nome e capacidade do disco.', 'error'); return; }
+  const srv = _adminServidores.find(s => s.id === srvId);
+  if (!srv) return;
+  if (!srv.discos) srv.discos = [];
+  srv.discos.push({ id: 'disco' + Date.now(), nome, total, unidade });
+  await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
+  document.getElementById(`new-disco-nome-${srvId}`).value = '';
+  document.getElementById(`new-disco-total-${srvId}`).value = '';
+  renderServidoresAdminList();
+  showConfigNotification('Disco adicionado! ✅', 'success');
+}
+
+async function removeDiscoAdmin(srvId, discoId) {
+  const srv = _adminServidores.find(s => s.id === srvId);
+  if (!srv) return;
+  srv.discos = (srv.discos || []).filter(d => d.id !== discoId);
+  await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
+  renderServidoresAdminList();
+  showConfigNotification('Disco removido.', 'success');
+}
+
+async function addServidorAdmin() {
+  const nome = document.getElementById('new-srv-nome')?.value.trim();
+  if (!nome) { showConfigNotification('Informe o nome do servidor.', 'error'); return; }
+  _adminServidores.push({ id: 'srv' + Date.now(), nome, discos: [] });
+  await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
+  document.getElementById('new-srv-nome').value = '';
+  renderServidoresAdminList();
+  showConfigNotification('Servidor adicionado! ✅', 'success');
+}
+
+async function removeServidorAdmin(id) {
+  if (!confirm('Remover este servidor e todos os seus discos?')) return;
+  _adminServidores = _adminServidores.filter(s => s.id !== id);
+  await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
+  renderServidoresAdminList();
+  showConfigNotification('Servidor removido.', 'success');
+}
+
+
 
 // ══════════════════════════════
 // ABA SLA
@@ -204,7 +341,7 @@ async function renderSlaPanel() {
     </div>`;
 
   // Carregar justificativas
-  if (isAdmin) renderSlaJustificativas();
+  if (isAdmin || configCurrentUser?.isSuperAdmin) await renderSlaJustificativas();
 }
 
 // Estado de paginação das justificativas
@@ -1005,13 +1142,25 @@ function initConfigSidebar(user) {
 
   // Módulos por acessos
   const acessos = user.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas']
     : (user.acessos || ['chamados']);
 
-  ['materiais', 'inventario'].forEach(mod => {
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
     const el = document.getElementById('cs-mod-' + mod);
-    if (el) el.style.display = acessos.includes(mod) ? 'flex' : 'none';
+    const elSub = document.getElementById('sub-' + mod);
+    const show = acessos.includes(mod) ? 'flex' : 'none';
+    if (el) el.style.display = show;
+    if (elSub) elSub.style.display = show;
   });
+
+
+  // Módulo Comercial — visibilidade na sidebar
+  const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
+    (user.acessos || []).includes('comercial') || (user.acessos || []).includes('adminComercial');
+  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
+  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
+
+  if (typeof initModPai === 'function') initModPai(null);
 }
 
 function toggleMenuSidebar() {

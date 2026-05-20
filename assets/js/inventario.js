@@ -32,13 +32,25 @@ function initInventario() {
 
   // Sidebar: módulos visíveis por acesso
   const acessos = currentUser?.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas']
     : (currentUser?.acessos || []);
 
-  ['materiais', 'inventario'].forEach(mod => {
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
     const el = document.getElementById(`cs-mod-${mod}`);
-    if (el) el.style.display = (currentUser?.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
+    const elSub = document.getElementById(`sub-${mod}`);
+    const show = (currentUser?.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
+    if (el) el.style.display = show;
+    if (elSub) elSub.style.display = show;
   });
+
+
+  // Módulo Comercial — visibilidade na sidebar
+  const canComercial = currentUser?.isSuperAdmin || currentUser?.isAdminComercial || currentUser?.isComercial ||
+    (currentUser?.acessos || []).includes('comercial') || (currentUser?.acessos || []).includes('adminComercial');
+  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
+  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
+
+  if (typeof initModPai === 'function') initModPai('inventario');
 
   // Verificar parâmetros da URL (ex: ?tab=insumos&id=XXX)
   const urlParams = new URLSearchParams(window.location.search);
@@ -115,6 +127,8 @@ async function renderInsumos() {
 }
 
 const INSUMOS_PER_PAGE = 10;
+const ATIVOS_PER_PAGE = 16;
+let _ativosPage = 1;
 let _insumosPage = 1;
 
 async function loadInsumos(canManage) {
@@ -618,13 +632,21 @@ async function renderAtivos() {
           style="font-size:0.8rem;width:170px;">
           <option value="">Todos os Setores</option>
         </select>
+        <select id="ativo-sort" class="form-input" onchange="filterAtivos()"
+          style="font-size:0.8rem;width:160px;">
+          <option value="patrimonio-asc">Patrimônio ↑ A→Z</option>
+          <option value="patrimonio-desc" selected>Patrimônio ↓ Z→A</option>
+          <option value="nome-asc">Nome ↑ A→Z</option>
+          <option value="recente">Mais recentes</option>
+        </select>
         <button class="config-new-user-btn" onclick="openAtivoForm()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
           Novo Ativo
         </button>
       </div>` : ''}
     </div>
-    <div id="ativos-grid" class="ativos-grid"></div>`;
+    <div id="ativos-grid" class="ativos-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;align-items:start;"></div>
+    <div id="ativos-pagination" style="margin-top:0.75rem;"></div>`;
 
   await loadSetoresInv();
   await loadAtivos(canManage);
@@ -653,8 +675,15 @@ async function loadAtivos(canManage) {
     const snap = await db.collection('ativos').get();
     _ativos = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
-      .sort((a, b) => (a.setor || '').localeCompare(b.setor || '', 'pt-BR') ||
-        (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+      .sort((a, b) => {
+        const pa = a.patrimonio || '';
+        const pb = b.patrimonio || '';
+        // Ativos sem patrimônio vão para o final
+        if (!pa && !pb) return 0;
+        if (!pa) return 1;
+        if (!pb) return -1;
+        return pa.localeCompare(pb, 'pt-BR', { numeric: true, sensitivity: 'base' });
+      });
     renderAtivosList(_ativos, canManage);
   } catch (e) {
     console.error('[Inventário] Erro ao carregar ativos:', e);
@@ -663,67 +692,188 @@ async function loadAtivos(canManage) {
   }
 }
 
+function _sortAtivos(list) {
+  const sort = document.getElementById('ativo-sort')?.value || 'patrimonio-desc';
+  return [...list].sort((a, b) => {
+    if (sort === 'patrimonio-asc') {
+      const pa = a.patrimonio || '', pb = b.patrimonio || '';
+      if (!pa && !pb) return 0;
+      if (!pa) return 1; if (!pb) return -1;
+      return pa.localeCompare(pb, 'pt-BR', { numeric: true, sensitivity: 'base' });
+    }
+    if (sort === 'patrimonio-desc') {
+      const pa = a.patrimonio || '', pb = b.patrimonio || '';
+      if (!pa && !pb) return 0;
+      if (!pa) return 1; if (!pb) return -1;
+      return pb.localeCompare(pa, 'pt-BR', { numeric: true, sensitivity: 'base' });
+    }
+    if (sort === 'nome-asc') {
+      return (a.nomeAmigavel || a.nome || '').localeCompare(b.nomeAmigavel || b.nome || '', 'pt-BR');
+    }
+    if (sort === 'recente') {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    }
+    return 0;
+  });
+}
+
 function renderAtivosList(list, canManage) {
   const grid = document.getElementById('ativos-grid');
+  const pagEl = document.getElementById('ativos-pagination');
   if (!grid) return;
 
-  if (list.length === 0) {
+  const sorted = _sortAtivos(list);
+  const total = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(total / ATIVOS_PER_PAGE));
+  if (_ativosPage > totalPages) _ativosPage = 1;
+
+  if (total === 0) {
     grid.innerHTML = `
       <div class="ativos-empty">
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
         <span>Nenhum ativo cadastrado ainda.</span>
       </div>`;
+    if (pagEl) pagEl.innerHTML = '';
     return;
   }
 
-  // Agrupar por setor
-  const bySetor = {};
-  list.forEach(a => {
-    const s = a.setor || 'Sem Setor';
-    if (!bySetor[s]) bySetor[s] = [];
-    bySetor[s].push(a);
-  });
+  const start = (_ativosPage - 1) * ATIVOS_PER_PAGE;
+  const paged = sorted.slice(start, start + ATIVOS_PER_PAGE);
 
-  grid.innerHTML = Object.entries(bySetor).map(([setor, ativos]) => `
-    <div class="ativos-setor-group">
-      <div class="ativos-setor-label">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>
-        ${setor}
-        <span class="ativos-setor-count">${ativos.length} ativo${ativos.length !== 1 ? 's' : ''}</span>
-      </div>
-      <div class="ativos-cards-row">
-        ${ativos.map(a => renderAtivoCard(a, canManage)).join('')}
-      </div>
-    </div>`).join('');
+  grid.innerHTML = paged.map(a => renderAtivoCard(a, canManage)).join('');
+
+  // Paginação
+  if (pagEl) {
+    if (totalPages <= 1) { pagEl.innerHTML = ''; return; }
+    const prev = _ativosPage > 1;
+    const next = _ativosPage < totalPages;
+    pagEl.innerHTML = `
+      <div class="config-users-pagination">
+        <span class="config-page-info">${start + 1}–${Math.min(start + ATIVOS_PER_PAGE, total)} de ${total} ativos</span>
+        <div class="config-page-btns">
+          <button class="config-page-btn" onclick="changeAtivosPage(${_ativosPage - 1})" ${!prev ? 'disabled' : ''}>‹</button>
+          ${Array.from({ length: totalPages }, (_, i) => `
+            <button class="config-page-btn ${i + 1 === _ativosPage ? 'active' : ''}" onclick="changeAtivosPage(${i + 1})">${i + 1}</button>`).join('')}
+          <button class="config-page-btn" onclick="changeAtivosPage(${_ativosPage + 1})" ${!next ? 'disabled' : ''}>›</button>
+        </div>
+      </div>`;
+  }
+}
+
+function changeAtivosPage(page) {
+  const total = _ativos.length;
+  const totalPages = Math.ceil(total / ATIVOS_PER_PAGE);
+  if (page < 1 || page > totalPages) return;
+  _ativosPage = page;
+  const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
+  filterAtivos();
 }
 
 function renderAtivoCard(a, canManage) {
+  const setorOpts = _setoresInv.map(s =>
+    `<option value="${s.nome}" ${a.setor === s.nome ? 'selected' : ''}>${s.nome}</option>`
+  ).join('');
+
+  const fieldStyle = 'width:100%;margin-top:3px;padding:0.38rem 0.55rem;font-size:0.78rem;border:1px solid var(--border2);border-radius:6px;background:var(--surface2);color:var(--text);font-family:var(--font-display);box-sizing:border-box;';
+  const labelStyle = 'font-size:0.6rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;';
+  const rowStyle = 'display:flex;align-items:center;gap:0.65rem;padding:0.55rem 0;border-bottom:1px solid var(--border2);';
+  const iconBox = 'width:26px;height:26px;border-radius:6px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);';
+
+  const SVG_TAG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/></svg>';
+  const SVG_USER = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  const SVG_BLDG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>';
+
+  const row = (svg, label, value) => !value ? '' : `
+    <div style="${rowStyle}">
+      <div style="${iconBox}">${svg}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="${labelStyle}">${label}</div>
+        <div style="font-size:0.8rem;font-weight:700;color:var(--text);margin-top:1px;">${value}</div>
+      </div>
+    </div>`;
+
   return `
-    <div class="ativo-card" id="ativo-card-${a.id}" onclick="openAtivoDetail('${a.id}')" style="cursor:pointer;">
-      <div class="ativo-card-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
-      </div>
-      <div class="ativo-card-info">
-        <div class="ativo-card-nome">${a.nomeAmigavel || a.nome}</div>
-        ${a.nomeAmigavel ? `<div class="ativo-card-modelo">${a.nome}</div>` : ''}
-        <div class="ativo-card-meta">
-          ${a.patrimonio ? `
-          <span class="ativo-meta-tag">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/></svg>
-            ${a.patrimonio}
-          </span>` : ''}
-          ${a.usuario ? `
-          <span class="ativo-meta-tag">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            ${a.usuario}
-          </span>` : ''}
+    <div class="ativo-flip-wrap" id="flip-wrap-${a.id}">
+      <div class="ativo-flip-inner" id="flip-inner-${a.id}">
+
+        <!-- ── FRENTE ── -->
+        <div class="ativo-flip-front" style="padding:0.85rem 1rem;">
+          <!-- Nome -->
+          <div style="margin-bottom:0.4rem;">
+            <div style="font-size:0.85rem;font-weight:800;color:var(--text);line-height:1.3;
+              word-break:break-word;">${a.nomeAmigavel || a.nome}</div>
+            ${a.nomeAmigavel ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:1px;">${a.nome}</div>` : ''}
+          </div>
+          <!-- Linhas de info -->
+          ${row(SVG_TAG, 'Patrimônio', a.patrimonio)}
+          ${row(SVG_USER, 'Responsável', a.usuario)}
+          ${row(SVG_BLDG, 'Setor', a.setor)}
+          <!-- Botões -->
+          ${canManage ? `
+          <div style="display:flex;gap:6px;margin-top:0.7rem;">
+            <button type="button"
+              onclick="flipAtivoCard('${a.id}')"
+              style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+                padding:0.4rem;background:var(--surface2);border:1px solid var(--border2);
+                border-radius:7px;font-size:0.75rem;font-weight:600;
+                font-family:var(--font-display);color:var(--text);cursor:pointer;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Editar
+            </button>
+            <button type="button"
+              onclick="openDeleteAtivoModal('${a.id}')"
+              style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+                padding:0.4rem;background:#fef2f2;border:1px solid #fecaca;
+                border-radius:7px;font-size:0.75rem;font-weight:600;
+                font-family:var(--font-display);color:#ef4444;cursor:pointer;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+              Excluir
+            </button>
+          </div>` : ''}
         </div>
+
+        <!-- ── VERSO (formulário) ── -->
+        <div class="ativo-flip-back" style="padding:0.85rem 1rem;display:flex;flex-direction:column;gap:0.45rem;">
+          <div style="font-size:0.75rem;font-weight:800;color:var(--text);margin-bottom:0.1rem;">✎ Editar Ativo</div>
+          <div>
+            <div style="${labelStyle}">Nome Amigável</div>
+            <input type="text" id="flip-amigavel-${a.id}" value="${(a.nomeAmigavel || '').replace(/"/g, '&quot;')}" placeholder="Ex: PC da Ana" style="${fieldStyle}">
+          </div>
+          <div>
+            <div style="${labelStyle}">Nome / Modelo *</div>
+            <input type="text" id="flip-nome-${a.id}" value="${(a.nome || '').replace(/"/g, '&quot;')}" placeholder="Ex: Dell OptiPlex 7090" style="${fieldStyle}">
+          </div>
+          <div>
+            <div style="${labelStyle}">Patrimônio</div>
+            <input type="text" id="flip-patrimonio-${a.id}" value="${(a.patrimonio || '').replace(/"/g, '&quot;')}" placeholder="Ex: PAT-001" style="${fieldStyle}">
+          </div>
+          <div>
+            <div style="${labelStyle}">Responsável</div>
+            <input type="text" id="flip-usuario-${a.id}" value="${(a.usuario || '').replace(/"/g, '&quot;')}" placeholder="Ex: João Silva" style="${fieldStyle}">
+          </div>
+          <div>
+            <div style="${labelStyle}">Setor *</div>
+            <select id="flip-setor-${a.id}" style="${fieldStyle}">
+              <option value="">Selecione o Setor</option>
+              ${setorOpts}
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:0.2rem;">
+            <button type="button" onclick="saveAtivoFlip('${a.id}')"
+              style="flex:1;padding:0.42rem;background:var(--accent);border:none;border-radius:7px;
+                color:#fff;font-size:0.75rem;font-weight:700;font-family:var(--font-display);cursor:pointer;">
+              Salvar
+            </button>
+            <button type="button" onclick="flipAtivoCard('${a.id}')"
+              style="flex:1;padding:0.42rem;background:var(--surface2);border:1px solid var(--border2);
+                border-radius:7px;color:var(--text);font-size:0.75rem;font-weight:600;
+                font-family:var(--font-display);cursor:pointer;">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
       </div>
-      ${canManage ? `
-      <div class="ativo-card-actions">
-        <button class="config-user-edit-btn" onclick="event.stopPropagation();openAtivoForm('${a.id}')" title="Editar">✎</button>
-        <button class="config-user-del-btn" onclick="event.stopPropagation();deleteAtivo('${a.id}')" title="Excluir">✕</button>
-      </div>` : ''}
     </div>`;
 }
 
@@ -732,6 +882,8 @@ function filterAtivos(q) {
   const query = (typeof q === 'string' ? q : document.getElementById('ativo-search')?.value || '').toLowerCase();
   const setor = document.getElementById('ativo-filter-setor')?.value || '';
   const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
+
+  _ativosPage = 1; // resetar para página 1 ao filtrar
 
   const filtered = _ativos.filter(a => {
     const matchSetor = !setor || a.setor === setor;
@@ -886,40 +1038,65 @@ async function _initInventarioPage() {
 document.addEventListener('DOMContentLoaded', _initInventarioPage);
 
 // ── Modal de detalhe do Ativo ──────────────────────────────────────────────
-function openAtivoDetail(id) {
-  const a = _ativos.find(x => x.id === id);
-  if (!a) return;
-
-  document.getElementById('ativo-detail-title').textContent = a.nomeAmigavel || a.nome;
-
-  const row = (icon, label, value) => value ? `
-    <div style="display:flex;align-items:center;gap:0.75rem;padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
-      <div style="width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);">${icon}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:0.68rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">${label}</div>
-        <div style="font-size:0.92rem;font-weight:700;color:var(--text);margin-top:2px;word-break:break-word;">${value}</div>
-      </div>
-    </div>` : '';
-
-  const ICON_EQUIP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>';
-  const ICON_TAG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/></svg>';
-  const ICON_USER = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-  const ICON_BUILD = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>';
-
-  document.getElementById('ativo-detail-body').innerHTML = `
-    <div style="padding-bottom:0.25rem;">
-      ${row(ICON_EQUIP, 'Equipamento', a.nome)}
-      ${a.nomeAmigavel && a.nomeAmigavel !== a.nome ? row(ICON_EQUIP, 'Nome Amigável', a.nomeAmigavel) : ''}
-      ${row(ICON_TAG, 'Patrimônio', a.patrimonio)}
-      ${row(ICON_USER, 'Responsável', a.usuario)}
-      ${row(ICON_BUILD, 'Setor', a.setor)}
-    </div>`;
-
-  document.getElementById('ativo-detail-modal').classList.add('open');
+// ── Flip Card ──
+function flipAtivoCard(id) {
+  const inner = document.getElementById('flip-inner-' + id);
+  if (inner) inner.classList.toggle('flipped');
 }
 
-function closeAtivoDetail() {
-  document.getElementById('ativo-detail-modal').classList.remove('open');
+async function saveAtivoFlip(id) {
+  const nome = document.getElementById('flip-nome-' + id)?.value.trim();
+  const patrimonio = document.getElementById('flip-patrimonio-' + id)?.value.trim();
+  const usuario = document.getElementById('flip-usuario-' + id)?.value.trim();
+  const setor = document.getElementById('flip-setor-' + id)?.value;
+  const nomeAmigavel = document.getElementById('flip-amigavel-' + id)?.value.trim();
+
+  if (!nome) { showNotification('Informe o nome do equipamento.', 'error'); return; }
+  if (!setor) { showNotification('Selecione o setor.', 'error'); return; }
+
+  try {
+    await db.collection('ativos').doc(id).update({
+      nome, patrimonio, usuario, setor, nomeAmigavel,
+      updatedAt: new Date().toISOString()
+    });
+    showNotification('Ativo atualizado! ✅', 'success');
+    await renderAtivos();
+  } catch (e) {
+    console.error('[Inventário] Erro ao salvar ativo:', e);
+    showNotification('Erro ao salvar ativo.', 'error');
+  }
+}
+
+// ── Modal de confirmação de exclusão ──
+let _ativoDeleteId = null;
+
+function openDeleteAtivoModal(id) {
+  const a = _ativos.find(x => x.id === id);
+  if (!a) return;
+  _ativoDeleteId = id;
+  const nomeEl = document.getElementById('ativo-delete-nome');
+  if (nomeEl) nomeEl.textContent = a.nomeAmigavel || a.nome;
+  const btn = document.getElementById('ativo-delete-confirm-btn');
+  if (btn) btn.onclick = () => confirmDeleteAtivo();
+  document.getElementById('ativo-delete-confirm-modal')?.classList.add('open');
+}
+
+function closeDeleteAtivoModal() {
+  document.getElementById('ativo-delete-confirm-modal')?.classList.remove('open');
+  _ativoDeleteId = null;
+}
+
+async function confirmDeleteAtivo() {
+  if (!_ativoDeleteId) return;
+  try {
+    await db.collection('ativos').doc(_ativoDeleteId).delete();
+    showNotification('Ativo excluído.', 'success');
+    closeDeleteAtivoModal();
+    await renderAtivos();
+  } catch (e) {
+    console.error('[Inventário] Erro ao excluir ativo:', e);
+    showNotification('Erro ao excluir ativo.', 'error');
+  }
 }
 
 // ── Destacar insumo vindo da URL ───────────────────────────────────────────

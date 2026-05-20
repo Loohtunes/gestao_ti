@@ -60,7 +60,7 @@ async function _initMateriaisPage() {
   currentUser = user;
 
   const acessos = user.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario', 'configuracoes']
+    ? ['chamados', 'materiais', 'inventario', 'rotinas', 'configuracoes']
     : (user.acessos || ['chamados']);
 
   if (!acessos.includes('materiais')) {
@@ -86,9 +86,12 @@ async function _initMateriaisPage() {
   if (syncBtn) syncBtn.style.display = user.isSuperAdmin ? 'flex' : 'none';
   if (configBtn) configBtn.style.display = (user.isAdmin || user.isSuperAdmin) ? 'flex' : 'none';
 
-  ['materiais', 'inventario'].forEach(mod => {
+  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
     const el = document.getElementById('cs-mod-' + mod);
-    if (el) el.style.display = acessos.includes(mod) ? 'flex' : 'none';
+    const elSub = document.getElementById('sub-' + mod);
+    const show = (user.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
+    if (el) el.style.display = show;
+    if (elSub) elSub.style.display = show;
   });
 
   const avatar = document.getElementById('mat-sidebar-avatar');
@@ -97,6 +100,15 @@ async function _initMateriaisPage() {
   if (avatar) avatar.textContent = user.username.charAt(0).toUpperCase();
   if (name) name.textContent = user.username;
   if (role) role.textContent = user.setor || (user.role === 'attendant' ? 'Atendente' : 'Solicitante');
+
+
+  // Módulo Comercial — visibilidade na sidebar
+  const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
+    (user.acessos || []).includes('comercial') || (user.acessos || []).includes('adminComercial');
+  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
+  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
+
+  if (typeof initModPai === 'function') initModPai('materiais');
 
   matLoadMaterials();
 }

@@ -33,6 +33,22 @@
 .detail-header-strip.prio-medium { background: var(--prio-medium-bg); border-left: 5px solid var(--prio-medium-stripe); }
 .detail-header-strip.prio-high   { background: var(--prio-high-bg);   border-left: 5px solid var(--prio-high-stripe); }
 .detail-header-strip.prio-urgent { background: var(--prio-urgent-bg); border-left: 5px solid var(--prio-urgent-stripe); }
+.detail-header-strip.force-closed-strip {
+  background: #fef2f2;
+  border-left: 5px solid #991b1b;
+}
+body.dark-mode .detail-header-strip.force-closed-strip {
+  background: #2a0808;
+  border-left: 5px solid #991b1b;
+}
+.detail-header-strip.completed-strip {
+  background: #f0fdf4;
+  border-left: 5px solid #22c55e;
+}
+body.dark-mode .detail-header-strip.completed-strip {
+  background: #052e16;
+  border-left: 5px solid #22c55e;
+}
 .detail-header-strip.test-strip {
   background: repeating-linear-gradient(
     45deg,

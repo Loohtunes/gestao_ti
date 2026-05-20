@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão T.I — Comercial</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <script>
+    (function () { try { const s = localStorage.getItem('premovale-theme'); const p = window.matchMedia('(prefers-color-scheme: dark)').matches; if (s === 'dark' || (!s && p)) document.documentElement.classList.add('dark-mode'); } catch (e) { } })();
+  </script>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/configuracoes.css">
+  <link rel="stylesheet" href="assets/css/comercial.css">
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══ -->
+  <nav>
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;" title="Menu Principal">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span
+          style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown"
+          style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track"
+        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill"
+          style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema"
+        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
+        <div
+          style="position:relative;width:28px;height:16px;background:var(--surface3);border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb"
+            style="position:absolute;top:1px;left:1px;width:12px;height:12px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;">
+          </div>
+        </div>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
+      </div>
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase" style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ LAYOUT ══ -->
+  <div class="config-wrapper">
+
+    <!-- SIDEBAR -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <!-- T.I -->
+        <div class="mod-pai-wrap" id="mod-pai-ti">
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-ti-btn" onclick="toggleModPai('ti')"
+            title="T.I">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="12" x="3" y="4" rx="2" />
+                <path d="M8 20h8M12 16v4" />
+              </svg></span>
+            <span class="chamados-sidebar-name">T.I</span>
+            <span class="mod-pai-chevron" id="mod-pai-ti-chevron"><svg width="12" height="12" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6" />
+              </svg></span>
+          </button>
+          <div class="mod-pai-submenu" id="mod-pai-ti-submenu">
+            <a class="mod-sub-item" href="index.html" id="sub-chamados">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                  <path d="M13 5v2" />
+                  <path d="M13 17v2" />
+                  <path d="M13 11v2" />
+                </svg></span>
+              <span>Chamados</span>
+            </a>
+            <a class="mod-sub-item" href="materiais.html" id="sub-materiais" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                  <path d="M12 22V12" />
+                  <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                  <path d="m7.5 4.27 9 5.15" />
+                </svg></span>
+              <span>Materiais</span>
+            </a>
+            <a class="mod-sub-item" href="inventario.html" id="sub-inventario" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+                  <path d="m7 16.5-4.74-2.85" />
+                  <path d="m7 16.5 5-3" />
+                  <path d="M7 16.5v5.17" />
+                  <path
+                    d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+                  <path d="m17 16.5-5-3" />
+                  <path d="m17 16.5 4.74-2.85" />
+                  <path d="M17 16.5v5.17" />
+                  <path
+                    d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+                  <path d="M12 8 7.26 5.15" />
+                  <path d="m12 8 4.74-2.85" />
+                  <path d="M12 13.5V8" />
+                </svg></span>
+              <span>Inventário</span>
+            </a>
+            <a class="mod-sub-item" href="rotinas.html" id="sub-rotinas" style="display:none;">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m3 17 2 2 4-4" />
+                  <path d="m3 7 2 2 4-4" />
+                  <path d="M13 6h8" />
+                  <path d="M13 12h8" />
+                  <path d="M13 18h8" />
+                </svg></span>
+              <span>Rotinas</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Engenharia -->
+        <div class="mod-pai-wrap">
+          <span class="chamados-sidebar-item mod-pai-btn mod-pai-soon" title="Engenharia — Em breve">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Engenharia</span>
+            <span class="chamados-sidebar-soon">Em breve</span>
+          </span>
+        </div>
+
+        <!-- Comercial -->
+        <div class="mod-pai-wrap" id="mod-pai-comercial">
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-comercial-btn"
+            onclick="toggleModPai('comercial')" title="Comercial" style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="14" x="2" y="7" rx="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Comercial</span>
+            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6" />
+              </svg></span>
+          </button>
+          <div class="mod-pai-submenu" id="mod-pai-comercial-submenu">
+            <a class="mod-sub-item active" href="comercial.html" id="sub-comercial">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 3v18h18" />
+                  <path d="m19 9-5 5-4-4-3 3" />
+                </svg></span>
+              <span>Controle de Obras</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="chamados-sidebar-divider"></div>
+        <a class="chamados-sidebar-item" href="menu.html" title="Menu Principal">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+              <path
+                d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Menu Principal</span>
+        </a>
+
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" id="sidebar-config-btn" style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="cs-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="cs-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="cs-sidebar-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="performLogout()">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO -->
+    <main class="config-main">
+      <div style="padding:2rem 2.5rem;">
+
+        <!-- Header -->
+        <div class="comercial-header">
+          <div>
+            <div class="comercial-header-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="14" x="2" y="7" rx="2" />
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+              </svg>
+              Controle de Obras
+            </div>
+            <div style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);margin-top:0.2rem;">
+              // Pós-fechamento — <span id="obras-counter">0 obras</span>
+            </div>
+          </div>
+          <button class="btn-primary" onclick="openNovaObraModal()" style="display:flex;align-items:center;gap:0.5rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nova Obra
+          </button>
+        </div>
+
+        <!-- Filtros -->
+        <div class="comercial-filters">
+          <select onchange="setFiltroRep(this.value)">
+            <option value="">Todos os representantes</option>
+            <option value="Verdile">Verdile</option>
+            <option value="Ricardo">Ricardo</option>
+            <option value="Sebastião">Sebastião</option>
+            <option value="Ângelo">Ângelo</option>
+            <option value="Sérgio">Sérgio</option>
+            <option value="Matheus">Matheus</option>
+            <option value="Henrique">Henrique</option>
+            <option value="Flávio">Flávio</option>
+            <option value="Gazzo">Gazzo</option>
+          </select>
+          <select onchange="setFiltroEtapa(this.value)">
+            <option value="">Todas as etapas</option>
+            <option value="0">Proposta Consolidada</option>
+            <option value="1">Contrato</option>
+            <option value="2">CNO/SBOBRAS</option>
+            <option value="3">Aditivos / Termo</option>
+            <option value="4">Medição</option>
+          </select>
+        </div>
+
+        <!-- Grid -->
+        <div class="obras-grid" id="obras-grid">
+          <div class="obras-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect width="20" height="14" x="2" y="7" rx="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg>
+            <h3>Carregando obras...</h3>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ══ MODAL NOVA OBRA ══ -->
+  <div id="nova-obra-modal"
+    style="display:none;position:fixed;inset:0;z-index:1000;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(500px,95vw);box-shadow:0 20px 60px #00000030;">
+      <div
+        style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Nova Obra
+        </div>
+        <button onclick="closeNovaObraModal()"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <form id="nova-obra-form" style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;"
+        onsubmit="event.preventDefault();saveNovaObra();">
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:0.75rem;">
+          <div>
+            <label class="form-label">Nº da Obra <span style="color:var(--accent);">*</span></label>
+            <input type="text" id="nova-obra-numero" class="form-input" placeholder="Ex: 247"
+              style="width:100%;margin-top:0.25rem;" required>
+          </div>
+          <div>
+            <label class="form-label">Nome da Obra <span style="color:var(--accent);">*</span></label>
+            <input type="text" id="nova-obra-nome" class="form-input" placeholder="Ex: Residencial São Paulo"
+              style="width:100%;margin-top:0.25rem;" required>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Representante Responsável <span style="color:var(--accent);">*</span></label>
+          <select id="nova-obra-rep" class="form-input" style="width:100%;margin-top:0.25rem;" required>
+            <option value="">Selecione...</option>
+            <option>Verdile</option>
+            <option>Ricardo</option>
+            <option>Sebastião</option>
+            <option>Ângelo</option>
+            <option>Sérgio</option>
+            <option>Matheus</option>
+            <option>Henrique</option>
+            <option>Flávio</option>
+            <option>Gazzo</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;align-items:end;">
+          <div>
+            <label class="form-label">Data de Fechamento <span style="color:var(--accent);">*</span></label>
+            <input type="date" id="nova-obra-fechamento" class="form-input" style="width:100%;margin-top:0.25rem;"
+              required>
+          </div>
+          <div>
+            <label class="form-label">Prazo estimado de finalização</label>
+            <input type="date" id="nova-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Observações</label>
+          <textarea id="nova-obra-obs" class="form-input" rows="2" placeholder="Informações adicionais..."
+            style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
+        </div>
+        <div
+          style="display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.5rem;border-top:1px solid var(--border2);">
+          <button type="button" class="btn-secondary" onclick="closeNovaObraModal()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btn-save-nova-obra">Cadastrar Obra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DETALHES DA OBRA ══ -->
+  <div class="obra-modal-overlay" id="obra-modal-overlay" onclick="if(event.target===this)closeObraModal()">
+    <div class="obra-modal">
+      <div class="obra-modal-header">
+        <div class="obra-modal-numero" id="obra-modal-numero"></div>
+        <div class="obra-modal-nome" id="obra-modal-nome"></div>
+        <div class="obra-modal-meta" id="obra-modal-meta"></div>
+      </div>
+      <div class="obra-modal-body">
+        <div
+          style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:1rem;">
+          Progresso das Etapas</div>
+        <div class="etapas-timeline" id="obra-timeline"></div>
+      </div>
+      <div class="obra-modal-footer" id="obra-modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL EDITAR OBRA ══ -->
+  <div id="editar-obra-modal"
+    style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(500px,95vw);box-shadow:0 20px 60px #00000030;">
+      <div
+        style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Editar Obra
+        </div>
+        <button onclick="closeEditarObraModal()"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:0.75rem;">
+          <div>
+            <label class="form-label">Nº da Obra</label>
+            <input type="text" id="editar-obra-numero" class="form-input" style="width:100%;margin-top:0.25rem;">
+          </div>
+          <div>
+            <label class="form-label">Nome da Obra <span style="color:var(--accent);">*</span></label>
+            <input type="text" id="editar-obra-nome" class="form-input" style="width:100%;margin-top:0.25rem;" required>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Representante Responsável</label>
+          <select id="editar-obra-rep" class="form-input" style="width:100%;margin-top:0.25rem;">
+            <option value="">Selecione...</option>
+            <option>Verdile</option>
+            <option>Ricardo</option>
+            <option>Sebastião</option>
+            <option>Ângelo</option>
+            <option>Sérgio</option>
+            <option>Matheus</option>
+            <option>Henrique</option>
+            <option>Flávio</option>
+            <option>Gazzo</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div>
+            <label class="form-label">Data de Fechamento</label>
+            <input type="date" id="editar-obra-fechamento" class="form-input" style="width:100%;margin-top:0.25rem;">
+          </div>
+          <div>
+            <label class="form-label">Prazo estimado</label>
+            <input type="date" id="editar-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Observações</label>
+          <textarea id="editar-obra-obs" class="form-input" rows="2"
+            style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
+        </div>
+        <div
+          style="display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.5rem;border-top:1px solid var(--border2);">
+          <button class="btn-secondary" onclick="closeEditarObraModal()">Cancelar</button>
+          <button class="btn-primary" onclick="saveEditarObra()">Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL PRÓXIMA ETAPA (pós-CNO) ══ -->
+  <div id="proxima-etapa-modal"
+    style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(480px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:0.25rem;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          CNO/SBOBRAS concluído!
+        </div>
+        <div style="font-size:0.78rem;color:var(--muted);">Qual é o próximo passo para esta obra?</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.6rem;">
+        <button onclick="escolherProximaEtapa('aditivos')" class="proxima-etapa-btn"
+          style="border-color:#ec4899;color:#9d174d;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="flex-shrink:0;">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          <div>
+            <div style="font-weight:700;">Aditivos / Termo</div>
+            <div style="font-size:0.72rem;opacity:0.8;">Há aditivos ou termos a serem processados</div>
+          </div>
+        </button>
+        <button onclick="escolherProximaEtapa('medicao')" class="proxima-etapa-btn"
+          style="border-color:#22c55e;color:#166534;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="flex-shrink:0;">
+            <path
+              d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z" />
+            <path d="m14.5 12.5 2-2" />
+            <path d="m11.5 9.5 2-2" />
+            <path d="m8.5 6.5 2-2" />
+            <path d="m17.5 15.5 2-2" />
+          </svg>
+          <div>
+            <div style="font-weight:700;">Medição</div>
+            <div style="font-size:0.72rem;opacity:0.8;">Ir direto para etapa de medição</div>
+          </div>
+        </button>
+        <button onclick="escolherProximaEtapa('aditivos_medicao')" class="proxima-etapa-btn"
+          style="border-color:#8b5cf6;color:#6d28d9;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="flex-shrink:0;">
+            <rect width="8" height="8" x="2" y="2" rx="2" />
+            <path d="M14 2c1.1 0 2 .9 2 2v4c0 1.1-.9 2-2 2" />
+            <rect width="8" height="8" x="14" y="14" rx="2" />
+            <path d="M10 14c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2" />
+          </svg>
+          <div>
+            <div style="font-weight:700;">Aditivos + Medição</div>
+            <div style="font-size:0.72rem;opacity:0.8;">A obra terá ambas as etapas em sequência</div>
+          </div>
+        </button>
+        <button onclick="escolherProximaEtapa('concluir')" class="proxima-etapa-btn"
+          style="border-color:#6b7280;color:var(--muted);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="flex-shrink:0;">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="8 12 11 15 16 9" />
+          </svg>
+          <div>
+            <div style="font-weight:700;">Concluir Obra</div>
+            <div style="font-size:0.72rem;opacity:0.8;">Obra finalizada sem etapas adicionais</div>
+          </div>
+        </button>
+      </div>
+      <div style="padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeProximaEtapaModal()" style="width:100%;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL MOTIVO DE ATRASO ══ -->
+  <div id="motivo-atraso-modal"
+    style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="motivo-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Registre o motivo — ficará visível na
+          timeline da sub-etapa</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Motivo do atraso <span style="color:var(--accent);">*</span></label>
+        <textarea id="motivo-input" class="form-input" rows="3" placeholder="Ex: Cliente solicitou revisão do escopo..."
+          style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeMotivoAtrasoModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveMotivoAtraso()">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL REVISÃO ══ -->
+  <div class="revisao-mini-modal" id="revisao-mini-modal" onclick="if(event.target===this)closeRevisaoModal()">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(440px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="revisao-modal-title" style="font-size:0.88rem;font-weight:700;"></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Registre o motivo da revisão — ficará na
+          timeline da etapa</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Motivo da revisão <span style="color:var(--accent);">*</span></label>
+        <textarea id="revisao-motivo-input" class="form-input" rows="3"
+          placeholder="Descreva o motivo da solicitação de revisão..."
+          style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeRevisaoModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveRevisao()">Registrar Revisão</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/comercial.js"></script>
+</body>
+
+</html>
