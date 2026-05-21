@@ -1,5 +1,15 @@
 // ===== COMERCIAL v2 — Sub-etapas, Dias Úteis, Feriados =====
 
+// ── Logout (contexto Comercial — sem closeTicketDetail) ───────────────────────
+function performLogout() {
+  if (!confirm('Deseja realmente sair do sistema?')) return;
+  if (_unsubObras) { _unsubObras(); _unsubObras = null; }
+  if (typeof stopSessionTimer === 'function') stopSessionTimer();
+  currentUser = null;
+  localStorage.removeItem('chamados-current-user-id');
+  window.location.href = 'login.html';
+}
+
 function toggleMenuSidebar() {
   const s = document.getElementById('chamados-sidebar'), i = document.getElementById('sidebar-toggle-icon');
   if (!s) return;
@@ -38,6 +48,7 @@ const ETAPAS_CONFIG = {
   contrato: {
     id:'contrato', nome:'Contrato', short:'Contrato', opcional:false, cor:'#8b5cf6',
     subEtapas:[
+      {id:'em_analise', nome:'Em Análise', dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true},
       {id:'envio',      nome:'Envio',      dias:3,  refEtapa:'proposta', refSub:'assinatura',      isNovaDataZero:false, dateLivre:false},
       {id:'assinatura', nome:'Assinatura', dias:5,  refEtapa:'contrato', refSub:'envio',           isNovaDataZero:false, dateLivre:false},
     ]
@@ -51,6 +62,7 @@ const ETAPAS_CONFIG = {
   aditivos: {
     id:'aditivos', nome:'Aditivos / Termo', short:'Aditivos', opcional:true, cor:'#ec4899',
     subEtapas:[
+      {id:'em_analise',             nome:'Em Análise',               dias:0, refEtapa:null,       refSub:null,                     isNovaDataZero:false, dateLivre:true,  isAnalise:true},
       {id:'comparativo_recebimento', nome:'Recebimento do Comparativo',  dias:0, refEtapa:null,       refSub:null,                     isNovaDataZero:true,  dateLivre:false},
       {id:'carta_envio',             nome:'Envio da Carta Aditiva',      dias:2, refEtapa:'aditivos', refSub:'comparativo_recebimento', isNovaDataZero:false, dateLivre:false},
       {id:'carta_aprovacao',         nome:'Aprovação da Carta Aditiva',  dias:3, refEtapa:'aditivos', refSub:'carta_envio',             isNovaDataZero:false, dateLivre:false},
@@ -61,8 +73,9 @@ const ETAPAS_CONFIG = {
   medicao: {
     id:'medicao', nome:'Medição', short:'Medição', opcional:true, cor:'#6b7280',
     subEtapas:[
-      {id:'envio',     nome:'Envio',     dias:0, refEtapa:null,      refSub:null,    isNovaDataZero:false, dateLivre:true},
-      {id:'aprovacao', nome:'Aprovação', dias:2, refEtapa:'medicao', refSub:'envio', isNovaDataZero:false, dateLivre:false},
+      {id:'em_analise', nome:'Em Análise', dias:0, refEtapa:null,      refSub:null,    isNovaDataZero:false, dateLivre:true, isAnalise:true},
+      {id:'envio',      nome:'Envio',      dias:0, refEtapa:null,      refSub:null,    isNovaDataZero:false, dateLivre:true},
+      {id:'aprovacao',  nome:'Aprovação',  dias:2, refEtapa:'medicao', refSub:'envio', isNovaDataZero:false, dateLivre:false},
     ]
   },
 };
@@ -101,14 +114,15 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras=[], _obraAtual=null, _filtroRep='', _filtroEtapa='', _unsubObras=null;
-let _filtroDataDe='', _filtroDataAte='';
+let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='';
 let _paginaAtual=0;
 let _obrasPorPagina=parseInt(localStorage.getItem('comercial-per-page')||'12');
 
 function setFiltroRep(val)     { _filtroRep=val;     _paginaAtual=0; renderObras(); }
 function setFiltroEtapa(val)   { _filtroEtapa=val;   _paginaAtual=0; renderObras(); }
 function setFiltroDataDe(val)  { _filtroDataDe=val;  _paginaAtual=0; renderObras(); }
-function setFiltroDataAte(val) { _filtroDataAte=val; _paginaAtual=0; renderObras(); }
+function setFiltroDataAte(val)    { _filtroDataAte=val;      _paginaAtual=0; renderObras(); }
+function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso=val; _paginaAtual=0; renderObras(); }
 function setObrasPorPagina(val){ _obrasPorPagina=parseInt(val); localStorage.setItem('comercial-per-page',val); _paginaAtual=0; renderObras(); }
 function irParaPagina(p)       { _paginaAtual=p; renderObras(); window.scrollTo({top:0,behavior:'smooth'}); }
 
@@ -117,74 +131,58 @@ const SCHEMA_VERSION = 2;
 
 async function migrateObras() {
   try {
-    // Buscar obras com schema antigo (sem _schemaVersion ou versão < atual)
     const snap = await db.collection('obras').get();
-    const toMigrate = snap.docs.filter(d => {
-      const data = d.data();
-      return (data._schemaVersion || 1) < SCHEMA_VERSION;
-    });
-
-    if (!toMigrate.length) return; // Nada a migrar
-
+    const toMigrate = snap.docs.filter(d => (d.data()._schemaVersion || 1) < SCHEMA_VERSION);
+    if (!toMigrate.length) return;
     console.log(`[Migração] ${toMigrate.length} obra(s) para migrar para schema v${SCHEMA_VERSION}`);
-
-    const batch = db.batch();
+    // Processar uma a uma para evitar erros de batch
     for (const doc of toMigrate) {
-      const obra = doc.data();
-      const migrated = _migrateObraToV2(obra);
-      batch.update(doc.ref, migrated);
+      try {
+        const migrated = _migrateObraToV2(doc.data());
+        await doc.ref.update(migrated);
+      } catch(e) {
+        console.warn(`[Migração] Erro na obra ${doc.id}:`, e);
+      }
     }
-    await batch.commit();
-    console.log(`[Migração] Concluída com sucesso! ${toMigrate.length} obra(s) migrada(s).`);
-  } catch (e) {
-    console.error('[Migração] Erro:', e);
+    console.log(`[Migração] Concluída! ${toMigrate.length} obra(s) migrada(s).`);
+  } catch(e) {
+    console.error('[Migração] Erro geral:', e);
+    // Não relançar — onSnapshot deve iniciar mesmo se migração falhar
   }
 }
 
 function _migrateObraToV2(obra) {
-  // Schema v1 → v2: array de etapas → objeto com sub-etapas
-  // Detectar se já é v2 (etapas como objeto com chave 'proposta')
   if (obra.etapas && !Array.isArray(obra.etapas) && obra.etapas['proposta']) {
     return { _schemaVersion: SCHEMA_VERSION };
   }
-
   const etapaAtualIdx = obra.etapaAtual ?? 0;
   const etapasAntigas = Array.isArray(obra.etapas) ? obra.etapas : [];
   const dataFechamento = obra.dataFechamento
     || (obra.createdAt?.toDate ? obra.createdAt.toDate().toISOString().slice(0,10) : new Date().toISOString().slice(0,10));
 
-  // Mapear índice antigo → id novo
-  const idxToId = ['proposta','contrato','cno','aditivos','medicao'];
-
   const novasEtapas = {};
   ETAPAS_ORDER.forEach((etapaId, idx) => {
     const cfg = ETAPAS_CONFIG[etapaId];
     const antigaEtapa = etapasAntigas[idx] || {};
-    // Status baseado no índice vs etapa atual
     let etapaStatus = 'pending';
-    if (idx < etapaAtualIdx)  etapaStatus = 'done';
+    if (idx < etapaAtualIdx)   etapaStatus = 'done';
     if (idx === etapaAtualIdx) etapaStatus = 'active';
     if (obra.concluida)        etapaStatus = 'done';
-
-    // Etapas opcionais: marcar ativa apenas se estava no fluxo original
     const eraAtiva = idx <= etapaAtualIdx || obra.concluida;
-
     novasEtapas[etapaId] = {
-      status: etapaStatus,
-      ativa:  cfg.opcional ? eraAtiva : true,
+      status:   etapaStatus,
+      ativa:    cfg.opcional ? eraAtiva : true,
       revisoes: antigaEtapa.revisoes || [],
       subEtapas: {},
     };
-
     cfg.subEtapas.forEach((sub, subIdx) => {
       let subStatus = 'pending';
-      if (idx < etapaAtualIdx)  subStatus = 'done';
+      if (idx < etapaAtualIdx)   subStatus = 'done';
       if (idx === etapaAtualIdx) subStatus = subIdx === 0 ? 'active' : 'pending';
       if (obra.concluida)        subStatus = 'done';
-
       novasEtapas[etapaId].subEtapas[sub.id] = {
         status:        subStatus,
-        dataLimite:    null, // Não temos como recalcular retroativamente
+        dataLimite:    null,
         dataConclusao: subStatus === 'done' ? (antigaEtapa.dataConclusao || null) : null,
         motivoAtraso:  null,
         revisoes:      [],
@@ -192,40 +190,78 @@ function _migrateObraToV2(obra) {
     });
   });
 
+  // Não usar FieldValue.delete() para evitar erros — sobrescrever com undefined é suficiente
   return {
     _schemaVersion: SCHEMA_VERSION,
     etapas:         novasEtapas,
     dataFechamento: dataFechamento,
-    numero:         obra.numero || obra.id?.slice(-6).toUpperCase() || '—',
-    // Limpar campos do schema antigo
-    etapaAtual:     firebase.firestore.FieldValue.delete(),
+    numero:         String(obra.numero || obra.id?.slice(-6).toUpperCase() || '—'),
   };
 }
 
-// ── Carregar obras ────────────────────────────────────────────────────────────
 function initComercial() {
-  if (_unsubObras) _unsubObras();
-  // Migrar obras antigas antes de começar a ouvir
-  migrateObras().then(() => {
-    _unsubObras = db.collection('obras').orderBy('createdAt','desc').onSnapshot(snap => {
-      _obras = snap.docs.map(d => ({id:d.id,...d.data()}));
-      renderObras();
-      if (_obraAtual) { const obra=_obras.find(o=>o.id===_obraAtual); if(obra) renderObraModal(obra); }
-    }, err => console.error(err));
-  });
+  if (_unsubObras) { _unsubObras(); _unsubObras = null; }
+
+  // 1. Carga imediata via get() — garante que obras aparecem mesmo se onSnapshot demorar
+  db.collection('obras').get()
+    .then(snap => {
+      _obras = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+          const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+      try { renderObras(); highlightObraFromUrl(); } catch(e) {
+        console.error('[renderObras get]', e);
+        const el = document.getElementById('obras-grid');
+        if (el) el.innerHTML = `<div class="obras-empty"><h3 style="color:#ef4444;">Erro ao renderizar obras</h3><span style="font-size:0.78rem;">${e.message}</span></div>`;
+      }
+    })
+    .catch(e => {
+      console.error('[initComercial get]', e);
+      const el = document.getElementById('obras-grid');
+      if (el) el.innerHTML = `<div class="obras-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <h3 style="color:#ef4444;">Sem permissão para ler obras</h3>
+        <span style="font-size:0.78rem;color:var(--muted);">Verifique as regras do Firestore para a coleção "obras" no projeto <strong>${e.code||'?'}</strong></span>
+      </div>`;
+    });
+
+  // 2. onSnapshot para atualizações em tempo real
+  try {
+    _unsubObras = db.collection('obras').onSnapshot(
+      snap => {
+        _obras = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => {
+            const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return tb - ta;
+          });
+        try { renderObras(); } catch(e) { console.error('[renderObras snap]', e); }
+        if (_obraAtual) {
+          const obra = _obras.find(o => o.id === _obraAtual);
+          if (obra) try { renderObraModal(obra); } catch(e) { console.error('[renderObraModal]', e); }
+        }
+      },
+      err => console.error('[onSnapshot obras]', err)
+    );
+  } catch(e) {
+    console.error('[initComercial onSnapshot setup]', e);
+  }
+
+  // 3. Migração em background — totalmente isolada
+  setTimeout(() => migrateObras(), 2000);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getEtapaAtualId(obra) {
   if (!obra.etapas) return 'proposta';
-  // Verificar se CNO está aguardando escolha
-  if (obra.etapas['cno']?.status === 'aguardando') return 'aguardando';
-  // Procurar etapa ativa
   for (const id of ETAPAS_ORDER) {
     const e = obra.etapas[id];
     if (e?.ativa && e?.status === 'active') return id;
   }
-  // Nenhuma ativa — retornar última done (evita fallback para proposta)
   let ultimaDone = null;
   for (const id of ETAPAS_ORDER) {
     if (obra.etapas[id]?.status === 'done') ultimaDone = id;
@@ -234,27 +270,38 @@ function getEtapaAtualId(obra) {
   return ultimaDone || 'proposta';
 }
 
-function hasSubEtapaAtrasada(obra) {
-  if (!obra.etapas || obra.concluida) return false;
-  const hoje = new Date().toISOString().slice(0,10);
-  for (const id of ETAPAS_ORDER) {
-    const e = obra.etapas[id];
-    if (!e?.ativa) continue;
-    for (const sub of Object.values(e.subEtapas||{})) {
-      if (sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje) return true;
-    }
-  }
-  return false;
-}
-
 function getPrazoInfo(prazo) {
   if (!prazo) return {texto:'Sem prazo definido', cls:''};
   const d=new Date(prazo+'T12:00:00'), hoje=new Date(); hoje.setHours(0,0,0,0);
   const diff=Math.ceil((d-hoje)/(1000*60*60*24));
   const fmt=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
   if (diff<0)  return {texto:`Vencido em ${fmt}`, cls:'vencido'};
-  if (diff<=7) return {texto:`${diff}d restantes — ${fmt}`, cls:'urgente'};
+  if (diff<=3) return {texto:`Vencendo em ${diff} dia${diff!==1?'s':''}`, cls:'urgente'};
   return {texto:`Prazo: ${fmt}`, cls:''};
+}
+
+
+function hasEtapaAtrasadaPorId(obra, etapaId) {
+  if (!obra.etapas) return false;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const e = obra.etapas[etapaId];
+  if (!e?.ativa) return false;
+  return Object.values(e.subEtapas || {}).some(
+    sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje
+  );
+}
+
+function hasSubEtapaAtrasada(obra) {
+  if (!obra.etapas || obra.concluida) return false;
+  const hoje = new Date().toISOString().slice(0, 10);
+  for (const id of ETAPAS_ORDER) {
+    const e = obra.etapas[id];
+    if (!e?.ativa) continue;
+    for (const sub of Object.values(e.subEtapas || {})) {
+      if (sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje) return true;
+    }
+  }
+  return false;
 }
 
 // ── Renderizar cards ──────────────────────────────────────────────────────────
@@ -266,8 +313,9 @@ function renderObras() {
   let lista = [..._obras];
   if (_filtroRep)     lista = lista.filter(o => o.representante===_filtroRep);
   if (_filtroEtapa)   lista = lista.filter(o => getEtapaAtualId(o)===_filtroEtapa);
-  if (_filtroDataDe)  lista = lista.filter(o => o.dataFechamento && o.dataFechamento >= _filtroDataDe);
-  if (_filtroDataAte) lista = lista.filter(o => o.dataFechamento && o.dataFechamento <= _filtroDataAte);
+  if (_filtroDataDe)      lista = lista.filter(o => o.dataFechamento && o.dataFechamento >= _filtroDataDe);
+  if (_filtroDataAte)     lista = lista.filter(o => o.dataFechamento && o.dataFechamento <= _filtroDataAte);
+  if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
 
   const total      = lista.length;
   const totalPags  = Math.max(1, Math.ceil(total / _obrasPorPagina));
@@ -292,40 +340,91 @@ function renderObras() {
   el.innerHTML = paginada.map(obra => {
     const etapaId   = getEtapaAtualId(obra);
     const cfg       = ETAPAS_CONFIG[etapaId];
-    const cor       = obra.concluida ? '#22c55e'
-                    : etapaId === 'aguardando' ? '#f59e0b'
-                    : cfg?.cor || 'var(--muted)';
-    const etapaNome = obra.concluida ? 'Concluída'
-                    : etapaId === 'aguardando' ? 'Em espera'
-                    : (cfg?.short || '—');
-    const badgeCls  = obra.concluida ? 'etapa-concluida'
-                    : etapaId === 'aguardando' ? 'etapa-aguardando'
-                    : `etapa-${etapaId}`;
-    const prazoInfo = getPrazoInfo(obra.prazoEstimado);
-    const atrasada  = hasSubEtapaAtrasada(obra);
-    const etapasAtivas = ETAPAS_ORDER.filter(id => obra.etapas?.[id]?.ativa!==false);
-    const progressBar  = etapasAtivas.map(id => {
-      const status = obra.etapas?.[id]?.status||'pending';
-      const cor2   = ETAPAS_CONFIG[id].cor;
-      const style  = status==='active'?`style="background:${cor2};"` :'';
-      const cls    = obra.concluida||status==='done'?'done':status==='active'?'active':'';
-      return `<div class="obra-progress-step ${cls}" ${style}></div>`;
+    const cor       = obra.concluida ? '#22c55e' : cfg?.cor || 'var(--muted)';
+    const etapaNome = obra.concluida ? 'Concluída' : (cfg?.short || '—');
+    const prazoInfo = obra.concluida
+      ? { texto: obra.dataConclusao
+            ? `Concluída em ${new Date(obra.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}`
+            : 'Concluída', cls: 'concluida' }
+      : getPrazoInfo(obra.prazoEstimado);
+    const hoje2 = new Date().toISOString().slice(0, 10);
+
+    // Stripe: semáforo de prazo (vermelho > amarelo > azul > verde)
+    let corBorda = '#3b82f6'; // azul padrão
+    if (obra.concluida) {
+      corBorda = '#22c55e'; // verde — concluída
+    } else {
+      // Vermelho: sub-etapa atrasada OU prazo geral vencido
+      const temAtrasada = hasSubEtapaAtrasada(obra);
+      const prazoVencido = obra.prazoEstimado && obra.prazoEstimado < hoje2;
+      if (temAtrasada || prazoVencido) {
+        corBorda = '#ef4444';
+      } else {
+        // Amarelo: prazo geral vencendo em ≤3 dias
+        if (obra.prazoEstimado) {
+          const d    = new Date(obra.prazoEstimado + 'T12:00:00');
+          const agora= new Date(); agora.setHours(0,0,0,0);
+          const diff = Math.ceil((d - agora) / (1000*60*60*24));
+          if (diff <= 3) corBorda = '#f59e0b';
+        }
+      }
+    }
+
+    // Linhas de status por etapa
+    const etapaLinhas = ETAPAS_ORDER.map(id => {
+      const cfg2  = ETAPAS_CONFIG[id];
+      const eData = obra.etapas?.[id];
+      // Etapa opcional não iniciada — linha discreta
+      if (!eData?.ativa) return `
+        <div class="card-etapa-row inativa">
+          <span class="card-etapa-dot" style="background:var(--surface3);border-color:var(--border2);">·</span>
+          <span class="card-etapa-nome">${cfg2.short}</span>
+          <span class="card-etapa-info">—</span>
+        </div>`;
+      const eStatus = eData.status || 'pending';
+      const subs    = Object.values(eData.subEtapas || {});
+      const atras   = subs.some(s=>s.status!=='done'&&s.dataLimite&&s.dataLimite<hoje2);
+      const ultima  = subs.findLast?.(s=>s.status==='active') || subs.find(s=>s.status==='active');
+      const limite  = ultima?.dataLimite;
+      const concl   = eData.status==='done' ? subs.findLast?.(s=>s.dataConclusao)?.dataConclusao : null;
+      let dot='', dotStyle='', info='';
+      if (obra.concluida || eStatus==='done') {
+        dot='✓'; dotStyle=`background:#22c55e;border-color:#22c55e;color:#fff;`;
+        info=concl?`<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(concl+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>`:'<span style="color:#22c55e;font-size:0.68rem;">Concluída</span>';
+      } else if (atras) {
+        dot='!'; dotStyle='background:#ef4444;border-color:#ef4444;color:#fff;';
+        const lFmt=limite?new Date(limite+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}):'?';
+        info=`<span style="color:#ef4444;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;">⚠ ${lFmt}</span>`;
+      } else if (eStatus==='active') {
+        dot='›'; dotStyle=`background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
+        info=limite?`<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${new Date(limite+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>`:'<span style="font-size:0.65rem;color:var(--muted);">Em andamento</span>';
+      } else {
+        dot='·'; dotStyle='background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+        info='<span style="font-size:0.65rem;color:var(--muted);">Pendente</span>';
+      }
+      return `
+        <div class="card-etapa-row">
+          <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
+          <span class="card-etapa-nome">${cfg2.short}</span>
+          ${info}
+        </div>`;
     }).join('');
+
     return `
-    <div class="obra-card" style="border-left:4px solid ${cor};" onclick="openObraModal('${obra.id}')">
-      ${atrasada?'<span class="obra-atrasado-badge">⚠ Atrasado</span>':''}
+    <div class="obra-card" data-obra-id="${obra.id}" style="border-left:4px solid ${corBorda};" onclick="openObraModal('${obra.id}')">
       <div class="obra-card-header">
         <div>
           <div class="obra-card-numero">#${obra.numero||obra.id.slice(-6).toUpperCase()}</div>
           <div class="obra-card-nome">${obra.nome}</div>
+          ${obra.cidade||obra.estado?`<div class="obra-card-local">📍 ${[obra.cidade,obra.estado].filter(Boolean).join(', ')}</div>`:''}
         </div>
-        <span class="obra-etapa-badge ${badgeCls}">${etapaNome}</span>
+        ${obra.concluida?'<span class="obra-etapa-badge etapa-concluida">Concluída</span>':''}
       </div>
       <div class="obra-card-rep">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        ${obra.representante||'—'}
+        <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante||'—'}
       </div>
-      <div class="obra-progress"><div class="obra-progress-bar">${progressBar}</div></div>
+      <div class="card-etapas-grid">${etapaLinhas}</div>
       <div class="obra-prazo ${prazoInfo.cls}">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         ${prazoInfo.texto}
@@ -371,8 +470,12 @@ async function saveNovaObra() {
   const fechamento=document.getElementById('nova-obra-fechamento')?.value;
   const prazo=document.getElementById('nova-obra-prazo')?.value;
   const obs=document.getElementById('nova-obra-obs')?.value.trim();
+  const cidade = document.getElementById('nova-obra-cidade')?.value.trim();
+  const estado = document.getElementById('nova-obra-estado')?.value;
   if (!numero)     {showComercialToast('Informe o número da obra.','error');return;}
   if (!nome)       {showComercialToast('Informe o nome da obra.','error');return;}
+  if (!cidade)     {showComercialToast('Informe a cidade.','error');return;}
+  if (!estado)     {showComercialToast('Selecione o estado (UF).','error');return;}
   if (!rep)        {showComercialToast('Selecione o representante.','error');return;}
   if (!fechamento) {showComercialToast('Informe a data de fechamento.','error');return;}
   const btn=document.getElementById('btn-save-nova-obra');
@@ -381,6 +484,7 @@ async function saveNovaObra() {
     const etapas = initObraEtapas(fechamento);
     await db.collection('obras').add({
       numero, nome, representante:rep, dataFechamento:fechamento,
+      cidade: cidade||'', estado: estado||'',
       prazoEstimado:prazo||null, obs:obs||'', concluida:false, etapas,
       createdAt:firebase.firestore.FieldValue.serverTimestamp(), createdBy:currentUser.username,
     });
@@ -406,9 +510,11 @@ function renderObraModal(obra) {
   document.getElementById('obra-modal-numero').textContent=`#${obra.numero||obra.id.slice(-6).toUpperCase()}`;
   document.getElementById('obra-modal-nome').textContent=obra.nome;
   const prazoInfo=getPrazoInfo(obra.prazoEstimado);
-  const canAdmin=currentUser?.isSuperAdmin||currentUser?.isAdminComercial;
+  const canAdmin=currentUser?.isSuperAdmin||
+    (currentUser?.acessos||[]).includes('adminComercial');
   document.getElementById('obra-modal-meta').innerHTML=`
     <span>👤 ${obra.representante||'—'}</span>
+    ${obra.cidade||obra.estado?`<span>📍 ${[obra.cidade,obra.estado].filter(Boolean).join(' — ')}</span>`:''}
     <span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>
     <span class="${prazoInfo.cls}">⏱ ${prazoInfo.texto}</span>`;
   const tl=document.getElementById('obra-timeline'); if(!tl) return;
@@ -416,11 +522,22 @@ function renderObraModal(obra) {
   tl.innerHTML=ETAPAS_ORDER.map(etapaId => {
     const cfg=ETAPAS_CONFIG[etapaId];
     const eData=obra.etapas?.[etapaId];
-    if (!eData?.ativa) return `<div class="etapa-item etapa-inativa">
-      <div class="etapa-icon pending" style="opacity:0.35;">—</div>
-      <div class="etapa-content" style="opacity:0.4;">
-        <div class="etapa-nome">${cfg.nome} <span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(não aplicável)</span></div>
-      </div></div>`;
+    if (!eData?.ativa) {
+      // Etapa pulada — mostrar com badge especial e botão Iniciar
+      const isPulada = eData?.status === 'pulada';
+      const canIniciarOpc = !obra.concluida;
+      return `<div class="etapa-item">
+        <div class="etapa-icon pending" style="${isPulada?'opacity:0.5;':'opacity:0.4;'}">⏭</div>
+        <div class="etapa-content">
+          <div class="etapa-nome" style="opacity:${isPulada?'0.7':'0.6'};">
+            ${cfg.nome}
+            ${isPulada?`<span style="font-size:0.65rem;font-weight:700;color:#6b7280;background:var(--surface3);padding:0.1rem 0.4rem;border-radius:4px;margin-left:0.25rem;">Pulada</span>`:'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>'}
+            ${canIniciarOpc?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.15rem 0.5rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
+          </div>
+          ${isPulada&&eData.puladaPor?`<div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem;">Pulada por ${eData.puladaPor}</div>`:''}
+        </div>
+      </div>`;
+    }
     const etapaStatus=eData.status||'pending';
     const cor=cfg.cor;
     const subsHtml=cfg.subEtapas.map(subCfg => {
@@ -431,12 +548,20 @@ function renderObraModal(obra) {
       const canConcluir=subStatus==='active'&&!obra.concluida;
       const canMotivo=atrasada&&!subData.motivoAtraso;
       const canRevisaoSub=subStatus!=='pending'&&!obra.concluida;
+      const canProrrogar=subStatus==='active'&&!obra.concluida;
       const subRevisoes=(subData.revisoes||[]);
 
       let dataInfo='';
-      if (subData.dataConclusao) {
-        const por = subData.concluidoPor ? ` — por ${subData.concluidoPor}` : '';
-        dataInfo=`<span class="sub-data concluida">✓ ${new Date(subData.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}</span>`;
+      // Sub-etapa Em Análise: mostrar "A X dias nessa sub-etapa"
+      if (subCfg.isAnalise && subStatus==='active' && subData.dataInicio) {
+        const ini  = new Date(subData.dataInicio+'T12:00:00');
+        const agora= new Date(); agora.setHours(0,0,0,0);
+        const dias = Math.floor((agora-ini)/(1000*60*60*24));
+        dataInfo=`<span class="sub-data" style="color:#8b5cf6;font-weight:700;">🕐 A ${dias} dia${dias!==1?'s':''} nesta sub-etapa</span>`;
+      } else if (subData.dataConclusao) {
+        const por  = subData.concluidoPor ? ` — por ${subData.concluidoPor}` : '';
+        const tipo = subData.tipoConclusao ? ` · <strong>${subData.tipoConclusao}</strong>` : '';
+        dataInfo=`<span class="sub-data concluida">✓ ${new Date(subData.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}${tipo}</span>`;
       } else if (limite) {
         const limFmt=new Date(limite+'T12:00:00').toLocaleDateString('pt-BR');
         dataInfo=atrasada?`<span class="sub-data atrasada">⚠ Limite: ${limFmt}</span>`:`<span class="sub-data">Limite: ${limFmt}</span>`;
@@ -462,6 +587,7 @@ function renderObraModal(obra) {
         canConcluir?`<button class="sub-action-btn concluir" onclick="concluirSubEtapa('${obra.id}','${etapaId}','${subCfg.id}')">✓ Concluir</button>`:'',
         canMotivo?`<button class="sub-action-btn motivo" onclick="openMotivoAtrasoModal('${obra.id}','${etapaId}','${subCfg.id}')">📌 Registrar motivo</button>`:'',
         canRevisaoSub?`<button class="sub-action-btn revisao" onclick="openRevisaoModal('${obra.id}','${etapaId}','${subCfg.id}')">↩ Revisão${subRevisoes.length?` (${subRevisoes.length})`:''}</button>`:'',
+        canProrrogar?`<button class="sub-action-btn prorrogar" onclick="openProrrogarModal('${obra.id}','${etapaId}','${subCfg.id}')">+ Prorrogar</button>`:'',
       ].filter(Boolean).join('');
       return `<div class="sub-etapa-item">
         <div class="sub-etapa-icon ${iconCls}" ${iconCls==='active'?`style="background:${cor};border-color:${cor};"`:iconCls==='atrasada'?'style="background:#ef4444;border-color:#ef4444;"':''}>${statusIcon}</div>
@@ -477,12 +603,15 @@ function renderObraModal(obra) {
     const etapaIconCls=etapaStatus==='done'?'done':etapaStatus==='active'?'active':'pending';
     const etapaIconStyle=etapaStatus==='active'?`style="background:${cor};border-color:${cor};"`:etapaStatus==='done'?`style="background:${cor};border-color:${cor};"` :'';
     const canRevisao=etapaStatus!=='pending'&&!obra.concluida;
+    const canIniciar=etapaStatus==='pending'&&!obra.concluida;
     return `<div class="etapa-item">
       <div class="etapa-icon ${etapaIconCls}" ${etapaIconStyle}>${etapaStatus==='done'?'✓':''}</div>
       <div class="etapa-content">
         <div class="etapa-nome" style="${etapaStatus==='active'?`color:${cor};`:''}">
           ${cfg.nome}
           ${cfg.opcional?'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>':''}
+          ${canIniciar?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
+          ${canIniciar&&!cfg.opcional?`<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>`:''}
           ${canRevisao?`<button class="etapa-revisao-btn" onclick="openRevisaoModal('${obra.id}','${etapaId}')">↩ Revisão</button>`:''}
         </div>
         ${(eData.revisoes||[]).length?`<div class="etapa-revisoes">${(eData.revisoes||[]).map((r,ri)=>`
@@ -499,10 +628,6 @@ function renderObraModal(obra) {
   }).join('');
   _renderObraFooter(obra, canAdmin);
 
-  // Se CNO aguardando escolha, reabrir modal automaticamente
-  if (obra.etapas?.['cno']?.status === 'aguardando' && !obra.concluida) {
-    setTimeout(() => openProximaEtapaModal(obra.id), 300);
-  }
 }
 
 function _renderObraFooter(obra, canAdmin) {
@@ -532,6 +657,14 @@ function _renderObraFooter(obra, canAdmin) {
 
 // ── Concluir sub-etapa ────────────────────────────────────────────────────────
 async function concluirSubEtapa(obraId, etapaId, subId) {
+  // Sub-etapas com escolha de tipo (Aditivos/Contrato assinatura)
+  const precisaTipo = (etapaId==='aditivos'&&subId==='termo_assinatura') ||
+                      (etapaId==='contrato'&&subId==='assinatura');
+  if (precisaTipo) { openTipoConclusaoModal(obraId,etapaId,subId); return; }
+  await _concluirComTipo(obraId,etapaId,subId,null);
+}
+
+async function _concluirComTipo(obraId, etapaId, subId, tipo) {
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
   const hoje=new Date().toISOString().slice(0,10);
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
@@ -539,96 +672,125 @@ async function concluirSubEtapa(obraId, etapaId, subId) {
   etapas[etapaId].subEtapas[subId].status='done';
   etapas[etapaId].subEtapas[subId].dataConclusao=hoje;
   etapas[etapaId].subEtapas[subId].concluidoPor=currentUser.username;
+  if (tipo) etapas[etapaId].subEtapas[subId].tipoConclusao=tipo;
   const subIdx=cfg.subEtapas.findIndex(s=>s.id===subId);
   const proxSub=cfg.subEtapas[subIdx+1];
   if (proxSub) {
     etapas[etapaId].subEtapas[proxSub.id].status='active';
+    etapas[etapaId].subEtapas[proxSub.id].dataInicio=hoje;
     etapas[etapaId].subEtapas[proxSub.id].dataLimite=calcDataLimite(proxSub,etapas,obra.dataFechamento);
     await db.collection('obras').doc(obraId).update({etapas});
     showComercialToast(`"${proxSub.nome}" liberada! ✅`,'success');
   } else {
     etapas[etapaId].status='done';
-    if (etapaId==='cno') {
-      etapas['cno'].status = 'aguardando';
-      await db.collection('obras').doc(obraId).update({etapas});
-      openProximaEtapaModal(obraId); return;
-    }
-    // Ao concluir Aditivos: se Medição já está marcada como ativa (seleção aditivos+medicao),
-    // ativar Medição automaticamente sem mostrar o modal
-    if (etapaId==='aditivos' && etapas['medicao']?.ativa && etapas['medicao']?.status==='pending') {
-      etapas['medicao'].status='active';
-      const primSub=ETAPAS_CONFIG['medicao'].subEtapas[0];
-      etapas['medicao'].subEtapas[primSub.id].status='active';
-      etapas['medicao'].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
-      await db.collection('obras').doc(obraId).update({etapas});
-      showComercialToast('Aditivos concluído! Avançando para Medição ✅','success');
-      return;
-    }
-    const etapaIdx=ETAPAS_ORDER.indexOf(etapaId);
-    let proxEtapaId=null;
-    for (let i=etapaIdx+1;i<ETAPAS_ORDER.length;i++) {
-      if (etapas[ETAPAS_ORDER[i]]?.ativa) {proxEtapaId=ETAPAS_ORDER[i];break;}
-    }
-    if (proxEtapaId) {
-      etapas[proxEtapaId].status='active';
-      const primSub=ETAPAS_CONFIG[proxEtapaId].subEtapas[0];
-      etapas[proxEtapaId].subEtapas[primSub.id].status='active';
-      etapas[proxEtapaId].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
-      await db.collection('obras').doc(obraId).update({etapas});
-      showComercialToast(`Avançado para "${ETAPAS_CONFIG[proxEtapaId].nome}"! ✅`,'success');
-    } else {
+    const todasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
+    if (todasDone) {
       await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
       showComercialToast('Obra concluída! 🎉','success');
+    } else {
+      await db.collection('obras').doc(obraId).update({etapas});
+      showComercialToast(`Etapa "${cfg.nome}" concluída! ✅`,'success');
     }
   }
 }
 
-// ── Modal próxima etapa (pós-CNO) ─────────────────────────────────────────────
-function openProximaEtapaModal(obraId) {
-  const modal=document.getElementById('proxima-etapa-modal');
-  if(modal){modal.dataset.obraId=obraId;modal.style.display='flex';}
+// ── Iniciar etapa manualmente ─────────────────────────────────────────────────
+async function iniciarEtapa(obraId, etapaId) {
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const cfg=ETAPAS_CONFIG[etapaId];
+  etapas[etapaId].ativa=true;
+  etapas[etapaId].status='active';
+  // Garantir que todas as sub-etapas existam (obras antigas podem não ter novas sub-etapas)
+  if (!etapas[etapaId].subEtapas) etapas[etapaId].subEtapas = {};
+  cfg.subEtapas.forEach((sub, idx) => {
+    if (!etapas[etapaId].subEtapas[sub.id]) {
+      etapas[etapaId].subEtapas[sub.id] = { status:'pending', dataLimite:null, dataConclusao:null, motivoAtraso:null, revisoes:[] };
+    }
+  });
+  const primSub=cfg.subEtapas[0];
+  etapas[etapaId].subEtapas[primSub.id].status='active';
+  etapas[etapaId].subEtapas[primSub.id].dataInicio=new Date().toISOString().slice(0,10);
+  etapas[etapaId].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast(`"${cfg.nome}" iniciada! ✅`,'success');
 }
-function closeProximaEtapaModal() {
-  const modal=document.getElementById('proxima-etapa-modal');
-  if(modal) modal.style.display='none';
-}
-async function escolherProximaEtapa(opcao) {
-  const modal=document.getElementById('proxima-etapa-modal');
-  const obraId=modal?.dataset.obraId; if(!obraId) return;
-  closeProximaEtapaModal();
+
+// ── Pular etapa ───────────────────────────────────────────────────────────────
+async function pularEtapa(obraId, etapaId) {
+  if (!confirm(`Pular a etapa "${ETAPAS_CONFIG[etapaId].nome}"? Ela ficará desabilitada e poderá ser reiniciada depois.`)) return;
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
   const hoje=new Date().toISOString().slice(0,10);
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
-
-  if (opcao==='em_espera') {
-    // Mantém CNO como aguardando — card mostra "Em espera"
-    showComercialToast('Obra em espera. Abra novamente para escolher o próximo passo.','success');
-    return;
-  }
-
-  // Limpar status aguardando do CNO → done definitivo
-  if (etapas['cno']?.status === 'aguardando') etapas['cno'].status = 'done';
-
-  if (opcao==='concluir') {
-    await db.collection('obras').doc(obraId).update({etapas, concluida:true, dataConclusao:hoje});
-    showComercialToast('Obra concluída! 🎉','success');
-  } else if (opcao==='aditivos_medicao') {
-    etapas['aditivos'].ativa=true; etapas['aditivos'].status='active';
-    etapas['medicao'].ativa=true;
-    const primSub=ETAPAS_CONFIG['aditivos'].subEtapas[0];
-    etapas['aditivos'].subEtapas[primSub.id].status='active';
-    etapas['aditivos'].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
-    await db.collection('obras').doc(obraId).update({etapas});
-    showComercialToast('Aditivos ativado! Medição virá em seguida ✅','success');
+  etapas[etapaId].status='pulada';
+  etapas[etapaId].ativa=false;
+  etapas[etapaId].puladaEm=hoje;
+  etapas[etapaId].puladaPor=currentUser.username;
+  // Verificar se todas as etapas ativas (não puladas) estão done
+  const todasDone=ETAPAS_ORDER
+    .filter(id=>etapas[id]?.ativa && etapas[id]?.status!=='pulada')
+    .every(id=>etapas[id]?.status==='done');
+  if (todasDone) {
+    await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+    showComercialToast('Etapa pulada — obra concluída! 🎉','success');
   } else {
-    etapas[opcao].ativa=true; etapas[opcao].status='active';
-    const primSub=ETAPAS_CONFIG[opcao].subEtapas[0];
-    etapas[opcao].subEtapas[primSub.id].status='active';
-    etapas[opcao].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
     await db.collection('obras').doc(obraId).update({etapas});
-    showComercialToast(`Avançado para "${ETAPAS_CONFIG[opcao].nome}"! ✅`,'success');
+    showComercialToast(`Etapa "${ETAPAS_CONFIG[etapaId].nome}" pulada ✅`,'success');
   }
 }
+
+// ── Modal Aprovado/Assinado (Aditivo) ────────────────────────────────────────
+let _tipoConclObraId=null, _tipoConclEtapaId=null, _tipoConclSubId=null;
+
+function openTipoConclusaoModal(obraId, etapaId, subId) {
+  _tipoConclObraId=obraId; _tipoConclEtapaId=etapaId; _tipoConclSubId=subId;
+  document.getElementById('tipo-conclusao-modal').style.display='flex';
+}
+
+async function salvarTipoConclusao(tipo) {
+  document.getElementById('tipo-conclusao-modal').style.display='none';
+  await _concluirComTipo(_tipoConclObraId, _tipoConclEtapaId, _tipoConclSubId, tipo);
+  _tipoConclObraId=_tipoConclEtapaId=_tipoConclSubId=null;
+}
+
+// ── Prorrogar sub-etapa ───────────────────────────────────────────────────────
+let _prorrogarObraId=null,_prorrogarEtapaId=null,_prorrogarSubId=null;
+
+function openProrrogarModal(obraId,etapaId,subId) {
+  _prorrogarObraId=obraId;_prorrogarEtapaId=etapaId;_prorrogarSubId=subId;
+  const subCfg=ETAPAS_CONFIG[etapaId].subEtapas.find(s=>s.id===subId);
+  const obra=_obras.find(o=>o.id===obraId);
+  const sub=obra?.etapas?.[etapaId]?.subEtapas?.[subId];
+  const limFmt=sub?.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const title=document.getElementById('prorrogar-modal-title');
+  if(title) title.textContent=`Prorrogar — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome||''}`;
+  const info=document.getElementById('prorrogar-modal-info');
+  if(info) info.textContent=`Limite atual: ${limFmt}${sub?.diasProrrogados?` (já prorrogado ${sub.diasProrrogados}d)`:''}`; 
+  document.getElementById('prorrogar-dias-input').value='';
+  document.getElementById('prorrogar-modal').style.display='flex';
+}
+
+function closeProrrogarModal() {
+  document.getElementById('prorrogar-modal').style.display='none';
+  _prorrogarObraId=_prorrogarEtapaId=_prorrogarSubId=null;
+}
+
+async function saveProrrogacao() {
+  const dias=parseInt(document.getElementById('prorrogar-dias-input')?.value)||0;
+  if(!dias||dias<1){showComercialToast('Informe um número de dias válido.','error');return;}
+  const obra=_obras.find(o=>o.id===_prorrogarObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const sub=etapas[_prorrogarEtapaId].subEtapas[_prorrogarSubId];
+  const baseDate=sub.dataLimite||new Date().toISOString().slice(0,10);
+  sub.dataLimite=addDiasUteis(baseDate,dias);
+  sub.prorrogadoPor=currentUser.username;
+  sub.prorrogadoEm=new Date().toISOString().slice(0,10);
+  sub.diasProrrogados=(sub.diasProrrogados||0)+dias;
+  await db.collection('obras').doc(_prorrogarObraId).update({etapas});
+  showComercialToast(`Prazo estendido em ${dias} dia(s) útil(eis)! ✅`,'success');
+  closeProrrogarModal();
+}
+
 
 // ── Modal motivo de atraso ────────────────────────────────────────────────────
 let _motivoObraId=null,_motivoEtapaId=null,_motivoSubId=null;
@@ -689,11 +851,12 @@ async function saveRevisao() {
   const novaRevisao={numero:0, motivo, data:new Date().toISOString().slice(0,10), por:currentUser.username};
 
   if (_revisaoSubId) {
-    // Revisão na sub-etapa
     const sub=etapas[_revisaoEtapaId].subEtapas[_revisaoSubId];
     if(!sub.revisoes) sub.revisoes=[];
     novaRevisao.numero=sub.revisoes.length+1;
     sub.revisoes.push(novaRevisao);
+    // Atualizar dataLimite para a data da revisão
+    if (sub.status !== 'done') sub.dataLimite = novaRevisao.data;
   } else {
     // Revisão na etapa
     if(!etapas[_revisaoEtapaId].revisoes) etapas[_revisaoEtapaId].revisoes=[];
@@ -716,6 +879,8 @@ function openEditarObraModal(obraId) {
   document.getElementById('editar-obra-rep').value       =obra.representante||'';
   document.getElementById('editar-obra-fechamento').value=obra.dataFechamento||'';
   document.getElementById('editar-obra-prazo').value     =obra.prazoEstimado||'';
+  document.getElementById('editar-obra-cidade').value    =obra.cidade||'';
+  document.getElementById('editar-obra-estado').value    =obra.estado||'';
   document.getElementById('editar-obra-obs').value       =obra.obs||'';
   document.getElementById('editar-obra-modal').style.display='flex';
 }
@@ -733,6 +898,8 @@ async function saveEditarObra() {
     representante: document.getElementById('editar-obra-rep')?.value||'',
     dataFechamento:document.getElementById('editar-obra-fechamento')?.value||null,
     prazoEstimado: document.getElementById('editar-obra-prazo')?.value||null,
+    cidade:        document.getElementById('editar-obra-cidade')?.value.trim()||'',
+    estado:        document.getElementById('editar-obra-estado')?.value||'',
     obs:           document.getElementById('editar-obra-obs')?.value.trim()||'',
   });
   showComercialToast('Obra atualizada! ✅','success');
@@ -773,7 +940,115 @@ async function reabrirObra(obraId) {
   showComercialToast('Obra reaberta! ✅','success');
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// ── Relatório ─────────────────────────────────────────────────────────────────
+function openRelatorioModal()  { document.getElementById('relatorio-modal').style.display='flex'; }
+function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display='none'; }
+
+function _gerarDadosRelatorio() {
+  const incluirTodas = document.getElementById('rel-todas')?.checked;
+  const hoje = new Date().toISOString().slice(0,10);
+  const linhas = [];
+  const NOMES_ETAPA = {proposta:'Proposta Consolidada',contrato:'Contrato',cno:'CNO/SBOBRAS',aditivos:'Aditivos/Termo',medicao:'Medição'};
+
+  _obras.filter(o => !o.concluida).forEach(obra => {
+    ETAPAS_ORDER.forEach(etapaId => {
+      const e = obra.etapas?.[etapaId];
+      if (!e?.ativa) return;
+      ETAPAS_CONFIG[etapaId].subEtapas.forEach(subCfg => {
+        const sub = e.subEtapas?.[subCfg.id];
+        if (!sub || sub.status === 'done') return;
+        const atrasada = sub.dataLimite && sub.dataLimite < hoje;
+        const vencendo = sub.dataLimite && !atrasada && (() => {
+          const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+          return Math.ceil((d-ag)/(1000*60*60*24))<=3;
+        })();
+        if (!incluirTodas && !atrasada && !vencendo) return;
+        const diasAtraso = atrasada ? (() => {
+          const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+          return Math.ceil((ag-d)/(1000*60*60*24));
+        })() : 0;
+        linhas.push({
+          numero:       obra.numero || obra.id.slice(-6),
+          nome:         obra.nome,
+          local:        [obra.cidade,obra.estado].filter(Boolean).join('/') || '—',
+          representante:obra.representante || '—',
+          etapa:        NOMES_ETAPA[etapaId],
+          subEtapa:     subCfg.nome,
+          status:       atrasada ? 'Atrasada' : vencendo ? 'Vencendo' : 'Em andamento',
+          dataLimite:   sub.dataLimite ? new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR') : '—',
+          diasAtraso:   atrasada ? `${diasAtraso}d` : '—',
+        });
+      });
+    });
+  });
+  return linhas;
+}
+
+function exportarRelatorioXLS() {
+  const linhas = _gerarDadosRelatorio();
+  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
+  const headers = ['Nº','Obra','Cidade/UF','Representante','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
+  const rows = linhas.map(l => [l.numero,l.nome,l.local,l.representante,l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso]);
+  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
+  ws['!cols'] = [6,30,12,14,22,28,12,12,12].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Relatório',ws);
+  XLSX.writeFile(wb,`relatorio_obras_${new Date().toISOString().slice(0,10)}.xlsx`);
+  closeRelatorioModal();
+  showComercialToast('XLS exportado! ✅','success');
+}
+
+function exportarRelatorioPDF() {
+  const linhas = _gerarDadosRelatorio();
+  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const rows = linhas.map(l => `
+    <tr>
+      <td>#${l.numero}</td>
+      <td><strong>${l.nome}</strong><br><small>${l.local}</small></td>
+      <td>${l.representante}</td>
+      <td>${l.etapa}</td>
+      <td>${l.subEtapa}</td>
+      <td><span class="badge ${l.status==='Atrasada'?'red':l.status==='Vencendo'?'amber':'blue'}">${l.status}</span></td>
+      <td>${l.dataLimite}</td>
+      <td>${l.diasAtraso}</td>
+    </tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Relatório de Obras — Premovale</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
+      .header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #ef4444;padding-bottom:12px;margin-bottom:20px;}
+      .header h1{font-size:16px;margin:0;color:#ef4444;}
+      .header span{font-size:10px;color:#6b7280;}
+      table{width:100%;border-collapse:collapse;}
+      th{background:#f3f4f6;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;}
+      td{padding:6px 8px;border-bottom:1px solid #f3f4f6;vertical-align:top;}
+      tr:nth-child(even) td{background:#fafafa;}
+      small{color:#6b7280;font-size:9px;}
+      .badge{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;}
+      .red{background:#fee2e2;color:#991b1b;}
+      .amber{background:#fef3c7;color:#92400e;}
+      .blue{background:#dbeafe;color:#1e40af;}
+      .footer{margin-top:20px;font-size:9px;color:#9ca3af;text-align:center;}
+    </style></head><body>
+    <div class="header">
+      <h1>📋 Relatório de Obras — Premovale</h1>
+      <span>Gerado em ${hoje}</span>
+    </div>
+    <table>
+      <thead><tr><th>Nº</th><th>Obra / Local</th><th>Representante</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
+    <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  closeRelatorioModal();
+}
+
+
 let _cToast=null;
 function showComercialToast(msg,type='success') {
   let t=document.getElementById('comercial-toast');
@@ -782,6 +1057,25 @@ function showComercialToast(msg,type='success') {
   requestAnimationFrame(()=>t.classList.add('show'));
   if(_cToast) clearTimeout(_cToast);
   _cToast=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ── Destaque de card via URL ─────────────────────────────────────────────────
+function highlightObraFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const obraId = params.get('obra');
+  if (!obraId) return;
+  // Aguardar o DOM renderizar os cards
+  setTimeout(() => {
+    const card = document.querySelector(`.obra-card[data-obra-id="${obraId}"]`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('obra-card-highlight');
+    setTimeout(() => card.classList.remove('obra-card-highlight'), 3000);
+    // Limpar parâmetro da URL sem recarregar
+    const url = new URL(window.location);
+    url.searchParams.delete('obra');
+    window.history.replaceState({}, '', url);
+  }, 400);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
