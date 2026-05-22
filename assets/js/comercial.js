@@ -114,7 +114,7 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras=[], _obraAtual=null, _filtroRep='', _filtroEtapa='', _unsubObras=null;
-let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='';
+let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='';
 let _paginaAtual=0;
 let _obrasPorPagina=parseInt(localStorage.getItem('comercial-per-page')||'12');
 
@@ -123,6 +123,7 @@ function setFiltroEtapa(val)   { _filtroEtapa=val;   _paginaAtual=0; renderObras
 function setFiltroDataDe(val)  { _filtroDataDe=val;  _paginaAtual=0; renderObras(); }
 function setFiltroDataAte(val)    { _filtroDataAte=val;      _paginaAtual=0; renderObras(); }
 function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso=val; _paginaAtual=0; renderObras(); }
+function setFiltroBusca(val)       { _filtroBusca=val.toLowerCase().trim(); _paginaAtual=0; renderObras(); }
 function setObrasPorPagina(val){ _obrasPorPagina=parseInt(val); localStorage.setItem('comercial-per-page',val); _paginaAtual=0; renderObras(); }
 function irParaPagina(p)       { _paginaAtual=p; renderObras(); window.scrollTo({top:0,behavior:'smooth'}); }
 
@@ -316,6 +317,10 @@ function renderObras() {
   if (_filtroDataDe)      lista = lista.filter(o => o.dataFechamento && o.dataFechamento >= _filtroDataDe);
   if (_filtroDataAte)     lista = lista.filter(o => o.dataFechamento && o.dataFechamento <= _filtroDataAte);
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
+  if (_filtroBusca)      lista = lista.filter(o =>
+    String(o.numero||'').toLowerCase().includes(_filtroBusca) ||
+    (o.nome||'').toLowerCase().includes(_filtroBusca) ||
+    (o.representante||'').toLowerCase().includes(_filtroBusca));
 
   const total      = lista.length;
   const totalPags  = Math.max(1, Math.ceil(total / _obrasPorPagina));
@@ -416,13 +421,21 @@ function renderObras() {
         <div>
           <div class="obra-card-numero">#${obra.numero||obra.id.slice(-6).toUpperCase()}</div>
           <div class="obra-card-nome">${obra.nome}</div>
-          ${obra.cidade||obra.estado?`<div class="obra-card-local">📍 ${[obra.cidade,obra.estado].filter(Boolean).join(', ')}</div>`:''}
         </div>
         ${obra.concluida?'<span class="obra-etapa-badge etapa-concluida">Concluída</span>':''}
       </div>
-      <div class="obra-card-rep">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante||'—'}
+      <div class="obra-card-rep" style="justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:0.35rem;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante||'—'}
+        </div>
+        <button onclick="event.stopPropagation();exportarObraPDF('${obra.id}')"
+          title="Exportar PDF da obra"
+          style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
+          onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444';"
+          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF
+        </button>
       </div>
       <div class="card-etapas-grid">${etapaLinhas}</div>
       <div class="obra-prazo ${prazoInfo.cls}">
@@ -470,12 +483,8 @@ async function saveNovaObra() {
   const fechamento=document.getElementById('nova-obra-fechamento')?.value;
   const prazo=document.getElementById('nova-obra-prazo')?.value;
   const obs=document.getElementById('nova-obra-obs')?.value.trim();
-  const cidade = document.getElementById('nova-obra-cidade')?.value.trim();
-  const estado = document.getElementById('nova-obra-estado')?.value;
   if (!numero)     {showComercialToast('Informe o número da obra.','error');return;}
   if (!nome)       {showComercialToast('Informe o nome da obra.','error');return;}
-  if (!cidade)     {showComercialToast('Informe a cidade.','error');return;}
-  if (!estado)     {showComercialToast('Selecione o estado (UF).','error');return;}
   if (!rep)        {showComercialToast('Selecione o representante.','error');return;}
   if (!fechamento) {showComercialToast('Informe a data de fechamento.','error');return;}
   const btn=document.getElementById('btn-save-nova-obra');
@@ -514,7 +523,6 @@ function renderObraModal(obra) {
     (currentUser?.acessos||[]).includes('adminComercial');
   document.getElementById('obra-modal-meta').innerHTML=`
     <span>👤 ${obra.representante||'—'}</span>
-    ${obra.cidade||obra.estado?`<span>📍 ${[obra.cidade,obra.estado].filter(Boolean).join(' — ')}</span>`:''}
     <span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>
     <span class="${prazoInfo.cls}">⏱ ${prazoInfo.texto}</span>`;
   const tl=document.getElementById('obra-timeline'); if(!tl) return;
@@ -611,7 +619,7 @@ function renderObraModal(obra) {
           ${cfg.nome}
           ${cfg.opcional?'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>':''}
           ${canIniciar?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
-          ${canIniciar&&!cfg.opcional?`<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>`:''}
+          ${!obra.concluida&&etapaStatus!=='done'?`<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>`:''}
           ${canRevisao?`<button class="etapa-revisao-btn" onclick="openRevisaoModal('${obra.id}','${etapaId}')">↩ Revisão</button>`:''}
         </div>
         ${(eData.revisoes||[]).length?`<div class="etapa-revisoes">${(eData.revisoes||[]).map((r,ri)=>`
@@ -765,8 +773,11 @@ function openProrrogarModal(obraId,etapaId,subId) {
   const title=document.getElementById('prorrogar-modal-title');
   if(title) title.textContent=`Prorrogar — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome||''}`;
   const info=document.getElementById('prorrogar-modal-info');
-  if(info) info.textContent=`Limite atual: ${limFmt}${sub?.diasProrrogados?` (já prorrogado ${sub.diasProrrogados}d)`:''}`; 
-  document.getElementById('prorrogar-dias-input').value='';
+  if(info) info.textContent=`Limite atual: ${limFmt}${sub?.diasProrrogados?` (já prorrogado ${sub.diasProrrogados}x)`:''}`; 
+  // Definir mínimo como amanhã
+  const amanha = new Date(); amanha.setDate(amanha.getDate()+1);
+  const input = document.getElementById('prorrogar-data-input');
+  if(input){ input.min=amanha.toISOString().slice(0,10); input.value=''; }
   document.getElementById('prorrogar-modal').style.display='flex';
 }
 
@@ -776,18 +787,20 @@ function closeProrrogarModal() {
 }
 
 async function saveProrrogacao() {
-  const dias=parseInt(document.getElementById('prorrogar-dias-input')?.value)||0;
-  if(!dias||dias<1){showComercialToast('Informe um número de dias válido.','error');return;}
+  const novaData=document.getElementById('prorrogar-data-input')?.value;
+  if(!novaData){showComercialToast('Selecione uma data válida.','error');return;}
+  // Validar que não é retroativa
+  const hoje=new Date().toISOString().slice(0,10);
+  if(novaData<=hoje){showComercialToast('A data deve ser futura.','error');return;}
   const obra=_obras.find(o=>o.id===_prorrogarObraId); if(!obra) return;
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
   const sub=etapas[_prorrogarEtapaId].subEtapas[_prorrogarSubId];
-  const baseDate=sub.dataLimite||new Date().toISOString().slice(0,10);
-  sub.dataLimite=addDiasUteis(baseDate,dias);
+  sub.dataLimite=novaData;
   sub.prorrogadoPor=currentUser.username;
-  sub.prorrogadoEm=new Date().toISOString().slice(0,10);
-  sub.diasProrrogados=(sub.diasProrrogados||0)+dias;
+  sub.prorrogadoEm=hoje;
+  sub.diasProrrogados=(sub.diasProrrogados||0)+1;
   await db.collection('obras').doc(_prorrogarObraId).update({etapas});
-  showComercialToast(`Prazo estendido em ${dias} dia(s) útil(eis)! ✅`,'success');
+  showComercialToast(`Prazo atualizado para ${new Date(novaData+'T12:00:00').toLocaleDateString('pt-BR')}! ✅`,'success');
   closeProrrogarModal();
 }
 
@@ -879,8 +892,6 @@ function openEditarObraModal(obraId) {
   document.getElementById('editar-obra-rep').value       =obra.representante||'';
   document.getElementById('editar-obra-fechamento').value=obra.dataFechamento||'';
   document.getElementById('editar-obra-prazo').value     =obra.prazoEstimado||'';
-  document.getElementById('editar-obra-cidade').value    =obra.cidade||'';
-  document.getElementById('editar-obra-estado').value    =obra.estado||'';
   document.getElementById('editar-obra-obs').value       =obra.obs||'';
   document.getElementById('editar-obra-modal').style.display='flex';
 }
@@ -898,8 +909,6 @@ async function saveEditarObra() {
     representante: document.getElementById('editar-obra-rep')?.value||'',
     dataFechamento:document.getElementById('editar-obra-fechamento')?.value||null,
     prazoEstimado: document.getElementById('editar-obra-prazo')?.value||null,
-    cidade:        document.getElementById('editar-obra-cidade')?.value.trim()||'',
-    estado:        document.getElementById('editar-obra-estado')?.value||'',
     obs:           document.getElementById('editar-obra-obs')?.value.trim()||'',
   });
   showComercialToast('Obra atualizada! ✅','success');
@@ -940,6 +949,71 @@ async function reabrirObra(obraId) {
   showComercialToast('Obra reaberta! ✅','success');
 }
 
+// ── PDF individual da obra ────────────────────────────────────────────────────
+function exportarObraPDF(obraId) {
+  const obra = _obras.find(o => o.id === obraId);
+  if (!obra) return;
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const NOMES = {proposta:'Proposta Consolidada',contrato:'Contrato',cno:'CNO/SBOBRAS',aditivos:'Aditivos/Termo',medicao:'Medição'};
+  const hoje2 = new Date().toISOString().slice(0, 10);
+  const etapasHtml = ETAPAS_ORDER.map(etapaId => {
+    const cfg  = ETAPAS_CONFIG[etapaId];
+    const e    = obra.etapas?.[etapaId];
+    if (!e?.ativa && e?.status !== 'pulada') return '';
+    // Status da etapa: verificar atraso nas sub-etapas
+    const temAtrasoEtapa = Object.values(e.subEtapas||{}).some(
+      s => s.status!=='done' && s.dataLimite && s.dataLimite < hoje2);
+    const statusEtapa = e.status==='done'   ? '✓ Concluída'
+                      : e.status==='pulada' ? '⏭ Pulada'
+                      : temAtrasoEtapa      ? '⚠ Em atraso'
+                      : e.status==='active' ? '► Em andamento'
+                      : '○ Não iniciada';
+    const corStatus   = e.status==='done'   ? '#22c55e'
+                      : e.status==='pulada' ? '#6b7280'
+                      : temAtrasoEtapa      ? '#ef4444'
+                      : e.status==='active' ? cfg.cor
+                      : '#9ca3af';
+    const subsHtml = cfg.subEtapas.map(sub => {
+      const s = e.subEtapas?.[sub.id]; if(!s) return '';
+      const atrasada = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
+      let st, corSt;
+      if      (s.status === 'done')  { st = '✓ Concluída';   corSt = '#22c55e'; }
+      else if (atrasada)             { st = '⚠ Atrasada';    corSt = '#ef4444'; }
+      else if (s.status === 'active'){ st = '► Em andamento'; corSt = cfg.cor; }
+      else                           { st = '○ Pendente';    corSt = '#9ca3af'; }
+      const tipo = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
+      const por  = s.concluidoPor  ? ` — por ${s.concluidoPor}` : '';
+      const dt   = s.dataConclusao
+        ? `${new Date(s.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}`
+        : s.dataLimite
+          ? `Limite: ${new Date(s.dataLimite+'T12:00:00').toLocaleDateString('pt-BR')}`
+          : '—';
+      return `<tr>
+        <td style="padding:4px 8px 4px 20px;color:${corSt};font-weight:600;white-space:nowrap;">${st}</td>
+        <td style="padding:4px 8px;">${sub.nome}${tipo}</td>
+        <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dt}</td>
+      </tr>`;
+    }).join('');
+    return `<tr style="background:#f9fafb;"><td colspan="3" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obra #${obra.numero} — ${obra.nome}</title>
+    <style>body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
+    .header{border-bottom:2px solid #ef4444;padding-bottom:12px;margin-bottom:20px;}
+    h1{font-size:15px;margin:0 0 4px;color:#111827;}
+    .meta{font-size:10px;color:#6b7280;display:flex;gap:16px;flex-wrap:wrap;}
+    table{width:100%;border-collapse:collapse;margin-top:12px;}
+    th{background:#f3f4f6;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;}
+    td{border-bottom:1px solid #f3f4f6;}
+    .footer{margin-top:16px;font-size:9px;color:#9ca3af;text-align:center;}</style></head>
+    <body>
+    <div class="header"><h1>Obra #${obra.numero} — ${obra.nome}</h1>
+    <div class="meta"><span>👤 ${obra.representante||'—'}</span><span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>${obra.prazoEstimado?`<span>⏱ Prazo: ${new Date(obra.prazoEstimado+'T12:00:00').toLocaleDateString('pt-BR')}</span>`:''}</div></div>
+    <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Data</th></tr></thead><tbody>${etapasHtml}</tbody></table>
+    <div class="footer">Premovale T.I — Gerado em ${hoje}</div>
+    <script>window.onload=()=>{window.print();}<\/script></body></html>`;
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
+
 // ── Relatório ─────────────────────────────────────────────────────────────────
 function openRelatorioModal()  { document.getElementById('relatorio-modal').style.display='flex'; }
 function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display='none'; }
@@ -970,7 +1044,6 @@ function _gerarDadosRelatorio() {
         linhas.push({
           numero:       obra.numero || obra.id.slice(-6),
           nome:         obra.nome,
-          local:        [obra.cidade,obra.estado].filter(Boolean).join('/') || '—',
           representante:obra.representante || '—',
           etapa:        NOMES_ETAPA[etapaId],
           subEtapa:     subCfg.nome,
@@ -987,15 +1060,32 @@ function _gerarDadosRelatorio() {
 function exportarRelatorioXLS() {
   const linhas = _gerarDadosRelatorio();
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
-  const headers = ['Nº','Obra','Cidade/UF','Representante','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
-  const rows = linhas.map(l => [l.numero,l.nome,l.local,l.representante,l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso]);
-  const ws = XLSX.utils.aoa_to_sheet([headers,...rows]);
-  ws['!cols'] = [6,30,12,14,22,28,12,12,12].map(w=>({wch:w}));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,'Relatório',ws);
-  XLSX.writeFile(wb,`relatorio_obras_${new Date().toISOString().slice(0,10)}.xlsx`);
-  closeRelatorioModal();
-  showComercialToast('XLS exportado! ✅','success');
+  try {
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    const headers = ['No','Obra','Representante','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
+    const escXml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const headerRow = headers.map(h=>`<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
+    const dataRows = linhas.map(l => {
+      const cor = l.status==='Atrasada'?'#fee2e2':l.status==='Vencendo'?'#fef3c7':'#ffffff';
+      const cols=[l.numero,l.nome,l.representante,l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso];
+      return `<tr style="background:${cor};">${cols.map(c=>`<td style="padding:5px 8px;border:1px solid #e5e7eb;">${escXml(c)}</td>`).join('')}</tr>`;
+    }).join('');
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+      <body><table><thead><tr>${headerRow}</tr></thead><tbody>${dataRows}</tbody></table></body></html>`;
+    const blob = new Blob(['﻿'+html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `relatorio_obras_${new Date().toISOString().slice(0,10)}.xls`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    closeRelatorioModal();
+    showComercialToast('XLS exportado! ✅','success');
+  } catch(e) {
+    console.error('XLS error:', e);
+    showComercialToast(`Erro: ${e.message}`,'error');
+  }
 }
 
 function exportarRelatorioPDF() {
@@ -1005,7 +1095,7 @@ function exportarRelatorioPDF() {
   const rows = linhas.map(l => `
     <tr>
       <td>#${l.numero}</td>
-      <td><strong>${l.nome}</strong><br><small>${l.local}</small></td>
+      <td><strong>${l.nome}</strong></td>
       <td>${l.representante}</td>
       <td>${l.etapa}</td>
       <td>${l.subEtapa}</td>
@@ -1036,7 +1126,7 @@ function exportarRelatorioPDF() {
       <span>Gerado em ${hoje}</span>
     </div>
     <table>
-      <thead><tr><th>Nº</th><th>Obra / Local</th><th>Representante</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
+      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
