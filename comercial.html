@@ -197,17 +197,16 @@
             <option value="">Todas as etapas</option>
             <option value="proposta">Proposta Consolidada</option>
             <option value="contrato">Contrato</option>
-            <option value="cno">CNO/SBOBRAS</option>
+            <option value="documentacoes">Documentações</option>
             <option value="aditivos">Aditivos / Termo</option>
             <option value="medicao">Medição</option>
-            <option value="aguardando">Em espera</option>
             <option value="concluida">Concluída</option>
           </select>
           <select onchange="setFiltroEtapaAtraso(this.value)">
             <option value="">Sem filtro de atraso</option>
             <option value="proposta">Proposta atrasada</option>
             <option value="contrato">Contrato atrasado</option>
-            <option value="cno">CNO atrasada</option>
+            <option value="documentacoes">Documentações atrasada</option>
             <option value="aditivos">Aditivos atrasados</option>
             <option value="medicao">Medição atrasada</option>
           </select>
@@ -321,8 +320,8 @@
             <input type="date" id="nova-obra-fechamento" class="form-input" style="width:100%;margin-top:0.25rem;" required>
           </div>
           <div>
-            <label class="form-label">Prazo estimado de finalização</label>
-            <input type="date" id="nova-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;">
+            <label class="form-label">Prazo estimado de finalização <span style="color:var(--accent);">*</span></label>
+            <input type="date" id="nova-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;" required>
           </div>
         </div>
         <div>
@@ -418,6 +417,15 @@
         <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">Obras com sub-etapas atrasadas ou prazo vencendo</div>
       </div>
       <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <div>
+          <label class="form-label">Representante</label>
+          <select id="rel-representante" class="form-input" style="width:100%;margin-top:0.25rem;">
+            <option value="">Todos os representantes</option>
+            <option>Verdile</option><option>Ricardo</option><option>Sebastião</option>
+            <option>Ângelo</option><option>Sérgio</option><option>Matheus</option>
+            <option>Henrique</option><option>Flávio</option><option>Gazzo</option>
+          </select>
+        </div>
         <label style="display:flex;align-items:center;gap:0.6rem;font-size:0.82rem;cursor:pointer;">
           <input type="checkbox" id="rel-todas" style="width:15px;height:15px;">
           Incluir todas as obras ativas (não apenas atrasadas)
@@ -552,6 +560,23 @@
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
         <button class="btn-secondary" onclick="closeAddItemModal()">Cancelar</button>
         <button class="btn-primary" onclick="saveAddItem()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL DATA PREVISTA ══ -->
+  <div id="dp-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeDataPrevistaModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(380px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="dp-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Data prevista <span style="color:var(--accent);">*</span></label>
+        <input type="date" id="dp-data-input" class="form-input" style="width:100%;margin-top:0.4rem;" onkeydown="if(event.key==='Enter')saveDataPrevista()">
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeDataPrevistaModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveDataPrevista()">Salvar</button>
       </div>
     </div>
   </div>
