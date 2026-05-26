@@ -51,6 +51,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
+  padding-top: 0.5rem;
 }
 
 /* ── Card de obra ── */
@@ -66,7 +67,7 @@
   gap: 0.75rem;
   position: relative;
   min-height: 240px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .obra-card::before {
@@ -577,3 +578,28 @@ body.dark-mode .sub-action-btn.prorrogar:hover { background:#1e1b4b; color:#a5b4
   margin-top: 0.1rem;
   font-family: var(--font-mono);
 }
+
+/* ── Histórico ── */
+.hist-item { display:flex; gap:0.6rem; padding:0.4rem 0; border-bottom:1px solid var(--border2); }
+.hist-item:last-child { border-bottom:none; }
+.hist-badge { font-size:0.65rem; font-family:var(--font-mono); font-weight:700; padding:0.15rem 0.45rem; border-radius:4px; flex-shrink:0; align-self:flex-start; margin-top:0.1rem; }
+.hist-badge.obs { background:#dbeafe; color:#1e40af; }
+.hist-badge.rev { background:#fef3c7; color:#92400e; }
+.hist-content { flex:1; font-size:0.8rem; }
+.hist-meta { font-size:0.68rem; color:var(--muted); font-family:var(--font-mono); margin-top:0.15rem; }
+
+/* ── Dropdown Ações ── */
+.acao-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  width: 100%; padding: 0.5rem 0.75rem;
+  font-size: 0.78rem; font-family: var(--font-display);
+  background: none; border: none; cursor: pointer;
+  color: var(--text); text-align: left; transition: background 0.1s;
+}
+.acao-item:hover { background: var(--surface2); }
+.acao-item.concluir { color: #16a34a; font-weight: 600; }
+.acao-item.concluir:hover { background: #f0fdf4; }
+.acao-item.revisao { color: #d97706; font-weight: 600; }
+.acao-item.revisao:hover { background: #fffbeb; }
+body.dark-mode .acao-item.concluir:hover { background: #14532d22; }
+body.dark-mode .acao-item.revisao:hover  { background: #78350f22; }

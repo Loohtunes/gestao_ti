@@ -178,6 +178,9 @@
 
         <!-- Filtros -->
         <div class="comercial-filters">
+          <input type="text" placeholder="🔍 Buscar por nº, nome ou representante..."
+            oninput="setFiltroBusca(this.value)"
+            style="padding:0.45rem 0.75rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;min-width:260px;flex:1;">
           <select onchange="setFiltroRep(this.value)">
             <option value="">Todos os representantes</option>
             <option value="Verdile">Verdile</option>
@@ -216,6 +219,38 @@
             <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">até</label>
             <input type="date" onchange="setFiltroDataAte(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
           </div>
+          <div style="position:relative;">
+            <button id="btn-minhas-pendencias" onclick="toggleMinhasPendencias()" class="btn-secondary"
+              style="white-space:nowrap;display:flex;align-items:center;gap:0.4rem;background:var(--surface);border-color:var(--border2);">
+              📌 Minhas Pendências
+            </button>
+            <div id="periodo-wrap" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px #00000018;padding:1rem;min-width:280px;flex-direction:column;gap:0.65rem;">
+              <div style="font-size:0.7rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Filtrar por período</div>
+              <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                  <label style="font-size:0.75rem;color:var(--muted);min-width:30px;">De</label>
+                  <input type="date" id="periodo-de" onchange="setFiltroPeriodoDe(this.value)"
+                    style="flex:1;padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;">
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                  <label style="font-size:0.75rem;color:var(--muted);min-width:30px;">Até</label>
+                  <input type="date" id="periodo-ate" onchange="setFiltroPeriodoAte(this.value)"
+                    style="flex:1;padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;">
+                </div>
+              </div>
+              <button onclick="limparPeriodo()"
+                style="width:100%;padding:0.35rem;font-size:0.75rem;background:none;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-family:var(--font-display);transition:all 0.15s;"
+                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+                onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
+                Limpar período
+              </button>
+            </div>
+          </div>
+          <select onchange="setOrdenacao(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
+            <option value="recente">Mais recente</option>
+            <option value="num-asc">Nº crescente</option>
+            <option value="num-desc">Nº decrescente</option>
+          </select>
           <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
             <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards por página</label>
             <select id="per-page-select" onchange="setObrasPorPagina(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
@@ -258,28 +293,11 @@
         <div style="display:grid;grid-template-columns:120px 1fr;gap:0.75rem;">
           <div>
             <label class="form-label">Nº da Obra <span style="color:var(--accent);">*</span></label>
-            <input type="text" id="nova-obra-numero" class="form-input" placeholder="Ex: 247" style="width:100%;margin-top:0.25rem;" required>
+            <input type="number" id="nova-obra-numero" class="form-input" placeholder="Ex: 247" min="1" max="99999" style="width:100%;margin-top:0.25rem;" required oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
           </div>
           <div>
             <label class="form-label">Nome da Obra <span style="color:var(--accent);">*</span></label>
             <input type="text" id="nova-obra-nome" class="form-input" placeholder="Ex: Residencial São Paulo" style="width:100%;margin-top:0.25rem;" required>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 80px;gap:0.75rem;align-items:end;">
-          <div>
-            <input type="text" id="nova-obra-cidade" class="form-input" placeholder="Cidade *" style="width:100%;" required>
-          </div>
-          <div>
-            <select id="nova-obra-estado" class="form-input" style="width:100%;" required>
-            <option value="">UF *</option>
-            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-            <option>SP</option><option>SE</option><option>TO</option>
-            </select>
           </div>
         </div>
         <div>
@@ -377,23 +395,6 @@
             <input type="date" id="editar-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;">
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 80px;gap:0.75rem;align-items:end;">
-          <div>
-            <input type="text" id="editar-obra-cidade" class="form-input" placeholder="Cidade" style="width:100%;">
-          </div>
-          <div>
-            <select id="editar-obra-estado" class="form-input" style="width:100%;">
-            <option value="">UF</option>
-            <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
-            <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
-            <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-            <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
-            <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
-            <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-            <option>SP</option><option>SE</option><option>TO</option>
-            </select>
-          </div>
-        </div>
         <div>
           <label class="form-label">Observações</label>
           <textarea id="editar-obra-obs" class="form-input" rows="2" style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
@@ -476,14 +477,13 @@
         <div id="prorrogar-modal-info" style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);"></div>
       </div>
       <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Adicionar dias úteis <span style="color:var(--accent);">*</span></label>
-        <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem;">
-          <input type="number" id="prorrogar-dias-input" class="form-input" min="1" max="365" placeholder="Ex: 5"
-            style="width:120px;font-family:var(--font-mono);font-size:1rem;text-align:center;"
-            onkeydown="if(event.key==='Enter')saveProrrogacao()">
-          <span style="font-size:0.82rem;color:var(--muted);">dias úteis</span>
+        <label class="form-label">Nova data limite <span style="color:var(--accent);">*</span></label>
+        <input type="date" id="prorrogar-data-input" class="form-input"
+          style="width:100%;margin-top:0.4rem;"
+          onkeydown="if(event.key==='Enter')saveProrrogacao()">
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">
+          A data de fechamento da obra permanece imutável. Apenas o prazo desta sub-etapa será estendido.
         </div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">A data de fechamento permanece imutável. Apenas o prazo desta sub-etapa será estendido.</div>
       </div>
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
         <button class="btn-secondary" onclick="closeProrrogarModal()">Cancelar</button>
@@ -508,6 +508,118 @@
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
         <button class="btn-secondary" onclick="closeRevisaoModal()">Cancelar</button>
         <button class="btn-primary" onclick="saveRevisao()">Registrar Revisão</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ MODAL EXCLUIR ITEM ══ -->
+  <div id="excluir-item-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeExcluirItemModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(400px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:0.9rem;font-weight:700;color:#ef4444;display:flex;align-items:center;gap:0.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Excluir item
+        </div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <p style="font-size:0.85rem;margin:0;">Tem certeza que deseja excluir <strong id="excluir-item-titulo"></strong>?</p>
+        <p style="font-size:0.78rem;color:var(--muted);margin:0.5rem 0 0;">Esta ação não pode ser desfeita. Todas as sub-etapas e observações serão perdidas.</p>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeExcluirItemModal()">Cancelar</button>
+        <button class="btn-primary" onclick="confirmarExcluir()" style="background:#ef4444;border-color:#ef4444;">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL ADICIONAR ITEM (aditivo/medição) ══ -->
+  <div id="add-item-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeAddItemModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="add-item-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <div>
+          <label class="form-label">Título <span style="color:var(--accent);">*</span></label>
+          <input type="text" id="add-item-nome" class="form-input" style="width:100%;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label class="form-label">Data prevista</label>
+          <input type="date" id="add-item-data" class="form-input" style="width:100%;margin-top:0.25rem;">
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeAddItemModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveAddItem()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL MOTIVO DE ATRASO ══ -->
+  <div id="motivo-atraso-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeMotivoAtrasoModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="motivo-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Motivo do atraso <span style="color:var(--accent);">*</span></label>
+        <textarea id="motivo-input" class="form-input" rows="3" placeholder="Descreva o motivo do atraso..." style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeMotivoAtrasoModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveMotivoAtraso()">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL OBSERVAÇÃO ══ -->
+  <div id="obs-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeObsModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="obs-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Observação <span style="color:var(--accent);">*</span></label>
+        <textarea id="obs-input" class="form-input" rows="3" placeholder="Digite a observação..." style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeObsModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveObs()">Registrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL HISTÓRICO ══ -->
+  <div id="historico-modal" style="display:none;position:fixed;inset:0;z-index:1070;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeHistoricoModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(580px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:0.9rem;font-weight:700;">📋 Histórico da Obra</div>
+        <button onclick="closeHistoricoModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
+      </div>
+      <div id="historico-modal-body" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL ATRIBUIÇÃO ══ -->
+  <div id="atrib-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeAtribuirModal()">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(440px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="atrib-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.85rem;">
+        <div>
+          <label class="form-label">Responsável <span style="color:var(--accent);">*</span></label>
+          <select id="atrib-usuario-sel" class="form-input" style="width:100%;margin-top:0.25rem;"></select>
+        </div>
+        <div id="atrib-justificativa-wrap" style="display:none;">
+          <label class="form-label">Justificativa <span style="color:var(--accent);">*</span></label>
+          <textarea id="atrib-justificativa" class="form-input" rows="2" placeholder="Motivo da reatribuição..." style="width:100%;margin-top:0.25rem;resize:none;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeAtribuirModal()">Cancelar</button>
+        <button class="btn-primary" onclick="saveAtribuicao()">Confirmar</button>
       </div>
     </div>
   </div>
