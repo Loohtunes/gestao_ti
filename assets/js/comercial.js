@@ -61,7 +61,7 @@ const ETAPAS_CONFIG = {
     id:'documentacoes', nome:'Documentações', short:'Docs', opcional:false, cor:'#f97316',
     isIndependente:true,
     subEtapas:[
-      {id:'coc',       nome:'COC',         dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
+      {id:'coc',       nome:'COC',         dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true, isCocLista:true},
       {id:'art',       nome:'ART',         dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
       {id:'cno_sfobras',nome:'CNO/SFOBRAS', dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
       {id:'serasa',    nome:'Serasa',      dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
@@ -221,7 +221,8 @@ let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='';
 let _ordenacao='recente';
 let _filtroPeriodoDe='', _filtroPeriodoAte='';
 let _filtroMinhasPendencias=false;
-let _filtroUsuarioPendencia=''; // username do usuário visualizado (vazio = currentUser)
+let _currentObraId=null; // ID da obra aberta no modal
+let _filtroUsuarioPendencia=''; // Para visualização do gestor
 let _paginaAtual=0;
 let _obrasPorPagina=parseInt(localStorage.getItem('comercial-per-page')||'12');
 
@@ -359,7 +360,7 @@ function initComercial() {
         try { renderObras(); } catch(e) { console.error('[renderObras snap]', e); }
         if (_obraAtual) {
           const obra = _obras.find(o => o.id === _obraAtual);
-          if (obra) try { renderObraModal(obra); } catch(e) { console.error('[renderObraModal]', e); }
+          if (obra) try { _saveAccordionState(); renderObraModal(obra); _restoreAccordionState(); } catch(e) { console.error('[renderObraModal]', e); }
         }
       },
       err => console.error('[onSnapshot obras]', err)
@@ -468,7 +469,7 @@ function renderObras() {
     });
   }
   if (_filtroMinhasPendencias) {
-    const alvo = _filtroUsuarioPendencia || currentUser.username;
+    const alvo=_filtroUsuarioPendencia||currentUser?.username;
     lista = lista.filter(obra => {
       if (obra.concluida) return false;
       return ETAPAS_ORDER.some(etapaId => {
@@ -721,14 +722,38 @@ async function saveNovaObra() {
 
 // ── Modal detalhes ────────────────────────────────────────────────────────────
 function openObraModal(obraId) {
+  _currentObraId=obraId;
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
-  _obraAtual=obraId; renderObraModal(obra);
-  document.getElementById('obra-modal-overlay').style.display='flex';
-  document.body.style.overflow='hidden';
+  try {
+    _obraAtual=obraId; renderObraModal(obra);
+    document.getElementById('obra-modal-overlay').style.display='flex';
+    document.body.style.overflow='hidden';
+  } catch(e) {
+    console.error('[openObraModal] ERRO:', e.message, e.stack);
+    showComercialToast('Erro ao abrir obra: '+e.message,'error');
+  }
 }
 function closeObraModal() {
+  _currentObraId=null;
   document.getElementById('obra-modal-overlay').style.display='none';
   document.body.style.overflow=''; _obraAtual=null;
+}
+
+// ── Accordion state preservation ─────────────────────────────────────────────
+let _accordionState = new Set(); // IDs dos accordions abertos
+
+function _saveAccordionState() {
+  _accordionState = new Set();
+  document.querySelectorAll('[id^="lista-item-"]').forEach(el => {
+    if (el.style.display !== 'none') _accordionState.add(el.id);
+  });
+}
+
+function _restoreAccordionState() {
+  _accordionState.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'block';
+  });
 }
 
 function renderObraModal(obra) {
@@ -736,7 +761,11 @@ function renderObraModal(obra) {
   document.getElementById('obra-modal-nome').textContent=obra.nome;
   const prazoInfo=getPrazoInfo(obra.prazoEstimado);
   const canAdmin=currentUser?.isSuperAdmin||
-    (currentUser?.acessos||[]).includes('adminComercial');
+    (currentUser?.acessos||[]).includes('adminComercial')||
+    (currentUser?.acessos||[]).includes('comercial');
+  const canEditar=currentUser?.isSuperAdmin||
+    (currentUser?.acessos||[]).includes('adminComercial')||
+    (currentUser?.acessos||[]).includes('comercial');
   document.getElementById('obra-modal-meta').innerHTML=`
     <span>👤 ${obra.representante||'—'}</span>
     <span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>
@@ -796,14 +825,28 @@ function renderObraModal(obra) {
       const canRevisaoSub=subStatus!=='pending'&&!obra.concluida;
       const canProrrogar=subStatus==='active'&&!obra.concluida;
       const subRevisoes=(subData.revisoes||[]);
+      const subDotStyle=atrasada?`style="background:#ef4444;border-color:#ef4444;"`:subStatus==='done'?`style="background:${cfg.cor};border-color:${cfg.cor};"`:subStatus==='active'?`style="background:${cfg.cor};border-color:${cfg.cor};"`:'';
 
       // Badge responsável na sub-etapa
       const _alvoDestaque = _filtroUsuarioPendencia || currentUser?.username;
+      const _ehDestaque = subData.responsavel === _alvoDestaque;
+      const _labelBadge = subData.responsavel === currentUser?.username ? 'Você' : subData.responsavel;
       const respBadge = subData.responsavel
-        ? subData.responsavel===_alvoDestaque
-          ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.62rem;font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${subData.responsavel===currentUser?.username?'Você':subData.responsavel}</span>`
+        ? _ehDestaque
+          ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.62rem;font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${_labelBadge}</span>`
           : `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.62rem;font-weight:600;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${subData.responsavel}</span>`
         : '';
+      // COC com lista dinâmica — não precisa de subData
+      if (subCfg.isCocLista) {
+        return `<div class="sub-etapa-item">
+          <div class="sub-etapa-dot ${subStatus}" ${subDotStyle}></div>
+          <div class="sub-etapa-content">
+            <div class="sub-etapa-nome">${subCfg.nome}${atrasada?' <span class="sub-atraso-label">ATRASADO</span>':''}</div>
+            <div style="margin-top:0.4rem;">${_renderCocLista(obra, etapaId, subCfg.id)}</div>
+          </div>
+        </div>`;
+      }
+      if (!subData) return '';
 
       let dataInfo='';
       // Sub-etapa Em Análise: mostrar "A X dias nessa sub-etapa"
@@ -891,14 +934,7 @@ function renderObraModal(obra) {
               </div>
             </div>`:''}
         </div>
-        ${(eData.revisoes||[]).length?`<div class="etapa-revisoes">${(eData.revisoes||[]).map((r,ri)=>`
-          <div class="etapa-revisao-item">
-            <span class="etapa-revisao-badge">REV.${ri+1}</span>
-            <div class="etapa-revisao-info">
-              <div class="etapa-revisao-motivo">${r.motivo}</div>
-              <div class="etapa-revisao-data">${r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'} — por ${r.por||'—'}</div>
-            </div>
-          </div>`).join('')}</div>`:''}
+
         <div class="sub-etapas-container">${subsHtml}</div>
       </div>
     </div>`;
@@ -1017,8 +1053,121 @@ async function saveRecusa(){
   });
   etapas[etapaId].status='active';
   await db.collection('obras').doc(obraId).update({etapas});
+  _audit(obraId,'recusa',`REV.${revNum} — ${ETAPAS_CONFIG[etapaId]?.nome}: recusado. Motivo: "${just}"`);
   showComercialToast(`REV.${revNum} registrada — etapa reiniciada ✅`,'success');
   closeRecusaModal();
+}
+
+
+// ── COC Lista — múltiplas COCs por obra ───────────────────────────────────────
+let _cocObraId=null;
+
+function _toggleCocItem(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function _renderCocLista(obra, etapaId, subId) {
+  const e       = obra.etapas?.[etapaId];
+  const cocLista = e?.cocLista || [];
+  const canAct  = !obra.concluida;
+  const hoje    = new Date().toISOString().slice(0,10);
+
+  const itemsHtml = cocLista.map((item, idx) => {
+    const isDone   = item.status === 'done';
+    const toggleId = `coc-item-${idx}`;
+    const dtPrev   = item.dataPrevista
+      ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">${new Date(item.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+    const dtConc   = item.dataConclusao
+      ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+    const dropId   = `acao-coc-${idx}`;
+    const btnAcoes = canAct && !isDone ? `<div style="position:relative;display:inline-block;">
+      <button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.15rem 0.45rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.2rem;">
+        Ações<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:150px;overflow:hidden;">
+        <button class="acao-item concluir" data-action="coc-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>
+      </div>
+    </div>` : '';
+
+    const delBtn = canAct && !isDone ? `<button onclick="event.stopPropagation();_deleteCocItem('${obra.id}','${etapaId}',${idx})"
+      title="Excluir" style="background:none;border:none;cursor:pointer;padding:0.15rem 0.25rem;color:var(--muted);border-radius:4px;flex-shrink:0;"
+      onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    </button>` : '';
+
+    return `<div style="border:1px solid var(--border2);border-radius:8px;margin-top:0.5rem;">
+      <div onclick="_toggleCocItem('${toggleId}')"
+        style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
+        <span style="font-size:0.8rem;font-weight:700;color:${isDone?'#22c55e':'#f97316'};flex:1;">${isDone?'✓ ':''} ${item.nome}</span>
+        ${dtConc}${!isDone?dtPrev:''}
+        ${btnAcoes}${delBtn}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div id="${toggleId}" style="display:none;padding:0.5rem 0.75rem;font-size:0.78rem;color:var(--muted);">
+        ${item.obs||'Sem observações.'}
+      </div>
+    </div>`;
+  }).join('');
+
+  const addBtn = canAct ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+    <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
+      style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      COC
+    </button>
+  </div>` : '';
+
+  return `${itemsHtml}${addBtn}`;
+}
+
+function _openAddCocModal(obraId, etapaId) {
+  _cocObraId = obraId;
+  document.getElementById('add-coc-obra-id').value = obraId;
+  document.getElementById('add-coc-etapa-id').value = etapaId;
+  document.getElementById('add-coc-nome').value = '';
+  document.getElementById('add-coc-data').value = '';
+  document.getElementById('add-coc-modal').style.display = 'flex';
+}
+function _closeAddCocModal() {
+  document.getElementById('add-coc-modal').style.display = 'none';
+}
+async function _saveAddCoc() {
+  const obraId  = document.getElementById('add-coc-obra-id').value;
+  const etapaId = document.getElementById('add-coc-etapa-id').value;
+  const nome    = document.getElementById('add-coc-nome').value.trim();
+  const data    = document.getElementById('add-coc-data').value || null;
+  if (!nome) { showComercialToast('Informe o nome da COC.','error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  if (!etapas[etapaId].cocLista) etapas[etapaId].cocLista = [];
+  etapas[etapaId].cocLista.push({ nome, dataPrevista: data, status: 'active', dataConclusao: null });
+  // Se etapa ainda não foi iniciada, iniciar
+  if (etapas[etapaId].status === 'pending') etapas[etapaId].status = 'active';
+  await db.collection('obras').doc(obraId).update({ etapas });
+  _audit(obraId, 'aditivo_add', `COC adicionada: "${nome}"`);
+  showComercialToast(`COC "${nome}" adicionada! ✅`, 'success');
+  _closeAddCocModal();
+}
+async function _concluirCocItem(obraId, etapaId, idx) {
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
+  item.status = 'done';
+  item.dataConclusao = new Date().toISOString().slice(0,10);
+  item.concluidoPor = currentUser.username;
+  await db.collection('obras').doc(obraId).update({ etapas });
+  showComercialToast('COC concluída! ✅', 'success');
+}
+async function _deleteCocItem(obraId, etapaId, idx) {
+  if (!confirm('Excluir esta COC? Esta ação não pode ser desfeita.')) return;
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const nome = etapas[etapaId].cocLista?.[idx]?.nome || '';
+  etapas[etapaId].cocLista.splice(idx, 1);
+  await db.collection('obras').doc(obraId).update({ etapas });
+  _audit(obraId, 'aditivo_del', `COC excluída: "${nome}"`);
+  showComercialToast('COC excluída. ✅', 'success');
 }
 
 // ── Iniciar sub-etapa independente (Documentações) ───────────────────────────
@@ -1060,6 +1209,8 @@ async function saveAddItem() {
   etapas[_addItemEtapaId].ativa=true;
   if(etapas[_addItemEtapaId].status==='pending') etapas[_addItemEtapaId].status='active';
   etapas[_addItemEtapaId].lista.push(criarItemLista(_addItemEtapaId, titulo, dataPrevista));
+  const tipoItem = ETAPAS_CONFIG[_addItemEtapaId]?.nome==='Aditivos / Termo'?'aditivo_add':'medicao_add';
+  _audit(_addItemObraId, tipoItem, `Novo item adicionado: "${titulo}"${dataPrevista?' (Previsto: '+dataPrevista+')':''}`);
   await db.collection('obras').doc(_addItemObraId).update({etapas});
   showComercialToast(`"${titulo}" adicionado! ✅`,'success');
   closeAddItemModal();
@@ -1089,6 +1240,10 @@ async function confirmarExcluir() {
     etapas[_excluirEtapaId].status='pending';
     etapas[_excluirEtapaId].ativa=false;
   }
+  const obraEx=_obras.find(o=>o.id===_excluirObraId);
+  const itemEx=(obraEx?.etapas?.[_excluirEtapaId]?.lista||[]).find(i=>i.id===_excluirItemId);
+  const tipoEx=ETAPAS_CONFIG[_excluirEtapaId]?.nome==='Aditivos / Termo'?'aditivo_del':'medicao_del';
+  _audit(_excluirObraId, tipoEx, `Item excluído: "${itemEx?.titulo||_excluirItemId}"`);
   await db.collection('obras').doc(_excluirObraId).update({etapas});
   showComercialToast('Item excluído. ✅','success');
   closeExcluirItemModal();
@@ -1199,11 +1354,13 @@ function renderListaEtapa(obra, etapaId, hoje) {
     </div>`;
   }).join('');
 
-  const addBtn = canAdd ? `
-    <button class="sub-action-btn concluir" style="margin-top:0.5rem;width:100%;justify-content:center;" onclick="adicionarItemLista('${obra.id}','${etapaId}')">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  const addBtn = canAdd ? `<div style="display:flex;justify-content:center;margin-top:0.5rem;">
+    <button class="sub-action-btn concluir" onclick="adicionarItemLista('${obra.id}','${etapaId}')"
+      style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       ${label}
-    </button>` : '';
+    </button>
+  </div>` : '';
 
   return `${itemsHtml}${addBtn}`;
 }
@@ -1272,6 +1429,57 @@ function _marcarHistoricoVisto(obra) {
   localStorage.setItem(_getHistKey(obra.id), _contarHistoricoTotal(obra));
 }
 
+
+// ── Auditoria — registro imutável em subcoleção ───────────────────────────────
+async function _audit(obraId, tipo, descricao, extra) {
+  try {
+    const entrada = {
+      tipo, descricao,
+      extra: extra||null,
+      por:   currentUser?.username||'—',
+      em:    new Date().toISOString(),
+    };
+    // Salva no array _auditoria dentro do documento da obra (sem subcoleção)
+    await db.collection('obras').doc(obraId).update({
+      _auditoria: firebase.firestore.FieldValue.arrayUnion(entrada)
+    });
+  } catch(e) { console.warn('[Auditoria]', e); }
+}
+
+let _auditoriaCache = {}; // { obraId: [{...}] }
+async function _loadAuditoria(obraId) {
+  try {
+    const doc = await db.collection('obras').doc(obraId).get();
+    const entries = doc.data()?._auditoria || [];
+    // Ordenar do mais recente para o mais antigo
+    entries.sort((a,b) => (b.em||'').localeCompare(a.em||''));
+    _auditoriaCache[obraId] = entries;
+  } catch(e) {
+    console.warn('[Auditoria load]', e);
+    _auditoriaCache[obraId] = [];
+  }
+  return _auditoriaCache[obraId];
+}
+
+const _AUDIT_ICONS = {
+  edicao:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  atribuicao:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  aditivo_add: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  aditivo_del: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>',
+  medicao_add: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  medicao_del: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>',
+  conclusao:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+  revisao:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg>',
+  recusa:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  prorrogacao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+};
+
+const _AUDIT_CORES = {
+  edicao:'#3b82f6', atribuicao:'#8b5cf6', aditivo_add:'#ec4899', aditivo_del:'#6b7280',
+  medicao_add:'#ec4899', medicao_del:'#6b7280', conclusao:'#22c55e',
+  revisao:'#f59e0b', recusa:'#ef4444', prorrogacao:'#f97316',
+};
+
 // ── Dropdown Ações — event delegation ────────────────────────────────────────
 let _acaoListenerActive = false;
 
@@ -1329,6 +1537,11 @@ function _initAcaoDelegate() {
       case 'aprovado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
       case 'recusado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
       case 'iniciar-sub':    iniciarSubEtapa(obraId, etapaId, subId); break;
+      case 'coc-concluir': {
+        const cocIdx = parseInt(btn.dataset.coc);
+        _concluirCocItem(obraId, etapaId, cocIdx);
+        break;
+      }
       case 'concluir-lista': concluirSubEtapaComData(obraId, etapaId, subId, itemId); break;
       case 'revisao':        openRevisaoModal(obraId, etapaId, subId, itemId); break;
       case 'prorrogar':      openProrrogarModal(obraId, etapaId, subId, itemId); break;
@@ -1432,6 +1645,7 @@ async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
       await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
       showComercialToast('Obra concluída! 🎉','success');
     } else {
+      _audit(obraId,'conclusao',`${cfg.nome} · ${subCfg?.nome||subId} concluída${tipo?' ('+tipo+')':''}${dataCustom&&dataCustom!==new Date().toISOString().slice(0,10)?' com data '+dataCustom:''}`);
       await db.collection('obras').doc(obraId).update({etapas});
       showComercialToast(`"${subCfg?.nome||''}" concluída! ✅`,'success');
     }
@@ -1732,6 +1946,7 @@ async function saveEditarObra() {
     prazoEstimado: document.getElementById('editar-obra-prazo')?.value||null,
     obs:           document.getElementById('editar-obra-obs')?.value.trim()||'',
   });
+  _audit(_editObraId,'edicao','Dados da obra editados por '+currentUser.username);
   showComercialToast('Obra atualizada! ✅','success');
   closeEditarObraModal();
 }
@@ -1753,17 +1968,32 @@ async function reabrirObra(obraId) {
   ETAPAS_ORDER.forEach(id=>{if(etapas[id]?.ativa&&etapas[id]?.status==='done') reativarId=id;});
   let found=false;
   ETAPAS_ORDER.forEach(id=>{
+    const cfg=ETAPAS_CONFIG[id];
     if(id===reativarId){
       found=true; etapas[id].status='active';
-      const cfg=ETAPAS_CONFIG[id];
-      let lastDone=null;
-      cfg.subEtapas.forEach(s=>{if(etapas[id].subEtapas[s.id]?.status==='done') lastDone=s.id;});
-      if(lastDone){etapas[id].subEtapas[lastDone].status='active';etapas[id].subEtapas[lastDone].dataConclusao=null;}
+      if(cfg.isLista){
+        // Reabrir último item da lista
+        const lista=etapas[id].lista||[];
+        if(lista.length>0) lista[lista.length-1].status='active';
+      } else {
+        const subs=cfg.subEtapas||[];
+        let lastDone=null;
+        subs.forEach(s=>{if(etapas[id].subEtapas?.[s.id]?.status==='done') lastDone=s.id;});
+        if(lastDone&&etapas[id].subEtapas[lastDone]){
+          etapas[id].subEtapas[lastDone].status='active';
+          etapas[id].subEtapas[lastDone].dataConclusao=null;
+        }
+      }
     } else if(found) {
       etapas[id].status='pending';
-      ETAPAS_CONFIG[id].subEtapas.forEach(s=>{
-        etapas[id].subEtapas[s.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null};
-      });
+      if(cfg.isLista){
+        (etapas[id].lista||[]).forEach(item=>{ item.status='pending'; });
+      } else {
+        (cfg.subEtapas||[]).forEach(s=>{
+          if(etapas[id].subEtapas?.[s.id])
+            etapas[id].subEtapas[s.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null};
+        });
+      }
     }
   });
   await db.collection('obras').doc(obraId).update({etapas,concluida:false,dataConclusao:null});
@@ -1949,8 +2179,7 @@ function exportarRelatorioXLS() {
     const headers = ['No','Obra','Representante','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
     const escXml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const headerRow = headers.map(h=>`<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
-    const dataRows = linhas.map(l => {
-      const bgCor2 = l.status==='Atrasada'?'#fee2e2':l.status==='Vencendo'?'#fef3c7':rowIdx%2===0?'#ffffff':'#f9fafb';
+    const dataRows = linhas.map((l, rowIdx) => {
       const cols=[l.numero,l.nome,l.representante,l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
@@ -2078,6 +2307,61 @@ function openHistoricoModal(obraId) {
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
   const el=document.getElementById('historico-modal-body');
   if(!el) return;
+  // Renderizar aba Histórico
+  _renderHistoricoAba(obra, el);
+  // Marcar como visto
+  _marcarHistoricoVisto(obra);
+  const o=_obras.find(x=>x.id===obraId); if(o){_saveAccordionState();renderObraModal(o);_restoreAccordionState();}
+  document.getElementById('historico-modal').style.display='flex';
+  // Carregar auditoria em background
+  _loadAuditoria(obraId).then(() => {
+    const auditEl=document.getElementById('historico-auditoria-body');
+    if(auditEl) _renderAuditoriaAba(obraId, auditEl);
+  });
+}
+
+function _switchHistoricoTab(tab, obraId) {
+  const t1=document.getElementById('tab-historico-btn');
+  const t2=document.getElementById('tab-auditoria-btn');
+  const b1=document.getElementById('historico-modal-body');
+  const b2=document.getElementById('historico-auditoria-body');
+  if(!t1||!t2||!b1||!b2) return;
+  if(tab==='historico') {
+    t1.style.borderBottom='2px solid var(--accent)'; t1.style.color='var(--accent)';
+    t2.style.borderBottom='2px solid transparent'; t2.style.color='var(--muted)';
+    b1.style.display='block'; b2.style.display='none';
+  } else {
+    t2.style.borderBottom='2px solid var(--accent)'; t2.style.color='var(--accent)';
+    t1.style.borderBottom='2px solid transparent'; t1.style.color='var(--muted)';
+    b1.style.display='none'; b2.style.display='block';
+    _loadAuditoria(obraId).then(()=>{
+      const el=document.getElementById('historico-auditoria-body');
+      if(el) _renderAuditoriaAba(obraId, el);
+    });
+  }
+}
+
+function _renderAuditoriaAba(obraId, el) {
+  const entries = _auditoriaCache[obraId] || [];
+  if(!entries.length) {
+    el.innerHTML='<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum registro de auditoria.</div>';
+    return;
+  }
+  el.innerHTML = entries.map(e => {
+    const cor = _AUDIT_CORES[e.tipo] || '#6b7280';
+    const icon = _AUDIT_ICONS[e.tipo] || '';
+    const dt = e.em ? new Date(e.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+    return `<div style="display:flex;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border2);align-items:flex-start;">
+      <span style="width:28px;height:28px;border-radius:50%;background:${cor}18;border:1.5px solid ${cor}40;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${cor};">${icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.8rem;color:var(--text);line-height:1.4;">${e.descricao}</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);">${dt} — ${e.por}</div>
+      </div>
+    </div>`;
+  }).join('') + '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:0.75rem;">🔒 Registro imutável — auditoria do sistema</div>';
+}
+
+function _renderHistoricoAba(obra, el) {
   const NOMES={proposta:'Proposta Consolidada',contrato:'Contrato',documentacoes:'Documentações',aditivos:'Aditivos/Termo',medicao:'Medição'};
   let html='';
   ETAPAS_ORDER.forEach(etapaId=>{
@@ -2113,7 +2397,7 @@ function openHistoricoModal(obraId) {
   _marcarHistoricoVisto(obra);
   document.getElementById('historico-modal').style.display='flex';
   // Atualizar footer para remover badge
-  const o=_obras.find(x=>x.id===obraId); if(o) renderObraModal(o);
+  const o=_obras.find(x=>x.id===obraId); if(o){_saveAccordionState();renderObraModal(o);_restoreAccordionState();}
 }
 function closeHistoricoModal(){ document.getElementById('historico-modal').style.display='none'; }
 
@@ -2150,6 +2434,9 @@ async function saveAtribuicao(){
   ref.sub.responsavel=usuario;
   if(!ref.sub.historicoAtribuicao) ref.sub.historicoAtribuicao=[];
   ref.sub.historicoAtribuicao.push({de:anterior||currentUser.username,para:usuario,data:new Date().toISOString().slice(0,10),justificativa:_atribModo==='reatribuir'?(document.getElementById('atrib-justificativa')?.value.trim()||null):null,por:currentUser.username});
+  const _cfgAt=ETAPAS_CONFIG[_atribEtapaId];
+  const _snAt=(_cfgAt.subEtapas||_cfgAt.subEtapasTemplate||[]).find(s=>s.id===_atribSubId)?.nome||_atribSubId;
+  _audit(_atribObraId,'atribuicao',`${_cfgAt.nome} · ${_snAt}: atribuído a "${usuario}"${anterior?' (antes: "'+anterior+'")':''}`);
   await db.collection('obras').doc(_atribObraId).update({etapas});
   showComercialToast(`Atribuído para ${usuario}! ✅`,'success');
   closeAtribuirModal();
@@ -2171,8 +2458,7 @@ function toggleMinhasPendencias() {
     _filtroMinhasPendencias = true;
     _filtroUsuarioPendencia = '';
     _paginaAtual = 0;
-    // Popular seletor de usuário se gestor
-    _atualizarSeletorUsuario();
+    _atualizarSeletorPendencia();
     if(wrap) wrap.style.display = 'flex';
     renderObras();
   }
@@ -2190,41 +2476,31 @@ function toggleMinhasPendencias() {
   }
 }
 
-function _atualizarSeletorUsuario() {
-  const wrap = document.getElementById('pendencia-user-wrap');
-  if (!wrap) return;
-  const podeVer = currentUser?.canVerTodasPendencias || currentUser?.isSuperAdmin || currentUser?.role==='superAdmin' || currentUser?.role==='admin';
-  if (!podeVer) { wrap.style.display='none'; return; }
-  const allUsers = typeof users !== 'undefined' ? users : [];
-  const usrsComercial = allUsers.filter(u =>
-    u.isSuperAdmin ||
-    (u.acessos||[]).includes('adminComercial') ||
-    (u.acessos||[]).includes('comercial') ||
-    u.role==='admin' || u.role==='superAdmin'
+
+function _atualizarSeletorPendencia() {
+  const wrap=document.getElementById('pendencia-user-wrap');
+  if(!wrap) return;
+  const isGestor=currentUser?.isSuperAdmin||(currentUser?.acessos||[]).includes('adminComercial');
+  if(!isGestor){wrap.style.display='none';return;}
+  const lista=(typeof users!=='undefined'?users:[]).filter(u=>
+    u.isSuperAdmin||(u.acessos||[]).includes('adminComercial')||(u.acessos||[]).includes('comercial')
   );
-  const lista = usrsComercial.length > 0 ? usrsComercial : allUsers;
-  const opts = lista.map(u => `<option value="${u.username}"${u.username===currentUser.username?' selected':''}>${u.username}${u.username===currentUser.username?' (você)':''}</option>`).join('');
-  const sel = document.getElementById('pendencia-user-sel');
-  if(sel) { sel.innerHTML=opts; wrap.style.display='flex'; }
+  const sel=document.getElementById('pendencia-user-sel');
+  if(sel){
+    sel.innerHTML=lista.map(u=>`<option value="${u.username}"${u.username===currentUser.username?' selected':''}>${u.username}${u.username===currentUser.username?' (você)':''}</option>`).join('');
+    wrap.style.display='flex';
+  }
 }
 
-function setPendenciaUsuario(val) {
-  _filtroUsuarioPendencia = val===currentUser.username ? '' : val;
-  _paginaAtual=0;
-  renderObras();
-  // Atualizar label do botão
-  const btn=document.getElementById('btn-minhas-pendencias');
-  if(btn && _filtroUsuarioPendencia){
-    btn.style.background='var(--accent)';
-    btn.style.color='#fff';
-  }
+function setPendenciaUsuario(val){
+  _filtroUsuarioPendencia=val===currentUser?.username?'':val;
+  _paginaAtual=0; renderObras();
 }
 
 function limparPeriodo() {
   _filtroPeriodoDe=''; _filtroPeriodoAte=''; _filtroUsuarioPendencia='';
   const de=document.getElementById('periodo-de'), ate=document.getElementById('periodo-ate');
   if(de) de.value=''; if(ate) ate.value='';
-  // Desativar filtro e fechar dropdown
   _filtroMinhasPendencias=false; _dropdownAberto=false;
   const btn=document.getElementById('btn-minhas-pendencias');
   const wrap=document.getElementById('periodo-wrap');
@@ -2282,10 +2558,19 @@ async function _initComercialPage() {
   const user=users.find(u=>u.id===savedId);
   if(!user){window.location.href='login.html';return;}
   const acessos=user.acessos||[];
-  if(!user.isSuperAdmin&&!user.isAdminComercial&&!user.isComercial&&!acessos.includes('comercial')&&!acessos.includes('adminComercial')){
-    window.location.href='menu.html';return;
+  // Tolerância temporária: canVerTodasPendencias pode ter entrado no array por bug
+  const temAcessoComercial=user.isSuperAdmin||user.isAdminComercial||user.isComercial||
+    acessos.includes('comercial')||acessos.includes('adminComercial')||
+    acessos.includes('canVerTodasPendencias')||!!user.canVerTodasPendencias;
+  if(!temAcessoComercial){window.location.href='menu.html';return;}
+  // Auto-corrigir dados corrompidos silenciosamente
+  if(acessos.includes('canVerTodasPendencias')){
+    const nov=acessos.filter(a=>a!=='canVerTodasPendencias');
+    if(!nov.includes('comercial')&&!nov.includes('adminComercial')&&!user.isSuperAdmin) nov.push('comercial');
+    db.collection('users').doc(user.id).update({acessos:nov,canVerTodasPendencias:true}).catch(()=>{});
+    user.acessos=nov; user.canVerTodasPendencias=true;
   }
-  currentUser=user;
+    currentUser=user;
   if(typeof initDarkMode==='function') initDarkMode();
   if(typeof initSessionTimer==='function') initSessionTimer(user.role);
   const collapsed=localStorage.getItem('chamados-sidebar-collapsed')==='1';

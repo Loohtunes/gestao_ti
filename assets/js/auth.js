@@ -430,8 +430,10 @@ function initChamadosSidebar() {
   });
 
   // Visibilidade módulo Comercial
+  const acessosC = currentUser.acessos || [];
   const canComercial = currentUser.isSuperAdmin || currentUser.isAdminComercial ||
-    currentUser.isComercial || acessos.includes('comercial') || acessos.includes('adminComercial');
+    currentUser.isComercial || acessosC.includes('comercial') || acessosC.includes('adminComercial') ||
+    acessosC.includes('canVerTodasPendencias') || !!currentUser.canVerTodasPendencias;
   const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
   if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
 
@@ -445,10 +447,10 @@ function initChamadosSidebar() {
     const path = window.location.pathname;
     const active = path.includes('materiais') ? 'materiais'
       : path.includes('inventario') ? 'inventario'
-        : path.includes('rotinas') ? 'rotinas'
-          : path.includes('comercial') ? 'comercial'
-            : path.includes('configuracoes') ? null
-              : 'chamados';
+      : path.includes('rotinas') ? 'rotinas'
+      : path.includes('comercial') ? 'comercial'
+      : path.includes('configuracoes') ? null
+      : 'chamados';
     initModPai(active);
   }
 

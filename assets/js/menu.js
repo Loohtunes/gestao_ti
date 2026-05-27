@@ -117,7 +117,8 @@ function applyMenuUI(user) {
 
   // Módulo Comercial
   const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
-    acessos.includes('comercial') || acessos.includes('adminComercial');
+    acessos.includes('comercial') || acessos.includes('adminComercial') ||
+    acessos.includes('canVerTodasPendencias') || !!user.canVerTodasPendencias;
   const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
   if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
 

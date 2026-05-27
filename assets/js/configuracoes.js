@@ -31,13 +31,11 @@ const MODULOS = [
   { key: 'rotinas', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Rotinas` },
   { key: 'comercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comercial` },
   { key: 'adminComercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><circle cx="17" cy="7" r="3" fill="currentColor" stroke="none" opacity="0.6"/></svg> Admin Comercial` },
-  { key: 'canVerTodasPendencias', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Ver Pendências de Todos` },
 ];
 
 // ── Inicializar ──
 async function initConfiguracoes() {
   await loadUsers();
-  _limparAcessosInvalidos(); // Migração: remove canVerTodasPendencias do array acessos
   const savedId = localStorage.getItem('chamados-current-user-id');
   if (!savedId) { window.location.href = 'index.html'; return; }
   const user = users.find(u => u.id === savedId);
@@ -1000,7 +998,7 @@ function renderAccessTable() {
     const isSA = u.isSuperAdmin;
 
     const toggleCols = MODULOS.map(m => {
-      const checked = isSA || (m.key==='canVerTodasPendencias' ? !!u.canVerTodasPendencias : acessos.includes(m.key));
+      const checked = isSA || acessos.includes(m.key);
       const disabled = m.key === 'chamados' || isSA;
       return `<td>
         <label class="access-toggle" title="${disabled ? 'Não pode ser alterado' : ''}">
@@ -1026,38 +1024,12 @@ function renderAccessTable() {
 async function toggleAcesso(userId, modulo, ativo) {
   const user = users.find(u => u.id === userId);
   if (!user) return;
-  // canVerTodasPendencias é campo booleano direto, NÃO entra no array acessos
-  if (modulo === 'canVerTodasPendencias') {
-    user.canVerTodasPendencias = ativo;
-    await db.collection('users').doc(userId).update({ canVerTodasPendencias: ativo });
-    showConfigNotification('Acesso atualizado! 🔐', 'success');
-    return;
-  }
   let acessos = [...(user.acessos || ['chamados'])];
-  // Garantir que canVerTodasPendencias nunca entre no array acessos
-  acessos = acessos.filter(a => a !== 'canVerTodasPendencias');
   if (ativo && !acessos.includes(modulo)) acessos.push(modulo);
   if (!ativo) acessos = acessos.filter(a => a !== modulo);
   user.acessos = acessos;
   await db.collection('users').doc(userId).update({ acessos });
   showConfigNotification('Acesso atualizado! 🔐', 'success');
-}
-
-// Migração: limpar canVerTodasPendencias do array acessos caso tenha entrado
-async function _limparAcessosInvalidos() {
-  try {
-    const snap = await db.collection('users').get();
-    for (const doc of snap.docs) {
-      const data = doc.data();
-      const acessos = data.acessos || [];
-      if (acessos.includes('canVerTodasPendencias')) {
-        const novosAcessos = acessos.filter(a => a !== 'canVerTodasPendencias');
-        const canVer = true; // estava marcado, então preservar a permissão
-        await doc.ref.update({ acessos: novosAcessos, canVerTodasPendencias: canVer });
-        console.log(`[Migração] Limpou canVerTodasPendencias do acessos de ${data.username}`);
-      }
-    }
-  } catch(e) { console.warn('[Migração acessos]', e); }
 }
 
 // ══════════════════════════════
