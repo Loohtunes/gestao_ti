@@ -41,16 +41,20 @@ const ETAPAS_CONFIG = {
   proposta: {
     id:'proposta', nome:'Proposta Consolidada', short:'Proposta', opcional:false, cor:'#3b82f6',
     subEtapas:[
-      {id:'envio',      nome:'Envio',      dias:2,  refEtapa:null,       refSub:null,              isNovaDataZero:false, dateLivre:false},
-      {id:'assinatura', nome:'Assinatura', dias:5,  refEtapa:'proposta', refSub:'envio',           isNovaDataZero:false, dateLivre:false},
+      {id:'elaboracao',     nome:'Elaboração',         dias:2,  refEtapa:null,      refSub:null,              isNovaDataZero:false, dateLivre:false},
+      {id:'envio',          nome:'Envio',              dias:2,  refEtapa:'proposta',refSub:'elaboracao',      isNovaDataZero:false, dateLivre:false},
+      {id:'analise_cliente',nome:'Análise do Cliente', dias:3,  refEtapa:'proposta',refSub:'envio',           isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
+      {id:'assinatura',     nome:'Assinatura',         dias:5,  refEtapa:'proposta',refSub:'analise_cliente', isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   contrato: {
     id:'contrato', nome:'Contrato', short:'Contrato', opcional:false, cor:'#8b5cf6',
     subEtapas:[
-      {id:'em_analise', nome:'Em Análise', dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true},
-      {id:'envio',      nome:'Envio',      dias:3,  refEtapa:'proposta', refSub:'assinatura',      isNovaDataZero:false, dateLivre:false},
-      {id:'assinatura', nome:'Assinatura', dias:5,  refEtapa:'contrato', refSub:'envio',           isNovaDataZero:false, dateLivre:false},
+      {id:'elaboracao',     nome:'Elaboração',         dias:2,  refEtapa:null,       refSub:null,               isNovaDataZero:false, dateLivre:false},
+      {id:'em_analise',     nome:'Em Análise',         dias:0,  refEtapa:null,       refSub:null,               isNovaDataZero:false, dateLivre:true,  isAnalise:true},
+      {id:'envio',          nome:'Envio',              dias:3,  refEtapa:'contrato', refSub:'em_analise',       isNovaDataZero:false, dateLivre:false},
+      {id:'analise_cliente',nome:'Análise do Cliente', dias:3,  refEtapa:'contrato', refSub:'envio',            isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
+      {id:'assinatura',     nome:'Assinatura',         dias:5,  refEtapa:'contrato', refSub:'analise_cliente',  isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   documentacoes: {
@@ -127,13 +131,9 @@ function _migrateObraToV3(obra) {
     const old = etapas['aditivos'];
     const lista = [];
     if (old.status && old.status !== 'pending') {
-      lista.push({
-        id: 'aditivo_1', titulo: 'Aditivo 1', dataPrevista: null,
-        status: old.status,
-        subEtapas: old.subEtapas || {},
-      });
+      lista.push({ id:'aditivo_1', titulo:'Aditivo 1', dataPrevista:null, status:old.status, subEtapas:old.subEtapas||{} });
     }
-    etapas['aditivos'] = { status: old.status||'pending', ativa: old.ativa||false, lista };
+    etapas['aditivos'] = { status:old.status||'pending', ativa:old.ativa||false, lista };
   }
 
   // 3. Converter medicao de objeto para lista
@@ -141,17 +141,43 @@ function _migrateObraToV3(obra) {
     const old = etapas['medicao'];
     const lista = [];
     if (old.status && old.status !== 'pending') {
-      lista.push({
-        id: 'medicao_1', titulo: 'Medição 1', dataPrevista: null,
-        status: old.status,
-        subEtapas: old.subEtapas || {},
-      });
+      lista.push({ id:'medicao_1', titulo:'Medição 1', dataPrevista:null, status:old.status, subEtapas:old.subEtapas||{} });
     }
-    etapas['medicao'] = { status: old.status||'pending', ativa: old.ativa||false, lista };
+    etapas['medicao'] = { status:old.status||'pending', ativa:old.ativa||false, lista };
   }
 
   return { etapas };
 }
+
+function _migrateObraToV4(obra) {
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  const hoje = new Date().toISOString().slice(0,10);
+  const blank = () => ({status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]});
+
+  // Proposta: add elaboracao and analise_cliente if missing
+  if (etapas.proposta?.subEtapas) {
+    if (!etapas.proposta.subEtapas.elaboracao) {
+      // Insert elaboracao as done (old obras already had envio)
+      etapas.proposta.subEtapas.elaboracao = {...blank(), status: etapas.proposta.subEtapas.envio ? 'done' : 'pending'};
+    }
+    if (!etapas.proposta.subEtapas.analise_cliente) {
+      etapas.proposta.subEtapas.analise_cliente = {...blank()};
+    }
+  }
+
+  // Contrato: add elaboracao and analise_cliente if missing
+  if (etapas.contrato?.subEtapas) {
+    if (!etapas.contrato.subEtapas.elaboracao) {
+      etapas.contrato.subEtapas.elaboracao = {...blank(), status: etapas.contrato.subEtapas.em_analise ? 'done' : 'pending'};
+    }
+    if (!etapas.contrato.subEtapas.analise_cliente) {
+      etapas.contrato.subEtapas.analise_cliente = {...blank()};
+    }
+  }
+
+  return { etapas };
+}
+
 
 // ── Init estrutura etapas ─────────────────────────────────────────────────────
 function initObraEtapas(dataFechamento) {
@@ -195,6 +221,7 @@ let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='';
 let _ordenacao='recente';
 let _filtroPeriodoDe='', _filtroPeriodoAte='';
 let _filtroMinhasPendencias=false;
+let _filtroUsuarioPendencia=''; // username do usuário visualizado (vazio = currentUser)
 let _paginaAtual=0;
 let _obrasPorPagina=parseInt(localStorage.getItem('comercial-per-page')||'12');
 
@@ -211,7 +238,7 @@ function setObrasPorPagina(val){ _obrasPorPagina=parseInt(val); localStorage.set
 function irParaPagina(p)       { _paginaAtual=p; renderObras(); window.scrollTo({top:0,behavior:'smooth'}); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 async function migrateObras() {
   try {
@@ -226,6 +253,7 @@ async function migrateObras() {
         let migrated = data;
         if (ver < 2) migrated = {...migrated, ..._migrateObraToV2(migrated)};
         if (ver < 3) migrated = {...migrated, ..._migrateObraToV3(migrated)};
+        if (ver < 4) migrated = {...migrated, ..._migrateObraToV4(migrated)};
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch(e) {
@@ -440,12 +468,13 @@ function renderObras() {
     });
   }
   if (_filtroMinhasPendencias) {
+    const alvo = _filtroUsuarioPendencia || currentUser.username;
     lista = lista.filter(obra => {
       if (obra.concluida) return false;
       return ETAPAS_ORDER.some(etapaId => {
-        const e=obra.etapas?.[etapaId];const cfg=ETAPAS_CONFIG[etapaId]; if(!e?.ativa) return false;
-        if(cfg.isLista) return (e.lista||[]).some(item=>Object.values(item.subEtapas||{}).some(s=>s.status!=='done'&&s.responsavel===currentUser.username));
-        return Object.values(e.subEtapas||{}).some(sub=>sub.status!=='done'&&sub.responsavel===currentUser.username);
+        const e=obra.etapas?.[etapaId]; const cfg=ETAPAS_CONFIG[etapaId]; if(!e?.ativa) return false;
+        if(cfg.isLista) return (e.lista||[]).some(item=>Object.values(item.subEtapas||{}).some(s=>s.status!=='done'&&s.responsavel===alvo));
+        return Object.values(e.subEtapas||{}).some(sub=>sub.status!=='done'&&sub.responsavel===alvo);
       });
     });
   }
@@ -769,9 +798,10 @@ function renderObraModal(obra) {
       const subRevisoes=(subData.revisoes||[]);
 
       // Badge responsável na sub-etapa
+      const _alvoDestaque = _filtroUsuarioPendencia || currentUser?.username;
       const respBadge = subData.responsavel
-        ? subData.responsavel===currentUser?.username
-          ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.62rem;font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Você</span>`
+        ? subData.responsavel===_alvoDestaque
+          ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.62rem;font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${subData.responsavel===currentUser?.username?'Você':subData.responsavel}</span>`
           : `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.62rem;font-weight:600;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${subData.responsavel}</span>`
         : '';
 
@@ -814,9 +844,10 @@ function renderObraModal(obra) {
       const dropId=`acao-sub-${etapaId}-${subCfg.id}`;
       const resp=subData.responsavel||'';
       const _menuItems=[
-        canConcluir?`<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
         canIniciarSub?`<button class="acao-item concluir" data-action="iniciar-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>`:'',
-        canRevisaoSub?`<button class="acao-item revisao" data-action="revisao" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg> Revisão${subRevisoes.length?' ('+subRevisoes.length+')':''}</button>`:'',
+        subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>`:'',
+        subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>`:'',
+        !subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
         canProrrogar?`<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>`:'',
         `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${resp||'Atribuir'}</button>`,
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
@@ -844,6 +875,7 @@ function renderObraModal(obra) {
       <div class="etapa-content">
         <div class="etapa-nome" style="${etapaStatus==='active'?`color:${cor};`:''}" title="${(eData.observacoes||[]).length} observação(ões)">
           ${cfg.nome}
+          ${(eData.revisoes||[]).length>0?`<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>`:''}
           ${cfg.opcional?'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>':''}
           ${canIniciar?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
           ${!obra.concluida&&etapaStatus!=='done'?`
@@ -853,7 +885,7 @@ function renderObraModal(obra) {
                 Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               <div id="acao-etapa-${etapaId}" class="acao-dropdown-menu" style="display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:155px;overflow:hidden;">
-                ${canRevisao?`<button class="acao-item revisao" data-action="revisao-etapa" data-obra="${obra.id}" data-etapa="${etapaId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg> Revisão</button>`:''}
+
                 <button class="acao-item" data-action="obs-etapa" data-obra="${obra.id}" data-etapa="${etapaId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
                 <button class="acao-item" data-action="pular-etapa" data-obra="${obra.id}" data-etapa="${etapaId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg> Pular</button>
               </div>
@@ -907,6 +939,87 @@ function _renderObraFooter(obra, canAdmin) {
   }
 }
 
+
+
+// ── Concluir com data retroativa ─────────────────────────────────────────────
+let _conclObraId=null, _conclEtapaId=null, _conclSubId=null, _conclItemId=null;
+
+function concluirSubEtapaComData(obraId, etapaId, subId, itemId) {
+  _conclObraId=obraId; _conclEtapaId=etapaId; _conclSubId=subId; _conclItemId=itemId||null;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(cfg.subEtapas||cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  const titleEl=document.getElementById('concl-modal-title');
+  if(titleEl) titleEl.textContent=`Concluir — ${cfg.nome} · ${subCfg?.nome||subId}`;
+  const input=document.getElementById('concl-data-input');
+  if(input){
+    const hoje=new Date(), min7=new Date(hoje);
+    min7.setDate(min7.getDate()-7);
+    input.max=hoje.toISOString().slice(0,10);
+    input.min=min7.toISOString().slice(0,10);
+    input.value=hoje.toISOString().slice(0,10);
+  }
+  document.getElementById('concl-modal').style.display='flex';
+}
+function closeConclModal(){ document.getElementById('concl-modal').style.display='none'; _conclObraId=_conclEtapaId=_conclSubId=_conclItemId=null; }
+async function saveConclData(){
+  const data=document.getElementById('concl-data-input')?.value;
+  if(!data){showComercialToast('Selecione uma data.','error');return;}
+  // Capturar IDs ANTES de fechar o modal (closeConclModal zeraria os IDs)
+  const obraId=_conclObraId, etapaId=_conclEtapaId, subId=_conclSubId, itemId=_conclItemId;
+  closeConclModal();
+  if(itemId) {
+    await _concluirSubDeLista(obraId,etapaId,itemId,subId,null,data);
+  } else {
+    await _concluirComTipo(obraId,etapaId,subId,null,data);
+  }
+}
+
+// ── Aprovado / Recusado ───────────────────────────────────────────────────────
+let _arObraId=null, _arEtapaId=null, _arSubId=null;
+
+function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
+  if(tipo==='aprovado') {
+    concluirSubEtapaComData(obraId, etapaId, subId);
+  } else {
+    _arObraId=obraId; _arEtapaId=etapaId; _arSubId=subId;
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const subCfg=(cfg.subEtapas||[]).find(s=>s.id===subId);
+    const titleEl=document.getElementById('recusa-modal-title');
+    if(titleEl) titleEl.textContent=`Recusado — ${cfg.nome} · ${subCfg?.nome||subId}`;
+    const input=document.getElementById('recusa-justificativa');
+    if(input) input.value='';
+    document.getElementById('recusa-modal').style.display='flex';
+  }
+}
+function closeRecusaModal(){ document.getElementById('recusa-modal').style.display='none'; _arObraId=_arEtapaId=_arSubId=null; }
+async function saveRecusa(){
+  const just=document.getElementById('recusa-justificativa')?.value.trim();
+  if(!just){showComercialToast('Justificativa obrigatória.','error');return;}
+  const obraId=_arObraId, etapaId=_arEtapaId, subId=_arSubId;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const cfg=ETAPAS_CONFIG[etapaId];
+  // Registrar revisão
+  if(!etapas[etapaId].revisoes) etapas[_arEtapaId].revisoes=[];
+  const revNum=etapas[etapaId].revisoes.length+1;
+  etapas[etapaId].revisoes.push({numero:revNum, motivo:`Recusado: ${just}`, data:hoje, por:currentUser.username});
+  // Reiniciar todas as sub-etapas
+  const subs=cfg.subEtapas||[];
+  subs.forEach((s,idx)=>{
+    if(!etapas[etapaId].subEtapas[s.id]) return;
+    etapas[etapaId].subEtapas[s.id].status=idx===0?'active':'pending';
+    etapas[etapaId].subEtapas[s.id].dataConclusao=null;
+    etapas[etapaId].subEtapas[s.id].motivoAtraso=null;
+    etapas[etapaId].subEtapas[s.id].tipoConclusao=null;
+    if(idx===0){etapas[etapaId].subEtapas[s.id].dataInicio=hoje;etapas[etapaId].subEtapas[s.id].dataLimite=s.dias?addDiasUteis(hoje,s.dias):null;}
+    else{etapas[etapaId].subEtapas[s.id].dataInicio=null;etapas[etapaId].subEtapas[s.id].dataLimite=null;}
+  });
+  etapas[etapaId].status='active';
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast(`REV.${revNum} registrada — etapa reiniciada ✅`,'success');
+  closeRecusaModal();
+}
 
 // ── Iniciar sub-etapa independente (Documentações) ───────────────────────────
 async function iniciarSubEtapa(obraId, etapaId, subId) {
@@ -1052,7 +1165,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
         const _resp = sub.responsavel||'';
         const _items = [
           subStatus==='active'?`<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
-          subStatus==='active'?`<button class="acao-item revisao" data-action="revisao" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg> Revisão</button>`:'',
+
           subStatus==='active'?`<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>`:'',
           `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_resp||'Atribuir'}</button>`,
           `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
@@ -1212,9 +1325,11 @@ function _initAcaoDelegate() {
     const resp   = btn.dataset.resp;
 
     switch(action) {
-      case 'concluir':       concluirSubEtapa(obraId, etapaId, subId); break;
+      case 'concluir':       concluirSubEtapaComData(obraId, etapaId, subId); break;
+      case 'aprovado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
+      case 'recusado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
       case 'iniciar-sub':    iniciarSubEtapa(obraId, etapaId, subId); break;
-      case 'concluir-lista': concluirSubEtapaDeLista(obraId, etapaId, itemId, subId); break;
+      case 'concluir-lista': concluirSubEtapaComData(obraId, etapaId, subId, itemId); break;
       case 'revisao':        openRevisaoModal(obraId, etapaId, subId, itemId); break;
       case 'prorrogar':      openProrrogarModal(obraId, etapaId, subId, itemId); break;
       case 'atribuir':       openAtribuirModal(obraId, etapaId, subId, resp?'reatribuir':'atribuir', itemId); break;
@@ -1242,9 +1357,9 @@ async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
   await _concluirSubDeLista(obraId, etapaId, itemId, subId, null);
 }
 let _tipoConclItemId=null;
-async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo) {
+async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom) {
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
-  const hoje=new Date().toISOString().slice(0,10);
+  const hoje=dataCustom||new Date().toISOString().slice(0,10);
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
   const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
   const cfg=ETAPAS_CONFIG[etapaId];
@@ -1282,21 +1397,26 @@ async function concluirSubEtapa(obraId, etapaId, subId) {
   await _concluirComTipo(obraId,etapaId,subId,null);
 }
 
-async function _concluirComTipo(obraId, etapaId, subId, tipo) {
+async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
-  const hoje=new Date().toISOString().slice(0,10);
+  const hoje=dataCustom||new Date().toISOString().slice(0,10);
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
   const cfg=ETAPAS_CONFIG[etapaId];
-  const subCfg=cfg.subEtapas?.find(s=>s.id===subId)||(cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  const subEtapasArr = cfg.subEtapas || [];
+  const subCfg=subEtapasArr.find(s=>s.id===subId)||(cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
   etapas[etapaId].subEtapas[subId].status='done';
   etapas[etapaId].subEtapas[subId].dataConclusao=hoje;
   etapas[etapaId].subEtapas[subId].concluidoPor=currentUser.username;
   if (tipo) etapas[etapaId].subEtapas[subId].tipoConclusao=tipo;
-  const subIdx=cfg.subEtapas.findIndex(s=>s.id===subId);
-  const proxSub=cfg.subEtapas[subIdx+1];
+  const subIdx=subEtapasArr.findIndex(s=>s.id===subId);
+  const proxSub=subEtapasArr[subIdx+1];
   // Sub-etapas independentes (Documentações): não ativar a próxima automaticamente
   const isIndSub = subCfg?.isIndependente || cfg.isIndependente;
   if (proxSub && !isIndSub) {
+    // Análise do cliente aprovada → avança para assinatura
+    if (!etapas[etapaId].subEtapas[proxSub.id]) {
+      etapas[etapaId].subEtapas[proxSub.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]};
+    }
     etapas[etapaId].subEtapas[proxSub.id].status='active';
     etapas[etapaId].subEtapas[proxSub.id].dataInicio=hoje;
     etapas[etapaId].subEtapas[proxSub.id].dataLimite=calcDataLimite(proxSub,etapas,obra.dataFechamento);
@@ -1304,10 +1424,9 @@ async function _concluirComTipo(obraId, etapaId, subId, tipo) {
     showComercialToast(`"${proxSub.nome}" liberada! ✅`,'success');
   } else if (isIndSub || !proxSub) {
     // Independente ou última sub: verificar se todas as sub-etapas da etapa estão done
-    const todasSubDone = cfg.subEtapas.every(s => etapas[etapaId].subEtapas[s.id]?.status==='done');
+    const todasSubDone = subEtapasArr.every(s => etapas[etapaId].subEtapas[s.id]?.status==='done');
     if (todasSubDone) etapas[etapaId].status='done';
     else etapas[etapaId].status='active';
-    // Verificar conclusão geral da obra
     const todasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
     if (todasSubDone && todasDone) {
       await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
@@ -1447,7 +1566,8 @@ function closeProrrogarModal() {
 async function saveProrrogacao() {
   const novaData=document.getElementById('prorrogar-data-input')?.value;
   if(!novaData){showComercialToast('Selecione uma data válida.','error');return;}
-  // Validar que não é retroativa
+  const justProrroga=document.getElementById('prorrogar-justificativa')?.value.trim();
+  if(!justProrroga){showComercialToast('Informe a justificativa da prorrogação.','error');return;}
   const hoje=new Date().toISOString().slice(0,10);
   if(novaData<=hoje){showComercialToast('A data deve ser futura.','error');return;}
   const obra=_obras.find(o=>o.id===_prorrogarObraId); if(!obra) return;
@@ -1458,6 +1578,7 @@ async function saveProrrogacao() {
   ref.sub.prorrogadoPor=currentUser.username;
   ref.sub.prorrogadoEm=hoje;
   ref.sub.diasProrrogados=(ref.sub.diasProrrogados||0)+1;
+  ref.sub.prorrogacaoJustificativa=justProrroga;
   await db.collection('obras').doc(_prorrogarObraId).update({etapas});
   showComercialToast(`Prazo atualizado para ${new Date(novaData+'T12:00:00').toLocaleDateString('pt-BR')}! ✅`,'success');
   closeProrrogarModal();
@@ -2043,14 +2164,15 @@ function toggleMinhasPendencias() {
   const wrap = document.getElementById('periodo-wrap');
 
   if (_dropdownAberto) {
-    // Fechar dropdown
     _dropdownAberto = false;
     if(wrap) wrap.style.display = 'none';
   } else {
-    // Abrir dropdown e ativar filtro
     _dropdownAberto = true;
     _filtroMinhasPendencias = true;
+    _filtroUsuarioPendencia = '';
     _paginaAtual = 0;
+    // Popular seletor de usuário se gestor
+    _atualizarSeletorUsuario();
     if(wrap) wrap.style.display = 'flex';
     renderObras();
   }
@@ -2068,8 +2190,38 @@ function toggleMinhasPendencias() {
   }
 }
 
+function _atualizarSeletorUsuario() {
+  const wrap = document.getElementById('pendencia-user-wrap');
+  if (!wrap) return;
+  const podeVer = currentUser?.canVerTodasPendencias || currentUser?.isSuperAdmin || currentUser?.role==='superAdmin' || currentUser?.role==='admin';
+  if (!podeVer) { wrap.style.display='none'; return; }
+  const allUsers = typeof users !== 'undefined' ? users : [];
+  const usrsComercial = allUsers.filter(u =>
+    u.isSuperAdmin ||
+    (u.acessos||[]).includes('adminComercial') ||
+    (u.acessos||[]).includes('comercial') ||
+    u.role==='admin' || u.role==='superAdmin'
+  );
+  const lista = usrsComercial.length > 0 ? usrsComercial : allUsers;
+  const opts = lista.map(u => `<option value="${u.username}"${u.username===currentUser.username?' selected':''}>${u.username}${u.username===currentUser.username?' (você)':''}</option>`).join('');
+  const sel = document.getElementById('pendencia-user-sel');
+  if(sel) { sel.innerHTML=opts; wrap.style.display='flex'; }
+}
+
+function setPendenciaUsuario(val) {
+  _filtroUsuarioPendencia = val===currentUser.username ? '' : val;
+  _paginaAtual=0;
+  renderObras();
+  // Atualizar label do botão
+  const btn=document.getElementById('btn-minhas-pendencias');
+  if(btn && _filtroUsuarioPendencia){
+    btn.style.background='var(--accent)';
+    btn.style.color='#fff';
+  }
+}
+
 function limparPeriodo() {
-  _filtroPeriodoDe=''; _filtroPeriodoAte='';
+  _filtroPeriodoDe=''; _filtroPeriodoAte=''; _filtroUsuarioPendencia='';
   const de=document.getElementById('periodo-de'), ate=document.getElementById('periodo-ate');
   if(de) de.value=''; if(ate) ate.value='';
   // Desativar filtro e fechar dropdown

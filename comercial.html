@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão T.I — Comercial</title>
+  <title>Gestão T.I — Configurações</title>
   <link rel="icon" href="img/premovale (1).png">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <script>
-    (function(){try{const s=localStorage.getItem('premovale-theme');const p=window.matchMedia('(prefers-color-scheme: dark)').matches;if(s==='dark'||(!s&&p))document.documentElement.classList.add('dark-mode');}catch(e){}})();
+    /* Anti-flash: aplica tema ANTES do primeiro pixel ser renderizado */
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
   </script>
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/layout.css">
   <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
   <link rel="stylesheet" href="assets/css/modals.css">
   <link rel="stylesheet" href="assets/css/configuracoes.css">
-  <link rel="stylesheet" href="assets/css/comercial.css">
 </head>
+
 <body>
 
   <!-- ══ NAVBAR ══ -->
   <nav>
-    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;" title="Menu Principal">
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;"
+      title="Voltar ao Menu Principal">
       <img src="img/premovale (1).png" width="30px" height="30px">
       <span class="nav-title">
         <span class="nav-title-ti">T.I</span>
@@ -29,32 +43,63 @@
       </span>
     </div>
 
+    <!-- Timer de sessão -->
     <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
       <div style="display:flex;align-items:center;gap:0.4rem;">
-        <span style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
-        <span id="session-countdown" style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+        <span style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);
+          text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown" style="font-size:0.75rem;font-family:'Space Mono',monospace;
+          font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
       </div>
-      <div id="session-bar-track" style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
-        <div id="session-bar-fill" style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;"></div>
+      <div id="session-bar-track"
+        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill" style="height:100%;width:100%;border-radius:2px;
+          background:var(--accent);transition:width 1s linear,background 0.3s;"></div>
       </div>
     </div>
 
     <div class="nav-right">
+
+      <!-- Ramais -->
       <div style="position:relative;display:inline-block;" id="ramais-wrapper">
-        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais" style="gap:0.4rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z"/></svg> Ramais
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
+          style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
         </button>
         <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
       </div>
-      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
-        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41"/></svg></span>
-        <div style="position:relative;width:28px;height:16px;background:var(--surface3);border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
-          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;"></div>
+
+      <!-- Switch Tema -->
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;
+          background:var(--surface2);border:1px solid var(--border2);border-radius:20px;
+          padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+          </svg></span>
+        <div style="position:relative;width:28px;height:16px;background:var(--surface3);
+          border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;
+              background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;"></div>
         </div>
-        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+          </svg></span>
       </div>
-      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase" style="display:none;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Firebase
+      <!-- Firebase — só superadmin -->
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
       </button>
     </div>
   </nav>
@@ -64,18 +109,32 @@
 
     <!-- SIDEBAR -->
     <aside class="chamados-sidebar" id="chamados-sidebar">
-      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()" title="Recolher/Expandir menu">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()"
+        title="Recolher/Expandir menu">
         <span id="sidebar-toggle-icon">‹</span>
       </button>
+
       <div class="chamados-sidebar-items">
         <span class="chamados-sidebar-label">Módulos</span>
 
-        <!-- T.I -->
+        <!-- ── MÓDULO PAI: T.I ── -->
         <div class="mod-pai-wrap" id="mod-pai-ti">
-          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-ti-btn" onclick="toggleModPai('ti')" title="T.I">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-ti-btn"
+            onclick="toggleModPai('ti')" title="T.I">
+            <span class="chamados-sidebar-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="12" x="3" y="4" rx="2"/>
+                <path d="M8 20h8M12 16v4"/>
+              </svg>
+            </span>
             <span class="chamados-sidebar-name">T.I</span>
-            <span class="mod-pai-chevron" id="mod-pai-ti-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+            <span class="mod-pai-chevron" id="mod-pai-ti-chevron">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </span>
           </button>
           <div class="mod-pai-submenu" id="mod-pai-ti-submenu">
             <a class="mod-sub-item" href="index.html" id="sub-chamados">
@@ -83,7 +142,7 @@
               <span>Chamados</span>
             </a>
             <a class="mod-sub-item" href="materiais.html" id="sub-materiais" style="display:none;">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg></span>
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></svg></span>
               <span>Materiais</span>
             </a>
             <a class="mod-sub-item" href="inventario.html" id="sub-inventario" style="display:none;">
@@ -97,25 +156,25 @@
           </div>
         </div>
 
-        <!-- Engenharia -->
+        <!-- ── MÓDULO PAI: Engenharia (Em breve) ── -->
         <div class="mod-pai-wrap">
           <span class="chamados-sidebar-item mod-pai-btn mod-pai-soon" title="Engenharia — Em breve">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg></span>
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg></span>
             <span class="chamados-sidebar-name">Engenharia</span>
             <span class="chamados-sidebar-soon">Em breve</span>
           </span>
         </div>
 
-        <!-- Comercial -->
+        <!-- ── MÓDULO PAI: Comercial ── -->
         <div class="mod-pai-wrap" id="mod-pai-comercial">
           <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-comercial-btn"
             onclick="toggleModPai('comercial')" title="Comercial" style="display:none;">
             <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
             <span class="chamados-sidebar-name">Comercial</span>
-            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
           </button>
           <div class="mod-pai-submenu" id="mod-pai-comercial-submenu">
-            <a class="mod-sub-item active" href="comercial.html" id="sub-comercial">
+            <a class="mod-sub-item" href="comercial.html" id="sub-comercial">
               <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
               <span>Controle de Obras</span>
             </a>
@@ -123,532 +182,236 @@
         </div>
 
         <div class="chamados-sidebar-divider"></div>
-        <a class="chamados-sidebar-item" href="menu.html" title="Menu Principal">
-          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+
+        <a class="chamados-sidebar-item" href="menu.html">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg></span>
           <span class="chamados-sidebar-name">Menu Principal</span>
         </a>
 
+        <!-- Rodapé fixo no fundo -->
         <div class="chamados-sidebar-footer">
           <div class="chamados-sidebar-divider"></div>
-          <a class="chamados-sidebar-item" href="configuracoes.html" id="sidebar-config-btn" style="display:none;">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+          <a class="chamados-sidebar-item active" href="configuracoes.html" title="Configurações">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg></span>
             <span class="chamados-sidebar-name">Configurações</span>
           </a>
           <div class="chamados-sidebar-user">
-            <div class="chamados-sidebar-avatar" id="cs-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-avatar" id="config-sidebar-avatar">?</div>
             <div class="chamados-sidebar-user-info">
-              <span class="chamados-sidebar-user-name" id="cs-sidebar-name">—</span>
-              <span class="chamados-sidebar-user-role" id="cs-sidebar-role">—</span>
+              <span class="chamados-sidebar-user-name" id="config-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="config-sidebar-role">—</span>
             </div>
           </div>
-          <button class="chamados-sidebar-logout" onclick="performLogout()">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></span>
+          <button class="chamados-sidebar-logout" onclick="configLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" x2="9" y1="12" y2="12" />
+              </svg></span>
             <span class="chamados-sidebar-name">Sair do sistema</span>
           </button>
         </div>
       </div>
     </aside>
 
-    <!-- CONTEÚDO -->
-    <main class="config-main">
-      <div style="padding:2rem 2.5rem;">
-
-        <!-- Header -->
-        <div class="comercial-header">
-          <div>
-            <div class="comercial-header-title">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-              Controle de Obras
-            </div>
-            <div style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);margin-top:0.2rem;">
-              // Pós-fechamento — <span id="obras-counter">0 obras</span>
-            </div>
-          </div>
-          <div style="display:flex;gap:0.5rem;align-items:center;">
-            <button class="btn-secondary" onclick="openRelatorioModal()" style="display:flex;align-items:center;gap:0.5rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-              Relatório
-            </button>
-            <button class="btn-primary" onclick="openNovaObraModal()" style="display:flex;align-items:center;gap:0.5rem;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Nova Obra
-            </button>
-          </div>
+    <!-- ÁREA PRINCIPAL -->
+    <div class="config-main">
+      <div class="config-header">
+        <div class="config-header-title" style="display:flex;align-items:center;gap:7px;"><svg width="14" height="14"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+            <path
+              d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg> Configurações</div>
+        <div class="config-header-sub">// Gerenciamento do sistema</div>
+        <div class="config-tabs">
+          <button class="config-tab active" data-tab="usuarios" onclick="openTab('usuarios')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg> Usuários
+          </button>
+          <button class="config-tab" data-tab="setores" onclick="openTab('setores')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+              <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+              <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+              <path d="M10 6h4" />
+              <path d="M10 10h4" />
+              <path d="M10 14h4" />
+              <path d="M10 18h4" />
+            </svg> Setores
+          </button>
+          <button class="config-tab" data-tab="acessos" onclick="openTab('acessos')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg> Acessos
+          </button>
+          <button class="config-tab" data-tab="templates" onclick="openTab('templates')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+              <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+              <path d="M8 13h8" />
+              <path d="M8 17h5" />
+            </svg> Templates
+          </button>
+          <button class="config-tab" data-tab="administracao" onclick="openTab('administracao')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg> Administração
+          </button>
         </div>
+      </div>
 
-        <!-- Filtros -->
-        <div class="comercial-filters">
-          <input type="text" placeholder="🔍 Buscar por nº, nome ou representante..."
-            oninput="setFiltroBusca(this.value)"
-            style="padding:0.45rem 0.75rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;min-width:260px;flex:1;">
-          <select onchange="setFiltroRep(this.value)">
-            <option value="">Todos os representantes</option>
-            <option value="Verdile">Verdile</option>
-            <option value="Ricardo">Ricardo</option>
-            <option value="Sebastião">Sebastião</option>
-            <option value="Ângelo">Ângelo</option>
-            <option value="Sérgio">Sérgio</option>
-            <option value="Matheus">Matheus</option>
-            <option value="Henrique">Henrique</option>
-            <option value="Flávio">Flávio</option>
-            <option value="Gazzo">Gazzo</option>
-          </select>
-          <select onchange="setFiltroEtapa(this.value)">
-            <option value="">Todas as etapas</option>
-            <option value="proposta">Proposta Consolidada</option>
-            <option value="contrato">Contrato</option>
-            <option value="documentacoes">Documentações</option>
-            <option value="aditivos">Aditivos / Termo</option>
-            <option value="medicao">Medição</option>
-            <option value="concluida">Concluída</option>
-          </select>
-          <select onchange="setFiltroEtapaAtraso(this.value)">
-            <option value="">Sem filtro de atraso</option>
-            <option value="proposta">Proposta atrasada</option>
-            <option value="contrato">Contrato atrasado</option>
-            <option value="documentacoes">Documentações atrasada</option>
-            <option value="aditivos">Aditivos atrasados</option>
-            <option value="medicao">Medição atrasada</option>
-          </select>
-          <div style="display:flex;align-items:center;gap:0.4rem;">
-            <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Fechamento de</label>
-            <input type="date" onchange="setFiltroDataDe(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
-          </div>
-          <div style="display:flex;align-items:center;gap:0.4rem;">
-            <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">até</label>
-            <input type="date" onchange="setFiltroDataAte(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
-          </div>
-          <div style="position:relative;">
-            <button id="btn-minhas-pendencias" onclick="toggleMinhasPendencias()" class="btn-secondary"
-              style="white-space:nowrap;display:flex;align-items:center;gap:0.4rem;background:var(--surface);border-color:var(--border2);">
-              📌 Minhas Pendências
-            </button>
-            <div id="periodo-wrap" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px #00000018;padding:1rem;min-width:280px;flex-direction:column;gap:0.65rem;">
-              <div style="font-size:0.7rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Filtrar por período</div>
-              <div style="display:flex;flex-direction:column;gap:0.4rem;">
-                <div style="display:flex;align-items:center;gap:0.5rem;">
-                  <label style="font-size:0.75rem;color:var(--muted);min-width:30px;">De</label>
-                  <input type="date" id="periodo-de" onchange="setFiltroPeriodoDe(this.value)"
-                    style="flex:1;padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;">
+      <div class="config-content">
+
+        <!-- ══ PAINEL USUÁRIOS ══ -->
+        <div class="config-panel active" id="panel-usuarios">
+          <!-- Lista de usuários -->
+          <div id="config-user-list-section">
+            <div class="config-users-header">
+              <span class="config-users-title">Usuários cadastrados</span>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div style="position:relative;">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                  <input type="text" id="config-user-search" class="form-input" placeholder="Buscar usuário..."
+                    oninput="filterConfigUsers(this.value)"
+                    style="padding-left:28px;height:34px;font-size:0.8rem;width:200px;">
                 </div>
-                <div style="display:flex;align-items:center;gap:0.5rem;">
-                  <label style="font-size:0.75rem;color:var(--muted);min-width:30px;">Até</label>
-                  <input type="date" id="periodo-ate" onchange="setFiltroPeriodoAte(this.value)"
-                    style="flex:1;padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;">
-                </div>
+                <button class="config-new-user-btn" onclick="showNewUserForm()">+ Novo Usuário</button>
               </div>
-              <button onclick="limparPeriodo()"
-                style="width:100%;padding:0.35rem;font-size:0.75rem;background:none;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-family:var(--font-display);transition:all 0.15s;"
-                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-                onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
-                Limpar período
-              </button>
+            </div>
+            <div class="config-user-list" id="config-user-list"></div>
+            <div class="config-users-pagination" id="config-users-pagination"></div>
+          </div>
+
+          <!-- Formulário de usuário -->
+        </div>
+
+        <!-- ══ PAINEL ACESSOS ══ -->
+        <div class="config-panel" id="panel-setores"></div>
+
+        <div class="config-panel" id="panel-acessos">
+          <div style="margin-bottom:1rem;">
+            <div style="font-size:0.88rem;font-weight:700;margin-bottom:0.25rem;">Permissões por módulo</div>
+            <div style="font-size:0.72rem;font-family:'Space Mono',monospace;color:var(--muted);">
+              Módulo "Chamados" é obrigatório e não pode ser desativado. SuperAdmin tem acesso total automático.
             </div>
           </div>
-          <select onchange="setOrdenacao(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
-            <option value="recente">Mais recente</option>
-            <option value="num-asc">Nº crescente</option>
-            <option value="num-desc">Nº decrescente</option>
-          </select>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
-            <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards por página</label>
-            <select id="per-page-select" onchange="setObrasPorPagina(this.value)" style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
-              <option value="6">6</option>
-              <option value="12" selected>12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
-            </select>
-          </div>
+          <table class="config-access-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                      <path d="M13 5v2" />
+                      <path d="M13 17v2" />
+                      <path d="M13 11v2" />
+                    </svg> Chamados</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+                      <path d="M12 22V12" />
+                      <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" />
+                      <path d="m7.5 4.27 9 5.15" />
+                    </svg> Materiais</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path
+                        d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z" />
+                      <path d="m7 16.5-4.74-2.85" />
+                      <path d="m7 16.5 5-3" />
+                      <path d="M7 16.5v5.17" />
+                      <path
+                        d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z" />
+                      <path d="m17 16.5-5-3" />
+                      <path d="m17 16.5 4.74-2.85" />
+                      <path d="M17 16.5v5.17" />
+                      <path
+                        d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z" />
+                      <path d="M12 8 7.26 5.15" />
+                      <path d="m12 8 4.74-2.85" />
+                      <path d="M12 13.5V8" />
+                    </svg> Inventário</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path d="m3 11 18-5v12L3 14v-3z" />
+                      <path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+                    </svg> Publicar Comunicados</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/>
+                      <path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>
+                    </svg> Rotinas</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <rect width="20" height="14" x="2" y="7" rx="2"/>
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                    </svg> Comercial</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <rect width="20" height="14" x="2" y="7" rx="2"/>
+                      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                      <circle cx="17" cy="7" r="3" fill="currentColor" stroke="none" opacity="0.6"/>
+                    </svg> Admin Comercial</span></th>
+                <th style="padding:0.4rem 0.6rem;"><span style="display:inline-flex;align-items:center;gap:5px;"><svg
+                      width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg> Ver Pendências de Todos</span></th>
+              </tr>
+            </thead>
+            <tbody id="access-tbody"></tbody>
+          </table>
         </div>
 
-        <!-- Grid -->
-        <div class="obras-grid" id="obras-grid">
-          <div class="obras-empty">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-            <h3>Carregando obras...</h3>
-          </div>
-        </div>
+        <div class="config-panel" id="panel-templates"></div>
 
-        <!-- Paginação -->
-        <div id="obras-paginacao" style="display:none;align-items:center;justify-content:space-between;margin-top:1.25rem;flex-wrap:wrap;gap:0.75rem;"></div>
+        <!-- ══ PAINEL FIREBASE ══ -->
+        <div class="config-panel" id="panel-administracao"></div>
 
-      </div>
-    </main>
-  </div>
-
-  <!-- ══ MODAL NOVA OBRA ══ -->
-  <div id="nova-obra-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(500px,95vw);box-shadow:0 20px 60px #00000030;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nova Obra
-        </div>
-        <button onclick="closeNovaObraModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <form id="nova-obra-form" style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;" onsubmit="event.preventDefault();saveNovaObra();">
-        <div style="display:grid;grid-template-columns:120px 1fr;gap:0.75rem;">
-          <div>
-            <label class="form-label">Nº da Obra <span style="color:var(--accent);">*</span></label>
-            <input type="number" id="nova-obra-numero" class="form-input" placeholder="Ex: 247" min="1" max="99999" style="width:100%;margin-top:0.25rem;" required oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
-          </div>
-          <div>
-            <label class="form-label">Nome da Obra <span style="color:var(--accent);">*</span></label>
-            <input type="text" id="nova-obra-nome" class="form-input" placeholder="Ex: Residencial São Paulo" style="width:100%;margin-top:0.25rem;" required>
-          </div>
-        </div>
-        <div>
-          <label class="form-label">Representante Responsável <span style="color:var(--accent);">*</span></label>
-          <select id="nova-obra-rep" class="form-input" style="width:100%;margin-top:0.25rem;" required>
-            <option value="">Selecione...</option>
-            <option>Verdile</option>
-            <option>Ricardo</option>
-            <option>Sebastião</option>
-            <option>Ângelo</option>
-            <option>Sérgio</option>
-            <option>Matheus</option>
-            <option>Henrique</option>
-            <option>Flávio</option>
-            <option>Gazzo</option>
-          </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;align-items:end;">
-          <div>
-            <label class="form-label">Data de Fechamento <span style="color:var(--accent);">*</span></label>
-            <input type="date" id="nova-obra-fechamento" class="form-input" style="width:100%;margin-top:0.25rem;" required>
-          </div>
-          <div>
-            <label class="form-label">Prazo estimado de finalização <span style="color:var(--accent);">*</span></label>
-            <input type="date" id="nova-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;" required>
-          </div>
-        </div>
-        <div>
-          <label class="form-label">Observações</label>
-          <textarea id="nova-obra-obs" class="form-input" rows="2" placeholder="Informações adicionais..." style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
-        </div>
-        <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.5rem;border-top:1px solid var(--border2);">
-          <button type="button" class="btn-secondary" onclick="closeNovaObraModal()">Cancelar</button>
-          <button type="submit" class="btn-primary" id="btn-save-nova-obra">Cadastrar Obra</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ══ MODAL DETALHES DA OBRA ══ -->
-  <div class="obra-modal-overlay" id="obra-modal-overlay" onclick="if(event.target===this)closeObraModal()">
-    <div class="obra-modal">
-      <div class="obra-modal-header">
-        <div class="obra-modal-numero" id="obra-modal-numero"></div>
-        <div class="obra-modal-nome" id="obra-modal-nome"></div>
-        <div class="obra-modal-meta" id="obra-modal-meta"></div>
-      </div>
-      <div class="obra-modal-body">
-        <div style="font-size:0.65rem;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:1rem;">Progresso das Etapas</div>
-        <div class="etapas-timeline" id="obra-timeline"></div>
-      </div>
-      <div class="obra-modal-footer" id="obra-modal-footer"></div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL EDITAR OBRA ══ -->
-  <div id="editar-obra-modal" style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(500px,95vw);box-shadow:0 20px 60px #00000030;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Editar Obra
-        </div>
-        <button onclick="closeEditarObraModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:0.25rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
-        <div style="display:grid;grid-template-columns:120px 1fr;gap:0.75rem;">
-          <div>
-            <label class="form-label">Nº da Obra</label>
-            <input type="text" id="editar-obra-numero" class="form-input" style="width:100%;margin-top:0.25rem;">
-          </div>
-          <div>
-            <label class="form-label">Nome da Obra <span style="color:var(--accent);">*</span></label>
-            <input type="text" id="editar-obra-nome" class="form-input" style="width:100%;margin-top:0.25rem;" required>
-          </div>
-        </div>
-        <div>
-          <label class="form-label">Representante Responsável</label>
-          <select id="editar-obra-rep" class="form-input" style="width:100%;margin-top:0.25rem;">
-            <option value="">Selecione...</option>
-            <option>Verdile</option><option>Ricardo</option><option>Sebastião</option>
-            <option>Ângelo</option><option>Sérgio</option><option>Matheus</option>
-            <option>Henrique</option><option>Flávio</option><option>Gazzo</option>
-          </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
-          <div>
-            <label class="form-label">Data de Fechamento</label>
-            <input type="date" id="editar-obra-fechamento" class="form-input" style="width:100%;margin-top:0.25rem;">
-          </div>
-          <div>
-            <label class="form-label">Prazo estimado</label>
-            <input type="date" id="editar-obra-prazo" class="form-input" style="width:100%;margin-top:0.25rem;">
-          </div>
-        </div>
-        <div>
-          <label class="form-label">Observações</label>
-          <textarea id="editar-obra-obs" class="form-input" rows="2" style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
-        </div>
-        <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding-top:0.5rem;border-top:1px solid var(--border2);">
-          <button class="btn-secondary" onclick="closeEditarObraModal()">Cancelar</button>
-          <button class="btn-primary" onclick="saveEditarObra()">Salvar Alterações</button>
-        </div>
       </div>
     </div>
   </div>
 
-  <!-- ══ MODAL RELATÓRIO ══ -->
-  <div id="relatorio-modal" style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeRelatorioModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(440px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:0.9rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          Gerar Relatório
-        </div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.25rem;">Obras com sub-etapas atrasadas ou prazo vencendo</div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
-        <div>
-          <label class="form-label">Representante</label>
-          <select id="rel-representante" class="form-input" style="width:100%;margin-top:0.25rem;">
-            <option value="">Todos os representantes</option>
-            <option>Verdile</option><option>Ricardo</option><option>Sebastião</option>
-            <option>Ângelo</option><option>Sérgio</option><option>Matheus</option>
-            <option>Henrique</option><option>Flávio</option><option>Gazzo</option>
-          </select>
-        </div>
-        <label style="display:flex;align-items:center;gap:0.6rem;font-size:0.82rem;cursor:pointer;">
-          <input type="checkbox" id="rel-todas" style="width:15px;height:15px;">
-          Incluir todas as obras ativas (não apenas atrasadas)
-        </label>
-        <div style="font-size:0.72rem;color:var(--muted);padding:0.5rem 0.75rem;background:var(--surface2);border-radius:6px;">
-          O relatório inclui: Nº da obra, nome, cidade/UF, representante, etapa, sub-etapa, status e data limite
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeRelatorioModal()" style="flex:1;">Cancelar</button>
-        <button class="btn-secondary" onclick="exportarRelatorioXLS()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          XLS
-        </button>
-        <button class="btn-primary" onclick="exportarRelatorioPDF()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          PDF
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL TIPO CONCLUSÃO ══ -->
-  <div id="tipo-conclusao-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(400px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:0.9rem;font-weight:700;">Como foi concluído?</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">Selecione o tipo de conclusão para registrar corretamente</div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.6rem;">
-        <button onclick="salvarTipoConclusao('Assinado')" class="proxima-etapa-btn" style="border-color:#22c55e;color:#166534;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M20 6 9 17l-5-5"/></svg>
-          <div>
-            <div style="font-weight:700;">Assinado</div>
-            <div style="font-size:0.72rem;opacity:0.8;">Documento formalmente assinado pelo cliente</div>
-          </div>
-        </button>
-        <button onclick="salvarTipoConclusao('Aprovado sem assinatura')" class="proxima-etapa-btn" style="border-color:#f59e0b;color:#92400e;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14Z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-          <div>
-            <div style="font-weight:700;">Aprovado sem assinatura</div>
-            <div style="font-size:0.72rem;opacity:0.8;">Aprovação formal ou verbal sem assinatura</div>
-          </div>
-        </button>
-      </div>
-      <div style="padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="document.getElementById('tipo-conclusao-modal').style.display='none'" style="width:100%;">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL PRORROGAR SUB-ETAPA ══ -->
-  <div id="prorrogar-modal" style="display:none;position:fixed;inset:0;z-index:1050;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeProrrogarModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="prorrogar-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
-        <div id="prorrogar-modal-info" style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Nova data limite <span style="color:var(--accent);">*</span></label>
-        <input type="date" id="prorrogar-data-input" class="form-input"
-          style="width:100%;margin-top:0.4rem;"
-          onkeydown="if(event.key==='Enter')saveProrrogacao()">
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">
-          A data de fechamento da obra permanece imutável. Apenas o prazo desta sub-etapa será estendido.
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeProrrogarModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveProrrogacao()">+ Prorrogar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL REVISÃO ══ -->
-  <div class="revisao-mini-modal" id="revisao-mini-modal" onclick="if(event.target===this)closeRevisaoModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(440px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="revisao-modal-title" style="font-size:0.88rem;font-weight:700;"></div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Registre o motivo da revisão — ficará na timeline da etapa</div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Motivo da revisão <span style="color:var(--accent);">*</span></label>
-        <textarea id="revisao-motivo-input" class="form-input" rows="3"
-          placeholder="Descreva o motivo da solicitação de revisão..."
-          style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeRevisaoModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveRevisao()">Registrar Revisão</button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ══ MODAL EXCLUIR ITEM ══ -->
-  <div id="excluir-item-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeExcluirItemModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(400px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div style="font-size:0.9rem;font-weight:700;color:#ef4444;display:flex;align-items:center;gap:0.5rem;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          Excluir item
-        </div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <p style="font-size:0.85rem;margin:0;">Tem certeza que deseja excluir <strong id="excluir-item-titulo"></strong>?</p>
-        <p style="font-size:0.78rem;color:var(--muted);margin:0.5rem 0 0;">Esta ação não pode ser desfeita. Todas as sub-etapas e observações serão perdidas.</p>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeExcluirItemModal()">Cancelar</button>
-        <button class="btn-primary" onclick="confirmarExcluir()" style="background:#ef4444;border-color:#ef4444;">Excluir</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL ADICIONAR ITEM (aditivo/medição) ══ -->
-  <div id="add-item-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeAddItemModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="add-item-title" style="font-size:0.9rem;font-weight:700;"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
-        <div>
-          <label class="form-label">Título <span style="color:var(--accent);">*</span></label>
-          <input type="text" id="add-item-nome" class="form-input" style="width:100%;margin-top:0.25rem;">
-        </div>
-        <div>
-          <label class="form-label">Data prevista</label>
-          <input type="date" id="add-item-data" class="form-input" style="width:100%;margin-top:0.25rem;">
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeAddItemModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveAddItem()">Adicionar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL DATA PREVISTA ══ -->
-  <div id="dp-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeDataPrevistaModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(380px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="dp-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Data prevista <span style="color:var(--accent);">*</span></label>
-        <input type="date" id="dp-data-input" class="form-input" style="width:100%;margin-top:0.4rem;" onkeydown="if(event.key==='Enter')saveDataPrevista()">
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeDataPrevistaModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveDataPrevista()">Salvar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL MOTIVO DE ATRASO ══ -->
-  <div id="motivo-atraso-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeMotivoAtrasoModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="motivo-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Motivo do atraso <span style="color:var(--accent);">*</span></label>
-        <textarea id="motivo-input" class="form-input" rows="3" placeholder="Descreva o motivo do atraso..." style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeMotivoAtrasoModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveMotivoAtraso()">Registrar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL OBSERVAÇÃO ══ -->
-  <div id="obs-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeObsModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="obs-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;">
-        <label class="form-label">Observação <span style="color:var(--accent);">*</span></label>
-        <textarea id="obs-input" class="form-input" rows="3" placeholder="Digite a observação..." style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeObsModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveObs()">Registrar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL HISTÓRICO ══ -->
-  <div id="historico-modal" style="display:none;position:fixed;inset:0;z-index:1070;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeHistoricoModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(580px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:0.9rem;font-weight:700;">📋 Histórico da Obra</div>
-        <button onclick="closeHistoricoModal()" style="background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
-      </div>
-      <div id="historico-modal-body" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
-    </div>
-  </div>
-
-  <!-- ══ MODAL ATRIBUIÇÃO ══ -->
-  <div id="atrib-modal" style="display:none;position:fixed;inset:0;z-index:1060;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeAtribuirModal()">
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(440px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
-      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
-        <div id="atrib-modal-title" style="font-size:0.9rem;font-weight:700;"></div>
-      </div>
-      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.85rem;">
-        <div>
-          <label class="form-label">Responsável <span style="color:var(--accent);">*</span></label>
-          <select id="atrib-usuario-sel" class="form-input" style="width:100%;margin-top:0.25rem;"></select>
-        </div>
-        <div id="atrib-justificativa-wrap" style="display:none;">
-          <label class="form-label">Justificativa <span style="color:var(--accent);">*</span></label>
-          <textarea id="atrib-justificativa" class="form-input" rows="2" placeholder="Motivo da reatribuição..." style="width:100%;margin-top:0.25rem;resize:none;"></textarea>
-        </div>
-      </div>
-      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
-        <button class="btn-secondary" onclick="closeAtribuirModal()">Cancelar</button>
-        <button class="btn-primary" onclick="saveAtribuicao()">Confirmar</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- ══ SCRIPTS ══ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -658,6 +421,370 @@
   <script src="assets/js/ui.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/sync.js"></script>
-  <script src="assets/js/comercial.js"></script>
+  <script src="assets/js/configuracoes.js"></script>
+  <script src="assets/js/init.js"></script>
+
+
+  <!-- ══ MODAL: DETALHE DO TEMPLATE ══ -->
+  <div class="modal-overlay" id="template-detail-modal" onclick="if(event.target===this)closeTemplateDetail()">
+    <div class="modal-content" style="max-width:480px;">
+      <div class="modal-header">
+        <div class="modal-title" id="template-detail-title">Template</div>
+        <button class="modal-close" onclick="closeTemplateDetail()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;" id="template-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CADASTRO DE TEMPLATE ══ -->
+  <div class="modal-overlay" id="template-form-modal" onclick="if(event.target===this)tryCloseTemplateForm()">
+    <div class="modal-content" style="max-width:620px;">
+      <div class="modal-header">
+        <div class="modal-title" id="template-form-title">Novo Template</div>
+        <button class="modal-close" onclick="tryCloseTemplateForm()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;gap:0.85rem;display:flex;flex-direction:column;">
+
+        <!-- Nome e Tipo -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Nome do Template</label>
+            <input type="text" class="form-input" id="tmpl-nome-input" placeholder='Ex: "Impressora com papel atolado"'>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de Chamado</label>
+            <select class="form-input" id="tmpl-tipo-input">
+              <option value="error">Erro / Suporte</option>
+              <option value="material">Solicitação de Material</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Prioridade e Setor -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Prioridade</label>
+            <select class="form-input" id="tmpl-prioridade-input">
+              <option value="none">Nenhuma</option>
+              <option value="low">Baixa</option>
+              <option value="medium" selected>Média</option>
+              <option value="high">Alta</option>
+              <option value="urgent">Urgente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ativo vinculado</label>
+            <select class="form-input" id="tmpl-ativo-tipo-input" onchange="updateTmplAtivoOption()">
+              <option value="none">Sem ativo</option>
+              <option value="specific">Ativo do setor do solicitante</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Título pré-preenchido -->
+        <div class="form-group">
+          <label class="form-label">
+            Título
+            <span class="form-optional">— variáveis: [ativo] [setor] [solicitante] [data]</span>
+          </label>
+          <input type="text" class="form-input" id="tmpl-titulo-input"
+            placeholder='Ex: "[ativo] com papel atolado — [setor]"'>
+        </div>
+
+        <!-- Descrição pré-preenchida -->
+        <div class="form-group">
+          <label class="form-label">
+            Descrição
+            <span class="form-optional">— variáveis: [ativo] [setor] [solicitante] [data]</span>
+          </label>
+          <textarea class="form-input" id="tmpl-descricao-input" rows="3" style="resize:vertical;min-height:72px;"
+            placeholder='Ex: "[solicitante] do setor [setor] reportou que [ativo] está com papel atolado em [data]."'></textarea>
+        </div>
+
+        <!-- Status ativo -->
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <label
+            style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8rem;font-family:var(--font-mono);">
+            <input type="checkbox" id="tmpl-ativo-input" checked
+              style="width:16px;height:16px;accent-color:var(--accent);">
+            Template ativo
+          </label>
+        </div>
+
+        <!-- Botões -->
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;padding-top:0.25rem;">
+          <button class="btn-cancel" onclick="tryCloseTemplateForm()">Cancelar</button>
+          <button class="btn-save" onclick="saveTemplate()">Salvar Template</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: AVISO DESCARTE TEMPLATE ══ -->
+  <div class="modal-overlay" id="template-discard-warning" style="z-index:10001;">
+    <div class="modal-content" style="max-width:380px;text-align:center;">
+      <div class="modal-body"
+        style="padding:1.75rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;">
+        <div
+          style="width:48px;height:48px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" />
+            <line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;">Descartar alterações?
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Você tem informações não salvas. Deseja
+            descartar ou continuar editando?</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;width:100%;justify-content:center;">
+          <button class="btn-cancel" onclick="confirmTemplateDiscard()" style="flex:1;">Descartar</button>
+          <button class="btn-save" onclick="closeTemplateDiscardWarning()" style="flex:1;">Continuar editando</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CADASTRO DE SETOR ══ -->
+  <div class="modal-overlay" id="setor-form-modal">
+    <div class="modal-content" style="max-width:560px;">
+      <div class="modal-header">
+        <div class="modal-title" id="setor-form-title">Novo Setor</div>
+        <button class="modal-close" onclick="tryCloseSetorForm()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;gap:1rem;display:flex;flex-direction:column;">
+
+        <!-- Nome e Responsável -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Nome do Setor</label>
+            <input type="text" class="form-input" id="setor-nome-input" placeholder="Ex: RH, Financeiro, TI...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Responsável</label>
+            <input type="text" class="form-input" id="setor-responsavel-input" placeholder="Nome do responsável">
+          </div>
+        </div>
+
+        <!-- Ramais -->
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+              </svg>
+              Ramais
+            </span>
+            <button type="button" class="setor-add-ramal-btn" onclick="addRamalRow()">+ Adicionar Ramal</button>
+          </label>
+          <div id="setor-ramais-container" style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.4rem;">
+          </div>
+        </div>
+
+        <!-- Status ativo -->
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <label
+            style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.8rem;font-family:var(--font-mono);">
+            <input type="checkbox" id="setor-ativo-input" checked
+              style="width:16px;height:16px;accent-color:var(--accent);">
+            Setor ativo
+          </label>
+        </div>
+
+        <!-- Botões -->
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;padding-top:0.25rem;">
+          <button class="btn-cancel" onclick="tryCloseSetorForm()">Cancelar</button>
+          <button class="btn-save" onclick="saveSetor()">Salvar Setor</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: CADASTRO DE USUÁRIO ══ -->
+  <div class="modal-overlay" id="config-user-form-modal" onclick="if(event.target===this)closeConfigUserForm()">
+    <div class="modal-content" style="max-width:600px;">
+      <div class="modal-header">
+        <div class="modal-title" id="config-form-title">Novo Usuário</div>
+        <button class="modal-close" onclick="closeConfigUserForm()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;gap:1rem;">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label">Nome de Usuário</label>
+            <input type="text" class="form-input" id="config-user-name-input" placeholder="Login do usuário">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Senha</label>
+            <input type="password" class="form-input" id="config-user-pass-input" placeholder="Nova senha"
+              autocomplete="new-password">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group" id="config-user-role-group">
+            <label class="form-label">Papel do Usuário</label>
+            <select class="form-input" id="config-user-role-input" onchange="toggleConfigAdminCheckbox()">
+              <option value="requester">Solicitante</option>
+              <option value="attendant">Atendente</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
+                <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
+                <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
+                <path d="M10 6h4" />
+                <path d="M10 10h4" />
+                <path d="M10 14h4" />
+                <path d="M10 18h4" />
+              </svg> Setor</label>
+            <select class="form-input" id="config-user-setor-input">
+              <option value="">Selecione o Setor</option>
+              <option value="Engenharia">Engenharia</option>
+              <option value="Comercial">Comercial</option>
+              <option value="Financeiro">Financeiro</option>
+              <option value="PCP">PCP</option>
+              <option value="Orçamento">Orçamento</option>
+              <option value="Segurança do Trabalho">Segurança do Trabalho</option>
+              <option value="Suprimentos">Suprimentos</option>
+              <option value="RH">RH</option>
+              <option value="TI">TI</option>
+              <option value="Contabilidade">Contabilidade</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+          <div id="config-user-admin-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+                background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="config-user-admin-input"
+              style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;"
+                for="config-user-admin-input">É Administrador?</label>
+              <span style="font-size:0.68rem;color:var(--muted);">Gerencia usuários e chamados</span>
+            </div>
+          </div>
+          <div id="config-user-vip-group" style="display:none;flex-direction:row;align-items:center;gap:10px;flex:1;
+                background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:0.6rem 0.9rem;">
+            <input type="checkbox" id="config-user-vip-input"
+              style="width:16px;height:16px;accent-color:#eab308;cursor:pointer;flex-shrink:0;margin:0;">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <label style="font-size:0.78rem;font-weight:600;color:var(--text);cursor:pointer;margin:0;"
+                for="config-user-vip-input">⭐ Usuário VIP</label>
+              <span style="font-size:0.68rem;color:var(--muted);">Card terá destaque especial</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;
+              font-family:'Space Mono',monospace;text-transform:uppercase;letter-spacing:0.1em;color:#6b6b80;">
+          <span style="flex:1;height:1px;background:var(--border);"></span>
+          <span>Contato <span style="font-size:0.6rem;opacity:0.6;">(opcional)</span></span>
+          <span style="flex:1;height:1px;background:var(--border);"></span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg> E-mail</label>
+            <input type="email" class="form-input" id="config-user-email-input" placeholder="email@empresa.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" style="flex-shrink:0">
+                <rect width="14" height="20" x="5" y="2" rx="2" />
+                <path d="M12 18h.01" />
+              </svg> WhatsApp</label>
+            <input type="text" class="form-input" id="config-user-whatsapp-input" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px;"><svg width="12" height="12"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" style="flex-shrink:0">
+              <rect width="20" height="14" x="2" y="3" rx="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+            </svg> AnyDesk</label>
+          <div style="display:flex;gap:1rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;">
+              <input type="radio" name="config-anydesk-opt" id="config-anydesk-no" value="no" checked
+                onchange="toggleConfigAnydeskInput()">
+              Não tenho AnyDesk
+            </label>
+            <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.8rem;">
+              <input type="radio" name="config-anydesk-opt" id="config-anydesk-yes" value="yes"
+                onchange="toggleConfigAnydeskInput()">
+              Tenho AnyDesk
+            </label>
+          </div>
+          <input type="text" class="form-input" id="config-user-anydesk-input"
+            placeholder="ID do AnyDesk (ex: 123 456 789)" style="display:none;margin-top:0.4rem;">
+        </div>
+
+        <div style="display:flex;gap:0.75rem;padding-top:0.5rem;border-top:1px solid var(--border);">
+          <button class="btn-cancel" onclick="showUserList()">Cancelar</button>
+          <button class="btn-save" onclick="saveConfigUser()">Salvar Usuário</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ MODAL: DETALHE DO SETOR ══ -->
+  <div class="modal-overlay" id="setor-detail-modal" onclick="if(event.target===this)closeSetorDetail()">
+    <div class="modal-content" style="max-width:460px;">
+      <div class="modal-header">
+        <div class="modal-title" id="setor-detail-title">Setor</div>
+        <button class="modal-close" onclick="closeSetorDetail()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;" id="setor-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL: AVISO DESCARTE SETOR ══ -->
+  <div class="modal-overlay" id="setor-discard-warning" style="z-index:10001;">
+    <div class="modal-content" style="max-width:380px;text-align:center;">
+      <div class="modal-body"
+        style="padding:1.75rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;">
+        <div
+          style="width:48px;height:48px;border-radius:50%;background:#fef3c7;display:flex;align-items:center;justify-content:center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" x2="12" y1="9" y2="13" />
+            <line x1="12" x2="12.01" y1="17" y2="17" />
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;">Descartar alterações?
+          </div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.5;">Você tem informações não salvas no setor.
+            Deseja descartar as alterações ou continuar editando?</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;width:100%;justify-content:center;">
+          <button class="btn-cancel" onclick="confirmSetorDiscard()" style="flex:1;">Descartar</button>
+          <button class="btn-save" onclick="closeSetorDiscardWarning()" style="flex:1;">Continuar editando</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
+
 </html>

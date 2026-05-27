@@ -31,11 +31,13 @@ const MODULOS = [
   { key: 'rotinas', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Rotinas` },
   { key: 'comercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comercial` },
   { key: 'adminComercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><circle cx="17" cy="7" r="3" fill="currentColor" stroke="none" opacity="0.6"/></svg> Admin Comercial` },
+  { key: 'canVerTodasPendencias', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Ver Pendências de Todos` },
 ];
 
 // ── Inicializar ──
 async function initConfiguracoes() {
   await loadUsers();
+  _limparAcessosInvalidos(); // Migração: remove canVerTodasPendencias do array acessos
   const savedId = localStorage.getItem('chamados-current-user-id');
   if (!savedId) { window.location.href = 'index.html'; return; }
   const user = users.find(u => u.id === savedId);
@@ -98,17 +100,17 @@ async function renderAdministracao() {
   renderServidoresAdmin();
 
   const origSla = document.getElementById('panel-sla');
-  const origFb = document.getElementById('panel-firebase');
-  if (!origSla) { const f = document.createElement('div'); f.id = 'panel-sla'; f.style.display = 'none'; document.body.appendChild(f); }
-  if (!origFb) { const f = document.createElement('div'); f.id = 'panel-firebase'; f.style.display = 'none'; document.body.appendChild(f); }
+  const origFb  = document.getElementById('panel-firebase');
+  if (!origSla) { const f=document.createElement('div'); f.id='panel-sla'; f.style.display='none'; document.body.appendChild(f); }
+  if (!origFb)  { const f=document.createElement('div'); f.id='panel-firebase'; f.style.display='none'; document.body.appendChild(f); }
   await renderSlaPanel();
   await renderFirebaseInfo();
   const slaEl = document.getElementById('panel-sla');
-  const fbEl = document.getElementById('panel-firebase');
+  const fbEl  = document.getElementById('panel-firebase');
   const slaTarget = document.getElementById('admin-sla-section');
-  const fbTarget = document.getElementById('admin-firebase-section');
+  const fbTarget  = document.getElementById('admin-firebase-section');
   if (slaEl && slaTarget) slaTarget.innerHTML = slaEl.innerHTML;
-  if (fbEl && fbTarget) fbTarget.innerHTML = fbEl.innerHTML;
+  if (fbEl  && fbTarget)  fbTarget.innerHTML  = fbEl.innerHTML;
 }
 
 // ── Gerenciamento de Servidores (SuperAdmin) ──
@@ -118,7 +120,7 @@ async function loadServidoresAdmin() {
   try {
     const snap = await db.collection('rotinas_config').doc('servidores').get();
     _adminServidores = snap.exists ? (snap.data().lista || []) : [];
-  } catch (e) { _adminServidores = []; }
+  } catch(e) { _adminServidores = []; }
 }
 
 function renderServidoresAdmin() {
@@ -173,7 +175,7 @@ function renderServidoresAdminList() {
         <div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.6rem;background:var(--surface2);border-radius:6px;font-size:0.78rem;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="5"/><path d="M2 12c0 2.76 4.48 5 10 5s10-2.24 10-5"/></svg>
           <span style="font-weight:600;font-family:var(--font-mono);min-width:28px;">${d.nome}</span>
-          <span style="color:var(--muted);">${d.total} ${d.unidade || "GB"}</span>
+          <span style="color:var(--muted);">${d.total} ${d.unidade||"GB"}</span>
           <button onclick="removeDiscoAdmin('${s.id}','${d.id}')"
             style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;padding:0.1rem;line-height:1;"
             onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'" title="Remover disco">
@@ -185,7 +187,7 @@ function renderServidoresAdminList() {
       <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:0.6rem;">
         <select id="new-disco-nome-${s.id}"
           style="width:75px;padding:0.3rem 0.4rem;font-size:0.75rem;font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
-          ${['A:', 'B:', 'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:', 'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:'].map(l => `<option value="${l}"${l === 'C:' ? ' selected' : ''}>${l}</option>`).join('')}
+          ${['A:','B:','C:','D:','E:','F:','G:','H:','I:','J:','K:','L:','M:','N:','O:','P:','Q:','R:','S:','T:','U:','V:','W:','X:','Y:','Z:'].map(l=>`<option value="${l}"${l==='C:'?' selected':''}>${l}</option>`).join('')}
         </select>
         <input type="number" placeholder="Capacidade" id="new-disco-total-${s.id}"
           style="width:90px;padding:0.3rem 0.5rem;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
@@ -215,14 +217,14 @@ async function saveServidorNome(id) {
 }
 
 async function addDiscoAdmin(srvId) {
-  const nome = document.getElementById(`new-disco-nome-${srvId}`)?.value.trim();
-  const total = parseFloat(document.getElementById(`new-disco-total-${srvId}`)?.value) || 0;
+  const nome    = document.getElementById(`new-disco-nome-${srvId}`)?.value.trim();
+  const total   = parseFloat(document.getElementById(`new-disco-total-${srvId}`)?.value)||0;
   const unidade = document.getElementById(`new-disco-unidade-${srvId}`)?.value || 'GB';
-  if (!nome || !total) { showConfigNotification('Preencha nome e capacidade do disco.', 'error'); return; }
+  if (!nome || !total) { showConfigNotification('Preencha nome e capacidade do disco.','error'); return; }
   const srv = _adminServidores.find(s => s.id === srvId);
   if (!srv) return;
   if (!srv.discos) srv.discos = [];
-  srv.discos.push({ id: 'disco' + Date.now(), nome, total, unidade });
+  srv.discos.push({ id:'disco'+Date.now(), nome, total, unidade });
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   document.getElementById(`new-disco-nome-${srvId}`).value = '';
   document.getElementById(`new-disco-total-${srvId}`).value = '';
@@ -233,7 +235,7 @@ async function addDiscoAdmin(srvId) {
 async function removeDiscoAdmin(srvId, discoId) {
   const srv = _adminServidores.find(s => s.id === srvId);
   if (!srv) return;
-  srv.discos = (srv.discos || []).filter(d => d.id !== discoId);
+  srv.discos = (srv.discos||[]).filter(d => d.id !== discoId);
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   renderServidoresAdminList();
   showConfigNotification('Disco removido.', 'success');
@@ -241,12 +243,12 @@ async function removeDiscoAdmin(srvId, discoId) {
 
 async function addServidorAdmin() {
   const nome = document.getElementById('new-srv-nome')?.value.trim();
-  if (!nome) { showConfigNotification('Informe o nome do servidor.', 'error'); return; }
-  _adminServidores.push({ id: 'srv' + Date.now(), nome, discos: [] });
+  if (!nome) { showConfigNotification('Informe o nome do servidor.','error'); return; }
+  _adminServidores.push({ id:'srv'+Date.now(), nome, discos:[] });
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   document.getElementById('new-srv-nome').value = '';
   renderServidoresAdminList();
-  showConfigNotification('Servidor adicionado! ✅', 'success');
+  showConfigNotification('Servidor adicionado! ✅','success');
 }
 
 async function removeServidorAdmin(id) {
@@ -254,7 +256,7 @@ async function removeServidorAdmin(id) {
   _adminServidores = _adminServidores.filter(s => s.id !== id);
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   renderServidoresAdminList();
-  showConfigNotification('Servidor removido.', 'success');
+  showConfigNotification('Servidor removido.','success');
 }
 
 
@@ -380,7 +382,7 @@ async function renderSlaJustificativas() {
 }
 
 function _renderSlaJustPage(container) {
-  const total = _slaJustDocs.length;
+  const total      = _slaJustDocs.length;
   const totalPages = Math.max(1, Math.ceil(total / _SLA_JUST_PER_PAGE));
   if (_slaJustPage > totalPages) _slaJustPage = totalPages;
 
@@ -388,15 +390,15 @@ function _renderSlaJustPage(container) {
   const paged = _slaJustDocs.slice(start, start + _SLA_JUST_PER_PAGE);
 
   const cards = paged.map(j => {
-    const dt = j.data ? new Date(j.data).toLocaleString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    const dt  = j.data ? new Date(j.data).toLocaleString('pt-BR', {
+      day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
     }) : '—';
-    const def = SLA_DEFAULTS[j.priority] || {};
-    const tipo = j.tipo === 'sobrevida' ? '⏱️ Sobrevida'
-      : j.tipo === 'escalacao_admin' ? '⬆️ Escalação'
-        : j.tipo === 'bloqueio_superadmin' ? '🔒 Bloqueio'
-          : j.tipo === 'vencimento_admin' ? '🔴 SLA Admin'
-            : '🔴 SLA';
+    const def  = SLA_DEFAULTS[j.priority] || {};
+    const tipo = j.tipo === 'sobrevida'           ? '⏱️ Sobrevida'
+               : j.tipo === 'escalacao_admin'     ? '⬆️ Escalação'
+               : j.tipo === 'bloqueio_superadmin' ? '🔒 Bloqueio'
+               : j.tipo === 'vencimento_admin'    ? '🔴 SLA Admin'
+               : '🔴 SLA';
     return `
       <div class="sla-just-card">
         <div class="sla-just-header">
@@ -998,8 +1000,8 @@ function renderAccessTable() {
     const isSA = u.isSuperAdmin;
 
     const toggleCols = MODULOS.map(m => {
-      const checked = isSA || acessos.includes(m.key);
-      const disabled = m.key === 'chamados' || isSA; // chamados sempre ativo; SA tem tudo
+      const checked = isSA || (m.key==='canVerTodasPendencias' ? !!u.canVerTodasPendencias : acessos.includes(m.key));
+      const disabled = m.key === 'chamados' || isSA;
       return `<td>
         <label class="access-toggle" title="${disabled ? 'Não pode ser alterado' : ''}">
           <input type="checkbox"
@@ -1024,12 +1026,38 @@ function renderAccessTable() {
 async function toggleAcesso(userId, modulo, ativo) {
   const user = users.find(u => u.id === userId);
   if (!user) return;
+  // canVerTodasPendencias é campo booleano direto, NÃO entra no array acessos
+  if (modulo === 'canVerTodasPendencias') {
+    user.canVerTodasPendencias = ativo;
+    await db.collection('users').doc(userId).update({ canVerTodasPendencias: ativo });
+    showConfigNotification('Acesso atualizado! 🔐', 'success');
+    return;
+  }
   let acessos = [...(user.acessos || ['chamados'])];
+  // Garantir que canVerTodasPendencias nunca entre no array acessos
+  acessos = acessos.filter(a => a !== 'canVerTodasPendencias');
   if (ativo && !acessos.includes(modulo)) acessos.push(modulo);
   if (!ativo) acessos = acessos.filter(a => a !== modulo);
   user.acessos = acessos;
   await db.collection('users').doc(userId).update({ acessos });
   showConfigNotification('Acesso atualizado! 🔐', 'success');
+}
+
+// Migração: limpar canVerTodasPendencias do array acessos caso tenha entrado
+async function _limparAcessosInvalidos() {
+  try {
+    const snap = await db.collection('users').get();
+    for (const doc of snap.docs) {
+      const data = doc.data();
+      const acessos = data.acessos || [];
+      if (acessos.includes('canVerTodasPendencias')) {
+        const novosAcessos = acessos.filter(a => a !== 'canVerTodasPendencias');
+        const canVer = true; // estava marcado, então preservar a permissão
+        await doc.ref.update({ acessos: novosAcessos, canVerTodasPendencias: canVer });
+        console.log(`[Migração] Limpou canVerTodasPendencias do acessos de ${data.username}`);
+      }
+    }
+  } catch(e) { console.warn('[Migração acessos]', e); }
 }
 
 // ══════════════════════════════
@@ -1146,17 +1174,17 @@ function initConfigSidebar(user) {
     : (user.acessos || ['chamados']);
 
   ['materiais', 'inventario', 'rotinas'].forEach(mod => {
-    const el = document.getElementById('cs-mod-' + mod);
+    const el    = document.getElementById('cs-mod-' + mod);
     const elSub = document.getElementById('sub-' + mod);
-    const show = acessos.includes(mod) ? 'flex' : 'none';
-    if (el) el.style.display = show;
+    const show  = acessos.includes(mod) ? 'flex' : 'none';
+    if (el)    el.style.display = show;
     if (elSub) elSub.style.display = show;
   });
 
 
   // Módulo Comercial — visibilidade na sidebar
   const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
-    (user.acessos || []).includes('comercial') || (user.acessos || []).includes('adminComercial');
+    (user.acessos||[]).includes('comercial') || (user.acessos||[]).includes('adminComercial');
   const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
   if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
 
