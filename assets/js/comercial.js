@@ -819,7 +819,7 @@ function renderObraModal(obra) {
       const limite=subData.dataLimite;
       const atrasada=subStatus!=='done'&&limite&&limite<hoje;
       const isIndependenteSub = subCfg.isIndependente || cfg.isIndependente;
-      const canConcluir = (subStatus==='active' || (isIndependenteSub && subStatus==='pending')) && !obra.concluida;
+      const canConcluir = subStatus==='active' && !obra.concluida;
       const canIniciarSub = isIndependenteSub && subStatus==='pending' && !obra.concluida;
       const canMotivo=atrasada&&!subData.motivoAtraso;
       const canRevisaoSub=subStatus!=='pending'&&!obra.concluida;
@@ -1081,12 +1081,19 @@ function _renderCocLista(obra, etapaId, subId) {
     const dtConc   = item.dataConclusao
       ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const dropId   = `acao-coc-${idx}`;
+    const cocStatus = item.status || 'pending';
+    const cocActive = cocStatus === 'active';
     const btnAcoes = canAct && !isDone ? `<div style="position:relative;display:inline-block;">
       <button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.15rem 0.45rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.2rem;">
         Ações<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
-      <div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:150px;overflow:hidden;">
-        <button class="acao-item concluir" data-action="coc-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>
+      <div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">
+        ${cocStatus==='pending' ? `<button class="acao-item concluir" data-action="coc-iniciar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : ''}
+        ${cocActive ? `<button class="acao-item concluir" data-action="coc-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : ''}
+        ${cocActive ? `<button class="acao-item" data-action="coc-prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : ''}
+        <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${item.responsavel||''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.responsavel||'Atribuir'}</button>
+        <button class="acao-item" data-action="coc-obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
+        ${cocActive ? `<button class="acao-item" data-action="coc-dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>` : ''}
       </div>
     </div>` : '';
 
@@ -1105,7 +1112,16 @@ function _renderCocLista(obra, etapaId, subId) {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div id="${toggleId}" style="display:none;padding:0.5rem 0.75rem;font-size:0.78rem;color:var(--muted);">
-        ${item.obs||'Sem observações.'}
+        ${(item.observacoes||[]).length === 0
+          ? `<div style="font-size:0.75rem;color:var(--muted);font-style:italic;">Nenhuma observação registrada.</div>`
+          : `<div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding-right:0.25rem;">
+              ${[...(item.observacoes||[])].reverse().map(o=>`
+                <div style="background:var(--surface3,var(--surface2));border-radius:6px;padding:0.45rem 0.6rem;">
+                  <div style="font-size:0.8rem;color:var(--text);line-height:1.4;">${o.texto}</div>
+                  <div style="font-size:0.65rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);">${o.data}${o.hora?' · '+o.hora:''} — ${o.por}</div>
+                </div>`).join('')}
+             </div>`
+        }
       </div>
     </div>`;
   }).join('');
@@ -1170,7 +1186,55 @@ async function _deleteCocItem(obraId, etapaId, idx) {
   showComercialToast('COC excluída. ✅', 'success');
 }
 
-// ── Iniciar sub-etapa independente (Documentações) ───────────────────────────
+async function _iniciarCocItem(obraId, etapaId, idx) {
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].cocLista?.[idx]; if(!item) return;
+  item.status='active'; item.dataInicio=new Date().toISOString().slice(0,10);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('COC iniciada! ✅','success');
+}
+
+async function _prorrogarCocItem(obraId, etapaId, idx) {
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const item=obra.etapas?.[etapaId]?.cocLista?.[idx]; if(!item) return;
+  const novaData=prompt('Nova data prevista (AAAA-MM-DD):',item.dataPrevista||'');
+  if(!novaData) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[etapaId].cocLista[idx].dataPrevista=novaData;
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('Prazo atualizado! ✅','success');
+}
+
+async function _atribuirCocItem(obraId, etapaId, idx) {
+  const allUsers=typeof users!=='undefined'?users:[];
+  const lista=allUsers.filter(u=>(u.acessos||[]).includes('comercial')||(u.acessos||[]).includes('adminComercial')||u.isSuperAdmin);
+  const nomes=(lista.length?lista:allUsers).map(u=>u.username).join(', ');
+  const usuario=prompt(`Responsável (${nomes||'nome do usuário'}):`);
+  if(!usuario) return;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[etapaId].cocLista[idx].responsavel=usuario;
+  await db.collection('obras').doc(obraId).update({etapas});
+  _audit(obraId,'atribuicao',`COC "${etapas[etapaId].cocLista[idx].nome}": atribuído a "${usuario}"`);
+  showComercialToast(`Atribuído para ${usuario}! ✅`,'success');
+}
+
+async function _obsCocItem(obraId, etapaId, idx) {
+  _openObsModalCoc(obraId, etapaId, idx);
+}
+
+async function _dataPrevistaCocItem(obraId, etapaId, idx) {
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const item=obra.etapas?.[etapaId]?.cocLista?.[idx]; if(!item) return;
+  const data=prompt('Data prevista (AAAA-MM-DD):',item.dataPrevista||'');
+  if(!data) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[etapaId].cocLista[idx].dataPrevista=data;
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('Data prevista salva! ✅','success');
+}
+
 async function iniciarSubEtapa(obraId, etapaId, subId) {
   const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
   const etapas=JSON.parse(JSON.stringify(obra.etapas));
@@ -1537,9 +1601,34 @@ function _initAcaoDelegate() {
       case 'aprovado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
       case 'recusado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
       case 'iniciar-sub':    iniciarSubEtapa(obraId, etapaId, subId); break;
+      case 'coc-iniciar': {
+        const ci=parseInt(btn.dataset.coc);
+        _iniciarCocItem(obraId, etapaId, ci);
+        break;
+      }
       case 'coc-concluir': {
-        const cocIdx = parseInt(btn.dataset.coc);
-        _concluirCocItem(obraId, etapaId, cocIdx);
+        const ci2=parseInt(btn.dataset.coc);
+        _concluirCocItem(obraId, etapaId, ci2);
+        break;
+      }
+      case 'coc-prorrogar': {
+        const ci3=parseInt(btn.dataset.coc);
+        _prorrogarCocItem(obraId, etapaId, ci3);
+        break;
+      }
+      case 'coc-atribuir': {
+        const ci4=parseInt(btn.dataset.coc);
+        _atribuirCocItem(obraId, etapaId, ci4, btn.dataset.resp);
+        break;
+      }
+      case 'coc-obs': {
+        const ci5=parseInt(btn.dataset.coc);
+        _obsCocItem(obraId, etapaId, ci5);
+        break;
+      }
+      case 'coc-dataprevista': {
+        const ci6=parseInt(btn.dataset.coc);
+        _dataPrevistaCocItem(obraId, etapaId, ci6);
         break;
       }
       case 'concluir-lista': concluirSubEtapaComData(obraId, etapaId, subId, itemId); break;
@@ -2268,6 +2357,17 @@ function exportarRelatorioPDF() {
 let _obsObraId=null, _obsEtapaId=null, _obsSubId=null;
 
 let _obsItemId=null;
+let _obsCocIdx=null;
+
+function _openObsModalCoc(obraId, etapaId, cocIdx) {
+  _obsObraId=obraId; _obsEtapaId=etapaId; _obsSubId=null; _obsItemId=null; _obsCocIdx=cocIdx;
+  const obra=_obras.find(o=>o.id===obraId);
+  const nome=obra?.etapas?.[etapaId]?.cocLista?.[cocIdx]?.nome||'COC';
+  document.getElementById('obs-modal-title').textContent=`Observação — COC · ${nome}`;
+  document.getElementById('obs-input').value='';
+  document.getElementById('obs-modal').style.display='flex';
+}
+
 function openObsModal(obraId, etapaId, subId, itemId) {
   _obsObraId=obraId; _obsEtapaId=etapaId; _obsSubId=subId||null; _obsItemId=itemId||null;
   const cfg=ETAPAS_CONFIG[etapaId];
@@ -2279,7 +2379,7 @@ function openObsModal(obraId, etapaId, subId, itemId) {
 }
 function closeObsModal() {
   document.getElementById('obs-modal').style.display='none';
-  _obsObraId=_obsEtapaId=_obsSubId=_obsItemId=null;
+  _obsObraId=_obsEtapaId=_obsSubId=_obsItemId=_obsCocIdx=null;
 }
 async function saveObs() {
   const texto=document.getElementById('obs-input')?.value.trim();
@@ -2289,12 +2389,12 @@ async function saveObs() {
   const novaObs={texto,data:new Date().toISOString().slice(0,10),
     hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
     por:currentUser.username};
-  if(_obsSubId){
+  if(_obsCocIdx!==null && _obsCocIdx!==undefined) {
+    const _item=etapas[_obsEtapaId].cocLista?.[_obsCocIdx];
+    if(_item){ if(!_item.observacoes) _item.observacoes=[]; _item.observacoes.push(novaObs); }
+  } else if(_obsSubId){
     const refObs=_findSubRef(etapas,_obsEtapaId,_obsSubId,_obsItemId);
-    if(refObs){
-      if(!refObs.sub.observacoes) refObs.sub.observacoes=[];
-      refObs.sub.observacoes.push(novaObs);
-    }
+    if(refObs){ if(!refObs.sub.observacoes) refObs.sub.observacoes=[]; refObs.sub.observacoes.push(novaObs); }
   } else {
     if(!etapas[_obsEtapaId].observacoes) etapas[_obsEtapaId].observacoes=[];
     etapas[_obsEtapaId].observacoes.push(novaObs);
