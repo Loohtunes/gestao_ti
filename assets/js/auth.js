@@ -67,8 +67,10 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _verificarVersao);
   } else {
-    setTimeout(_verificarVersao, 500);
+    setTimeout(_verificarVersao, 1000);
   }
+  // Re-verificar a cada 5 minutos (usuários com aba aberta)
+  setInterval(_verificarVersao, 5 * 60 * 1000);
 })();
 
 function getSectorBadge(user) {
