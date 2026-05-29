@@ -1,78 +1,3 @@
-// ── Verificação de versão do sistema ─────────────────────────────────────────
-(function _initVersionCheck() {
-  const STORAGE_KEY = 'premovale-versao';
-
-  function _criarModalAtualizacao() {
-    if (document.getElementById('_versao-modal')) return;
-    const div = document.createElement('div');
-    div.id = '_versao-modal';
-    div.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;';
-    div.innerHTML = `
-      <div style="background:var(--surface,#1e293b);border:1px solid var(--border2,#334155);border-radius:20px;width:min(420px,92vw);padding:2.5rem 2rem;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
-        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <div style="font-size:1.15rem;font-weight:800;color:var(--text,#f1f5f9);margin-bottom:0.75rem;font-family:var(--font-display,sans-serif);">Atualização Disponível</div>
-        <p style="font-size:0.85rem;color:var(--muted,#94a3b8);line-height:1.6;margin-bottom:2rem;font-family:var(--font-display,sans-serif);">
-          Uma nova atualização está disponível.<br>Faça login novamente para continuar.
-        </p>
-        <button onclick="_fazerLogoutAtualizacao()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border:none;border-radius:10px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:var(--font-display,sans-serif);letter-spacing:0.02em;">
-          🔄 Fazer Login Novamente
-        </button>
-      </div>
-    `;
-    document.body.appendChild(div);
-  }
-
-  window._fazerLogoutAtualizacao = function () {
-    localStorage.removeItem('chamados-current-user-id');
-    localStorage.removeItem(STORAGE_KEY);
-    window.location.href = 'login.html';
-  };
-
-  function _verificarVersao() {
-    // Não verificar na página de login
-    if (window.location.pathname.includes('login')) return;
-
-    db.collection('config').doc('versao').get().then(doc => {
-      if (!doc.exists) return;
-      const versaoServidor = doc.data()?.versao;
-      if (!versaoServidor) return;
-      const versaoLocal = localStorage.getItem(STORAGE_KEY);
-      if (!versaoLocal) {
-        // Primeiro acesso — salvar versão atual sem mostrar modal
-        localStorage.setItem(STORAGE_KEY, versaoServidor);
-        return;
-      }
-      if (versaoLocal !== versaoServidor) {
-        _criarModalAtualizacao();
-      }
-    }).catch(() => { });
-  }
-
-  // Salvar versão ao fazer login com sucesso
-  window._salvarVersaoLogin = function () {
-    db.collection('config').doc('versao').get().then(doc => {
-      if (doc.exists && doc.data()?.versao) {
-        localStorage.setItem(STORAGE_KEY, doc.data().versao);
-      }
-    }).catch(() => { });
-  };
-
-  // Verificar após DOM estar pronto
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _verificarVersao);
-  } else {
-    setTimeout(_verificarVersao, 1000);
-  }
-  // Re-verificar a cada 5 minutos (usuários com aba aberta)
-  setInterval(_verificarVersao, 5 * 60 * 1000);
-})();
-
 function getSectorBadge(user) {
   const SETOR_ICON = {
     'TI': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
@@ -346,8 +271,6 @@ async function performLogin() {
   document.getElementById('attendant-pass').value = '';
   // Salvar setor no localStorage para uso nos módulos
   localStorage.setItem('premovale-current-setor', user.setor || '');
-  // Salvar versão atual para detectar atualizações futuras
-  if (typeof _salvarVersaoLogin === 'function') _salvarVersaoLogin();
   // Redirecionar para menu principal após login
   window.location.href = 'menu.html';
 }
