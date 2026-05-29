@@ -368,7 +368,7 @@ function loadAlertasComercial(user) {
       if (!obra.etapas) return;
       // Ignorar obras concluídas — campo explícito OU todas as etapas ativas finalizadas
       if (obra.concluida) return;
-      const ETAPAS_IDS = ['proposta','contrato','cno','aditivos','medicao'];
+      const ETAPAS_IDS = ['proposta','contrato','documentacoes','aditivos','medicao'];
       const ativas = ETAPAS_IDS.filter(id => obra.etapas[id]?.ativa);
       const todasDone = ativas.length > 0 && ativas.every(id => obra.etapas[id]?.status === 'done');
       if (todasDone) return;
@@ -384,7 +384,7 @@ function loadAlertasComercial(user) {
             numero: obra.numero || doc.id.slice(-6),
             nome:   obra.nome,
             msg:    `Prazo vencido há ${Math.abs(diff)} dia${Math.abs(diff)!==1?'s':''}` });
-        } else if (diff <= 3) {
+        } else if (diff <= 7) {
           alertas.push({ tipo:'vencendo', id:obra.id,
             numero: obra.numero || doc.id.slice(-6),
             nome:   obra.nome,
@@ -393,14 +393,22 @@ function loadAlertasComercial(user) {
       }
 
       // ── Sub-etapas atrasadas ──────────────────────────────────────
-      const ORDEM = ['proposta','contrato','cno','aditivos','medicao'];
-      const NOMES = { proposta:'Proposta', contrato:'Contrato', cno:'CNO', aditivos:'Aditivos', medicao:'Medição' };
+      const ORDEM = ['proposta','contrato','documentacoes','aditivos','medicao'];
+      const NOMES = { proposta:'Proposta', contrato:'Contrato', documentacoes:'Documentações', aditivos:'Aditivos', medicao:'Medição' };
       ORDEM.forEach(etapaId => {
         const e = obra.etapas?.[etapaId];
         if (!e?.ativa || e.status === 'done') return;
-        const temAtraso = Object.values(e.subEtapas || {}).some(
-          sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hojeStr
-        );
+        let temAtraso = false;
+        if (Array.isArray(e.lista)) {
+          // isLista: aditivos, medicao
+          temAtraso = e.lista.some(item =>
+            Object.values(item.subEtapas||{}).some(sub => sub.status!=='done' && sub.dataLimite && sub.dataLimite < hojeStr)
+          );
+        } else {
+          temAtraso = Object.values(e.subEtapas || {}).some(
+            sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hojeStr
+          );
+        }
         if (temAtraso) {
           alertas.push({ tipo:'atrasada', id:obra.id,
             numero: obra.numero || doc.id.slice(-6),

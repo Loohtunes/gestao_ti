@@ -71,21 +71,21 @@ const ETAPAS_CONFIG = {
     id:'aditivos', nome:'Aditivos / Termo', short:'Aditivos', opcional:true, cor:'#ec4899',
     isLista:true,
     subEtapasTemplate:[
-      {id:'em_analise',              nome:'Em Análise',               isAnalise:true, dateLivre:true},
-      {id:'comparativo_recebimento', nome:'Recebimento do Comparativo', isNovaDataZero:true, dateLivre:false, dias:0},
-      {id:'carta_envio',             nome:'Envio da Carta Aditiva',    dias:2, dateLivre:false},
-      {id:'carta_aprovacao',         nome:'Aprovação da Carta Aditiva',dias:3, dateLivre:false},
-      {id:'termo_envio',             nome:'Envio do Termo Aditivo',    dias:3, dateLivre:false},
-      {id:'termo_assinatura',        nome:'Assinatura do Termo Aditivo',dias:5, dateLivre:false},
+      {id:'comparativo_recebimento', nome:'Recebimento do Comparativo', dias:0,  dateLivre:true},
+      {id:'elaboracao',              nome:'Elaboração',                  dias:2,  dateLivre:false},
+      {id:'carta_envio',             nome:'Envio da Carta Aditiva',      dias:2,  dateLivre:false},
+      {id:'carta_aprovacao',         nome:'Aprovação da Carta Aditiva',  dias:3,  dateLivre:false, isAprovacaoRecusa:true, podeEncerrar:true},
+      {id:'termo_envio',             nome:'Envio do Termo Aditivo',      dias:3,  dateLivre:false},
+      {id:'termo_assinatura',        nome:'Assinatura do Termo Aditivo', dias:5,  dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   medicao: {
     id:'medicao', nome:'Medição', short:'Medição', opcional:true, cor:'#6b7280',
     isLista:true,
     subEtapasTemplate:[
-      {id:'em_analise', nome:'Em Análise', isAnalise:true, dateLivre:true},
-      {id:'envio',      nome:'Envio',      dateLivre:true, dias:0},
-      {id:'aprovacao',  nome:'Aprovação',  dias:2, dateLivre:false},
+      {id:'elaboracao', nome:'Elaboração', dias:2,  dateLivre:false},
+      {id:'envio',      nome:'Envio',      dias:0,  dateLivre:true},
+      {id:'aprovacao',  nome:'Aprovação',  dias:2,  dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
 };
@@ -146,6 +146,24 @@ function _migrateObraToV3(obra) {
     etapas['medicao'] = { status:old.status||'pending', ativa:old.ativa||false, lista };
   }
 
+  return { etapas };
+}
+
+
+function _migrateObraToV5(obra) {
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  ['aditivos','medicao'].forEach(etapaId => {
+    const lista = etapas[etapaId]?.lista || [];
+    lista.forEach(item => {
+      const subs = item.subEtapas || {};
+      // Renomear em_analise → elaboracao nos aditivos e medicao
+      if (subs['em_analise'] && !subs['elaboracao']) {
+        subs['elaboracao'] = {...subs['em_analise']};
+        delete subs['em_analise'];
+      }
+      item.subEtapas = subs;
+    });
+  });
   return { etapas };
 }
 
@@ -217,7 +235,7 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras=[], _obraAtual=null, _filtroRep='', _filtroEtapa='', _unsubObras=null;
-let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='';
+let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='', _filtroVencendo=false;
 let _ordenacao='recente';
 let _filtroPeriodoDe='', _filtroPeriodoAte='';
 let _filtroMinhasPendencias=false;
@@ -231,6 +249,7 @@ function setFiltroEtapa(val)   { _filtroEtapa=val;   _paginaAtual=0; renderObras
 function setFiltroDataDe(val)  { _filtroDataDe=val;  _paginaAtual=0; renderObras(); }
 function setFiltroDataAte(val)    { _filtroDataAte=val;      _paginaAtual=0; renderObras(); }
 function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso=val; _paginaAtual=0; renderObras(); }
+function toggleFiltroVencendo(btn) { _filtroVencendo=!_filtroVencendo; _paginaAtual=0; if(btn){btn.style.background=_filtroVencendo?'var(--accent)':'';btn.style.color=_filtroVencendo?'#fff':'var(--text)';} renderObras(); }
 function setFiltroBusca(val)       { _filtroBusca=val.toLowerCase().trim(); _paginaAtual=0; renderObras(); }
 function setOrdenacao(val)         { _ordenacao=val; _paginaAtual=0; renderObras(); }
 function setFiltroPeriodoDe(val)   { _filtroPeriodoDe=val; _paginaAtual=0; renderObras(); }
@@ -239,7 +258,7 @@ function setObrasPorPagina(val){ _obrasPorPagina=parseInt(val); localStorage.set
 function irParaPagina(p)       { _paginaAtual=p; renderObras(); window.scrollTo({top:0,behavior:'smooth'}); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 
 async function migrateObras() {
   try {
@@ -255,6 +274,7 @@ async function migrateObras() {
         if (ver < 2) migrated = {...migrated, ..._migrateObraToV2(migrated)};
         if (ver < 3) migrated = {...migrated, ..._migrateObraToV3(migrated)};
         if (ver < 4) migrated = {...migrated, ..._migrateObraToV4(migrated)};
+        if (ver < 5) migrated = {...migrated, ..._migrateObraToV5(migrated)};
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch(e) {
@@ -377,8 +397,15 @@ function initComercial() {
 function getEtapaAtualId(obra) {
   if (!obra.etapas) return 'proposta';
   for (const id of ETAPAS_ORDER) {
-    const e = obra.etapas[id];
-    if (e?.ativa && e?.status === 'active') return id;
+    const e   = obra.etapas[id];
+    const cfg = ETAPAS_CONFIG[id];
+    if (!e?.ativa || e?.status === 'done') continue;
+    if (cfg.isLista) {
+      if ((e.lista||[]).some(item => item.status==='active')) return id;
+    } else if (cfg.isIndependente) {
+      // Documentações: ativa e não concluída = etapa atual
+      return id;
+    } else if (e?.status === 'active') return id;
   }
   let ultimaDone = null;
   for (const id of ETAPAS_ORDER) {
@@ -446,6 +473,14 @@ function renderObras() {
   if (_filtroDataDe)      lista = lista.filter(o => o.dataFechamento && o.dataFechamento >= _filtroDataDe);
   if (_filtroDataAte)     lista = lista.filter(o => o.dataFechamento && o.dataFechamento <= _filtroDataAte);
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
+  if (_filtroVencendo) {
+    const daqui7=new Date(); daqui7.setDate(daqui7.getDate()+7);
+    lista = lista.filter(o => {
+      if (!o.prazoEstimado || o.concluida) return false;
+      const d=new Date(o.prazoEstimado+'T12:00:00');
+      return d >= new Date() && d <= daqui7;
+    });
+  }
   // Ordenação
   if (_ordenacao === 'num-asc')  lista = [...lista].sort((a,b) => (parseInt(a.numero)||0)-(parseInt(b.numero)||0));
   if (_ordenacao === 'num-desc') lista = [...lista].sort((a,b) => (parseInt(b.numero)||0)-(parseInt(a.numero)||0));
@@ -838,10 +873,20 @@ function renderObraModal(obra) {
         : '';
       // COC com lista dinâmica — não precisa de subData
       if (subCfg.isCocLista) {
-        return `<div class="sub-etapa-item">
-          <div class="sub-etapa-dot ${subStatus}" ${subDotStyle}></div>
-          <div class="sub-etapa-content">
-            <div class="sub-etapa-nome">${subCfg.nome}${atrasada?' <span class="sub-atraso-label">ATRASADO</span>':''}</div>
+        const cocLst = eData.cocLista||[];
+        const allDone = cocLst.length>0 && cocLst.every(i=>i.status==='done');
+        const hasActive = cocLst.some(i=>i.status==='active');
+        const cocIconChar = allDone?'✓':hasActive?'›':'·';
+        const cocIconCls  = allDone?'done':hasActive?'active':'pending';
+        const cocIconInlineStyle = allDone
+          ? 'background:#22c55e;border-color:#22c55e;'
+          : hasActive
+          ? `background:${cfg.cor};border-color:${cfg.cor};`
+          : '';
+        return `<div class="sub-etapa-item" style="align-items:flex-start;">
+          <div class="sub-etapa-icon ${cocIconCls}" style="${cocIconInlineStyle}">${cocIconChar}</div>
+          <div class="sub-etapa-content" style="flex:1;min-width:0;">
+            <div class="sub-etapa-nome">${subCfg.nome}</div>
             <div style="margin-top:0.4rem;">${_renderCocLista(obra, etapaId, subCfg.id)}</div>
           </div>
         </div>`;
@@ -1028,7 +1073,113 @@ function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
   }
 }
 function closeRecusaModal(){ document.getElementById('recusa-modal').style.display='none'; _arObraId=_arEtapaId=_arSubId=null; }
+// ── Aprovado/Recusado em item de lista (aditivos/medicao) ─────────────────────
+async function processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, tipo) {
+  if (tipo==='aprovado') {
+    await _concluirSubDeLista(obraId, etapaId, itemId, subId, 'Aprovado');
+  } else {
+    const obra=_obras.find(o=>o.id===obraId);
+    const lista=obra?.etapas?.[etapaId]?.lista||[];
+    const item=lista.find(i=>i.id===itemId);
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const subCfg=(cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+    const titleEl=document.getElementById('recusa-modal-title');
+    if(titleEl) titleEl.textContent=`Recusado — ${item?.titulo||cfg.nome} · ${subCfg?.nome||subId}`;
+    const input=document.getElementById('recusa-justificativa');
+    if(input) input.value='';
+    // Armazenar contexto para saveRecusa
+    _arObraId=obraId; _arEtapaId=etapaId; _arSubId=subId;
+    window._arListaItemId=itemId;
+    document.getElementById('recusa-modal').style.display='flex';
+  }
+}
+
+async function saveRecusaLista() {
+  const just=document.getElementById('recusa-justificativa')?.value.trim();
+  if(!just){showComercialToast('Justificativa obrigatória.','error');return;}
+  const obraId=_arObraId, etapaId=_arEtapaId, itemId=window._arListaItemId;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  if(!item.revisoes) item.revisoes=[];
+  const revNum=item.revisoes.length+1;
+  item.revisoes.push({numero:revNum,motivo:`Recusado: ${just}`,data:hoje,por:currentUser.username});
+  (cfg.subEtapasTemplate||[]).forEach((s,i)=>{
+    if(!item.subEtapas[s.id]) return;
+    item.subEtapas[s.id].status=i===0?'active':'pending';
+    item.subEtapas[s.id].dataConclusao=null; item.subEtapas[s.id].motivoAtraso=null;
+    if(i===0) item.subEtapas[s.id].dataInicio=hoje;
+    else { item.subEtapas[s.id].dataInicio=null; item.subEtapas[s.id].dataLimite=null; }
+  });
+  item.status='active';
+  _audit(obraId,'recusa',`REV.${revNum} — ${item.titulo}: recusado. Motivo: "${just}"`);
+  window._arListaItemId=null;
+  closeRecusaModal();
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast(`REV.${revNum} registrada — item reiniciado ✅`,'success');
+}
+
+// ── Encerrar aditivo sem termo (conclui na carta_aprovacao) ──────────────────
+let _encerrarObraId=null, _encerrarEtapaId=null, _encerrarItemId=null;
+
+function openEncerrarAditivoModal(obraId, etapaId, itemId) {
+  _encerrarObraId=obraId; _encerrarEtapaId=etapaId; _encerrarItemId=itemId;
+  const obra=_obras.find(o=>o.id===obraId);
+  const item=(obra?.etapas?.[etapaId]?.lista||[]).find(i=>i.id===itemId);
+  const titleEl=document.getElementById('encerrar-aditivo-title');
+  if(titleEl) titleEl.textContent=`Encerrar: ${item?.titulo||'Aditivo'}`;
+  document.getElementById('encerrar-aditivo-modal').style.display='flex';
+}
+function closeEncerrarAditivoModal() {
+  document.getElementById('encerrar-aditivo-modal').style.display='none';
+  _encerrarObraId=_encerrarEtapaId=_encerrarItemId=null;
+}
+async function confirmarEncerrarAditivo() {
+  const obraId=_encerrarObraId, etapaId=_encerrarEtapaId, itemId=_encerrarItemId;
+  closeEncerrarAditivoModal();
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  // Marcar sub-etapa atual (carta_aprovacao) como done e as posteriores como pulada
+  const subs=cfg.subEtapasTemplate||[];
+  let passouEncerramento=false;
+  subs.forEach(s=>{
+    if(!item.subEtapas[s.id]) item.subEtapas[s.id]={status:'pending',dataLimite:null,dataConclusao:null};
+    if(s.podeEncerrar) {
+      // Concluir a sub-etapa de encerramento (carta_aprovacao)
+      item.subEtapas[s.id].status='done';
+      item.subEtapas[s.id].dataConclusao=hoje;
+      item.subEtapas[s.id].concluidoPor=currentUser.username;
+      passouEncerramento=true;
+    } else if(passouEncerramento) {
+      // Marcar sub-etapas POSTERIORES como puladas
+      item.subEtapas[s.id].status='pulada';
+      item.subEtapas[s.id].dataLimite=null;
+      item.subEtapas[s.id].dataConclusao=null;
+    } else if(item.subEtapas[s.id].status==='active') {
+      // Marcar sub-etapas ativas anteriores como done (ex: carta_envio pode estar active)
+      item.subEtapas[s.id].status='done';
+      item.subEtapas[s.id].dataConclusao=hoje;
+    }
+  });
+  item.status='done'; item.dataConclusao=hoje; item.concluidoPor=currentUser.username; item.encerradoSemTermo=true;
+  const todosItemsDone=(etapas[etapaId].lista||[]).every(i=>i.status==='done');
+  if(todosItemsDone) etapas[etapaId].status='done';
+  _audit(obraId,'conclusao',`${item.titulo} encerrado sem Termo Aditivo`);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('Aditivo encerrado! ✅','success');
+}
+
+async function encerrarItemLista(obraId, etapaId, itemId) {
+  openEncerrarAditivoModal(obraId, etapaId, itemId);
+}
+
 async function saveRecusa(){
+  if(window._arListaItemId) { await saveRecusaLista(); return; }
   const just=document.getElementById('recusa-justificativa')?.value.trim();
   if(!just){showComercialToast('Justificativa obrigatória.','error');return;}
   const obraId=_arObraId, etapaId=_arEtapaId, subId=_arSubId;
@@ -1070,6 +1221,8 @@ function _toggleCocItem(id) {
 function _renderCocLista(obra, etapaId, subId) {
   const e       = obra.etapas?.[etapaId];
   const cocLista = e?.cocLista || [];
+  // Dot status for COC is based on cocLista state
+  // (subEtapas.coc is a stub — actual state in cocLista)
   const canAct  = !obra.concluida;
   const hoje    = new Date().toISOString().slice(0,10);
 
@@ -1169,9 +1322,34 @@ async function _concluirCocItem(obraId, etapaId, idx) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
+  const hoje = new Date().toISOString().slice(0,10);
   item.status = 'done';
-  item.dataConclusao = new Date().toISOString().slice(0,10);
+  item.dataConclusao = hoje;
   item.concluidoPor = currentUser.username;
+
+  // Garantir que subEtapas existe
+  if (!etapas[etapaId].subEtapas) etapas[etapaId].subEtapas = {};
+  if (!etapas[etapaId].subEtapas.coc) etapas[etapaId].subEtapas.coc = {status:'pending',dataLimite:null,dataConclusao:null};
+
+  // Verificar se TODOS os COCs estão done
+  const allCocDone = (etapas[etapaId].cocLista||[]).length > 0 &&
+                     (etapas[etapaId].cocLista||[]).every(i => i.status==='done');
+
+  // Sincronizar subEtapas.coc com o estado real da cocLista
+  etapas[etapaId].subEtapas.coc.status = allCocDone ? 'done' : 'active';
+  if (allCocDone) etapas[etapaId].subEtapas.coc.dataConclusao = hoje;
+
+  // Verificar se toda a etapa de Documentações está concluída
+  const cfgDoc = ETAPAS_CONFIG[etapaId];
+  if (cfgDoc?.isIndependente && allCocDone) {
+    const todasDocDone = (cfgDoc.subEtapas||[]).every(s =>
+      etapas[etapaId].subEtapas?.[s.id]?.status === 'done'
+    );
+    if (todasDocDone) {
+      etapas[etapaId].status = 'done';
+    }
+  }
+
   await db.collection('obras').doc(obraId).update({ etapas });
   showComercialToast('COC concluída! ✅', 'success');
 }
@@ -1356,6 +1534,16 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const sub    = item.subEtapas?.[subCfg.id];
       if (!sub) return '';
       const subStatus  = sub.status || 'pending';
+      // Sub-etapa pulada — exibir cinza com tachado
+      if (subStatus === 'pulada') {
+        return `<div class="sub-etapa-item">
+          <div class="sub-etapa-icon" style="background:#9ca3af;border-color:#9ca3af;color:#fff;font-size:0.5rem;">⏭</div>
+          <div class="sub-etapa-content">
+            <div class="sub-etapa-nome" style="color:var(--muted);text-decoration:line-through;">${subCfg.nome}</div>
+            <div class="sub-etapa-meta"><span style="font-size:0.68rem;color:var(--muted);">Pulada</span></div>
+          </div>
+        </div>`;
+      }
       const atrasada   = subStatus!=='done' && sub.dataLimite && sub.dataLimite < hoje;
       const diasCount  = sub.dataInicio ? Math.floor((new Date()-new Date(sub.dataInicio+'T12:00:00'))/(1000*60*60*24)) : 0;
       let dataInfo = '';
@@ -1383,7 +1571,10 @@ function renderListaEtapa(obra, etapaId, hoje) {
         const _dId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
         const _resp = sub.responsavel||'';
         const _items = [
-          subStatus==='active'?`<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
+          subStatus==='active'&&subCfg.podeEncerrar?`<button class="acao-item" data-action="encerrar-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#f59e0b;font-weight:600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Encerrar Aditivo</button>`:'',
+          subStatus==='active'&&!subCfg.isAprovacaoRecusa?`<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
+          subStatus==='active'&&subCfg.isAprovacaoRecusa?`<button class="acao-item concluir" data-action="aprovado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>`:'',
+          subStatus==='active'&&subCfg.isAprovacaoRecusa?`<button class="acao-item motivo" data-action="recusado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>`:'',
 
           subStatus==='active'?`<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>`:'',
           `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_resp||'Atribuir'}</button>`,
@@ -1395,6 +1586,10 @@ function renderListaEtapa(obra, etapaId, hoje) {
       return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
         <span style="width:16px;height:16px;border-radius:50%;background:${dotColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">${dotSymbol}</span>
         <span style="flex:1;font-size:0.78rem;">${subCfg.nome}</span>
+        ${sub.responsavel ? sub.responsavel===currentUser?.username
+          ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);">📍 Você</span>`
+          : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);">👤 ${sub.responsavel}</span>`
+          : ''}
         <div style="display:flex;align-items:center;gap:0.4rem;">${dataInfo}${acoesDropdown}</div>
       </div>`;
     }).join('');
@@ -1403,7 +1598,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
     <div style="border:1px solid var(--border2);border-radius:8px;margin-top:0.5rem;">
       <div onclick="document.getElementById('${toggleId}').style.display=document.getElementById('${toggleId}').style.display==='none'?'block':'none'"
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
-        <span style="font-size:0.8rem;font-weight:700;color:${corItem};flex:1;">${isDone?'✓ ':''} ${item.titulo}</span>
+        <span style="font-size:0.8rem;font-weight:700;color:${corItem};flex:1;">${isDone?'✓ ':''} ${item.titulo}${(item.revisoes||[]).length>0?` <span style="background:#f59e0b;color:#fff;font-size:0.58rem;font-weight:800;padding:0.1rem 0.35rem;border-radius:4px;font-family:var(--font-mono);vertical-align:middle;">REV.${item.revisoes.length}</span>`:''}</span>
         ${dtConc}${!isDone?dtPrev:''}
         ${canAdd?`<button
             onclick="event.stopPropagation();confirmarExcluirItem('${obra.id}','${etapaId}','${item.id}','${item.titulo}')"
@@ -1641,6 +1836,9 @@ function _initAcaoDelegate() {
       case 'obs-etapa':      openObsModal(obraId, etapaId); break;
       case 'pular-etapa':    pularEtapa(obraId, etapaId); break;
       case 'dataprevista':   openDataPrevistaModal(obraId, etapaId, subId); break;
+      case 'aprovado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'aprovado'); break;
+      case 'recusado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'recusado'); break;
+      case 'encerrar-lista': encerrarItemLista(obraId, etapaId, itemId); break;
     }
   });
 }
@@ -1674,8 +1872,11 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
   const prox=subArr[idx+1];
   if(prox && !item.subEtapas[prox.id]) item.subEtapas[prox.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]};
   if(prox) { item.subEtapas[prox.id].status='active'; item.subEtapas[prox.id].dataInicio=hoje; }
-  // Verificar se todas as sub-etapas do item estão done
-  const todasSubDone=subArr.every(s=>item.subEtapas[s.id]?.status==='done');
+  // Verificar se todas as sub-etapas do item estão done ou pulada
+  const todasSubDone = subArr.every(s => {
+    const st = item.subEtapas[s.id]?.status;
+    return st === 'done' || st === 'pulada';
+  });
   if(todasSubDone){ item.status='done'; item.dataConclusao=hoje; item.concluidoPor=currentUser.username; }
   // Verificar conclusão da etapa
   const todosItensDone=(etapas[etapaId].lista||[]).every(i=>i.status==='done');
@@ -1685,7 +1886,10 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
     await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
     showComercialToast('Obra concluída! 🎉','success');
   } else {
-    await db.collection('obras').doc(obraId).update({etapas});
+    const _cfgL=ETAPAS_CONFIG[etapaId];
+  const _subNmL=(_cfgL.subEtapasTemplate||[]).find(s=>s.id===subId)?.nome||subId;
+  _audit(obraId,'conclusao',`${item.titulo} · ${_subNmL} concluída${tipo?' ('+tipo+')':''}${dataCustom&&dataCustom!==new Date().toISOString().slice(0,10)?' com data '+dataCustom:''}`);
+  await db.collection('obras').doc(obraId).update({etapas});
     showComercialToast('Sub-etapa concluída! ✅','success');
   }
 }
@@ -1853,11 +2057,15 @@ function openProrrogarModal(obraId,etapaId,subId,itemId) {
   const limFmt=sub?.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
   const title=document.getElementById('prorrogar-modal-title');
   if(title) title.textContent=`Prorrogar — ${cfg.nome} · ${subCfg?.nome||''}`;
-  const info=document.getElementById('prorrogar-modal-info');
-  if(info) info.textContent=`Limite atual: ${limFmt}${sub?.diasProrrogados?` (já prorrogado ${sub.diasProrrogados}x)`:''}`; 
   const amanha = new Date(); amanha.setDate(amanha.getDate()+1);
   const input = document.getElementById('prorrogar-data-input');
-  if(input){ input.min=amanha.toISOString().slice(0,10); input.value=''; }
+  if(input){ input.min=amanha.toISOString().slice(0,10); input.value=sub?.dataLimite||''; }
+  const info2=document.getElementById('prorrogar-modal-info');
+  if(info2){
+    const limFmt2=sub?.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    const prorrCount=sub?.diasProrrogados||0;
+    info2.textContent=`Limite atual: ${limFmt2}${prorrCount?' (prorrogado '+prorrCount+'x)':''}`.trim();
+  }
   document.getElementById('prorrogar-modal').style.display='flex';
 }
 
@@ -2125,19 +2333,35 @@ function exportarObraPDF(obraId) {
           const atrasada2 = s.status!=='done'&&s.dataLimite&&s.dataLimite<hoje2;
           let st2,corSt2;
           if(s.status==='done'){st2='✓ Concluída';corSt2='#22c55e';}
+          else if(s.status==='pulada'){st2='⏭ Pulada';corSt2='#6b7280';}
           else if(atrasada2){st2='⚠ Atrasada';corSt2='#ef4444';}
           else if(s.status==='active'){st2='► Em andamento';corSt2=cfg.cor;}
           else{st2='○ Pendente';corSt2='#9ca3af';}
           const tipo2=s.tipoConclusao?` (${s.tipoConclusao})`:'';
           const dt2=s.dataConclusao?new Date(s.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR'):s.dataLimite?new Date(s.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
           const dias2=atrasada2?`${Math.ceil((new Date()-new Date(s.dataLimite+'T12:00:00'))/(1000*60*60*24))} dias`:'—';
-          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dt2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2?'#ef4444':'#6b7280'}">${dias2}</td></tr>`;
+          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel||'—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dt2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2?'#ef4444':'#6b7280'}">${dias2}</td></tr>`;
         }).join('');
-        return `<tr style="background:#f0f9ff;"><td colspan="4" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev?` — ${dtPrev}`:''}${dtConc?` — ${dtConc}`:''}</td></tr>${subsItem}`;
+      return `<tr style="background:#f0f9ff;"><td colspan="5" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev?` — ${dtPrev}`:''}${dtConc?` — ${dtConc}`:''}</td></tr>${subsItem}`;
       }).join('');
-      return `<tr style="background:#f9fafb;"><td colspan="4" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
+      return `<tr style="background:#f9fafb;"><td colspan="5" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
     }
     const subsHtml = cfg.subEtapas.map(sub => {
+      // COC: renderizar cada item da cocLista
+      if (sub.isCocLista) {
+        const cocLst = e.cocLista || [];
+        if (!cocLst.length) {
+          return `<tr><td style="padding:4px 8px 4px 20px;color:#9ca3af;font-weight:600;">○ Pendente</td><td style="padding:4px 8px;">COC</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
+        }
+        return cocLst.map((cItem, ci) => {
+          const isDone = cItem.status==='done';
+          const stCoc = isDone?'✓ Concluída':'► Em andamento';
+          const corCoc = isDone?'#22c55e':'#f97316';
+          const dtCoc = cItem.dataConclusao?new Date(cItem.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+          const bg = ci%2===0?'#fff9f0':'#fff';
+          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome||'COC '+(ci+1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel||'—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
+        }).join('');
+      }
       const s = e.subEtapas?.[sub.id]; if(!s) return '';
       const atrasada = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
       let st, corSt;
@@ -2159,11 +2383,12 @@ function exportarObraPDF(obraId) {
       return `<tr>
         <td style="padding:4px 8px 4px 20px;color:${corSt};font-weight:600;white-space:nowrap;">${st}</td>
         <td style="padding:4px 8px;">${sub.nome}${tipo}</td>
+        <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel||'—'}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtConc}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada?'#ef4444':'#6b7280'};font-weight:${atrasada?'700':'400'};">${diasAt}</td>
       </tr>`;
     }).join('');
-    return `<tr style="background:#f9fafb;"><td colspan="3" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};" colspan="4">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
+    return `<tr style="background:#f9fafb;"><td colspan="5" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
   }).join('');
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obra #${obra.numero} — ${obra.nome}</title>
     <style>body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
@@ -2177,14 +2402,47 @@ function exportarObraPDF(obraId) {
     <body>
     <div class="header"><h1>Obra #${obra.numero} — ${obra.nome}</h1>
     <div class="meta"><span>👤 ${obra.representante||'—'}</span><span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>${obra.prazoEstimado?`<span>⏱ Prazo estimado: ${new Date(obra.prazoEstimado+'T12:00:00').toLocaleDateString('pt-BR')}</span>`:''}</div></div>
-    <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Data Conclusão / Limite</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
+    <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Responsável</th><th>Data Conclusão / Limite</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
     <div class="footer">Premovale T.I — Gerado em ${hoje}</div>
     <script>window.onload=()=>{window.print();}<\/script></body></html>`;
   const w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
 // ── Relatório ─────────────────────────────────────────────────────────────────
-function openRelatorioModal()  { document.getElementById('relatorio-modal').style.display='flex'; }
+function openRelatorioModal() {
+  // Popular selects de responsável
+  const resps = new Set();
+  _obras.forEach(obra => {
+    ETAPAS_ORDER.forEach(etapaId => {
+      const e=obra.etapas?.[etapaId]; if(!e?.ativa) return;
+      const cfg=ETAPAS_CONFIG[etapaId];
+      if(cfg.isLista) (e.lista||[]).forEach(item=>Object.values(item.subEtapas||{}).forEach(s=>{if(s.responsavel)resps.add(s.responsavel);}));
+      else Object.values(e.subEtapas||{}).forEach(s=>{if(s.responsavel)resps.add(s.responsavel);});
+    });
+  });
+  const opts='<option value="">Todos</option>'+[...resps].sort().map(r=>`<option value="${r}">${r}</option>`).join('');
+  const sel=document.getElementById('rel-responsavel'); if(sel) sel.innerHTML=opts;
+  const sel2=document.getElementById('rel-responsavel-pend'); if(sel2) sel2.innerHTML=opts.replace('Todos','Todos os responsáveis');
+  document.getElementById('relatorio-modal').style.display='flex';
+  _switchRelTab('geral');
+}
+
+function _switchRelTab(tab) {
+  const t1=document.getElementById('rel-tab-geral');
+  const t2=document.getElementById('rel-tab-pend');
+  const b1=document.getElementById('rel-body-geral');
+  const b2=document.getElementById('rel-body-pend');
+  if(!t1||!b1) return;
+  if(tab==='geral') {
+    t1.style.borderBottom='2px solid var(--accent)'; t1.style.color='var(--accent)';
+    t2.style.borderBottom='2px solid transparent'; t2.style.color='var(--muted)';
+    b1.style.display='flex'; b2.style.display='none';
+  } else {
+    t2.style.borderBottom='2px solid var(--accent)'; t2.style.color='var(--accent)';
+    t1.style.borderBottom='2px solid transparent'; t1.style.color='var(--muted)';
+    b1.style.display='none'; b2.style.display='flex';
+  }
+}
 function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display='none'; }
 
 function _gerarDadosRelatorio() {
@@ -2218,6 +2476,7 @@ function _gerarDadosRelatorio() {
             linhas.push({
               numero:obra.numero||obra.id.slice(-6), nome:obra.nome,
               representante:obra.representante||'—',
+              responsavel:sub.responsavel||'—',
               prazoObra:obra.prazoEstimado?new Date(obra.prazoEstimado+'T12:00:00').toLocaleDateString('pt-BR'):'—',
               etapa:`${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
               subEtapa:subCfg.nome,
@@ -2248,6 +2507,7 @@ function _gerarDadosRelatorio() {
           numero:       obra.numero || obra.id.slice(-6),
           nome:         obra.nome,
           representante:obra.representante || '—',
+          responsavel:  sub.responsavel || '—',
           etapa:        NOMES_ETAPA[etapaId],
           subEtapa:     subCfg.nome,
           status:       atrasada ? 'Atrasada' : vencendo ? 'Vencendo' : 'Em andamento',
@@ -2265,11 +2525,11 @@ function exportarRelatorioXLS() {
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
   try {
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const headers = ['No','Obra','Representante','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
+    const headers = ['Nº','Obra','Representante','Responsável','Etapa','Sub-etapa','Status','Data Limite','Dias em atraso'];
     const escXml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const headerRow = headers.map(h=>`<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
     const dataRows = linhas.map((l, rowIdx) => {
-      const cols=[l.numero,l.nome,l.representante,l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso];
+      const cols=[l.numero,l.nome,l.representante,l.responsavel||'—',l.etapa,l.subEtapa,l.status,l.dataLimite,l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
         const cellBg   = l.status==='Atrasada' ? '#fee2e2' : l.status==='Vencendo' ? '#fef3c7' : rowIdx%2===0 ? '#ffffff' : '#f9fafb';
@@ -2310,6 +2570,7 @@ function exportarRelatorioPDF() {
       <td ${td}>#${l.numero}</td>
       <td ${td}><strong>${l.nome}</strong></td>
       <td ${td}>${l.representante}</td>
+      <td ${td}>${l.responsavel||'—'}</td>
       <td ${td}>${l.prazoObra}</td>
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
@@ -2340,7 +2601,7 @@ function exportarRelatorioPDF() {
       <span>Gerado em ${hoje}</span>
     </div>
     <table>
-      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Prazo da Obra</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
+      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Responsável</th><th>Prazo da Obra</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
@@ -2542,6 +2803,89 @@ async function saveAtribuicao(){
   closeAtribuirModal();
 }
 
+
+
+// ── Relatório de pendências ───────────────────────────────────────────────────
+function exportarRelatorioPendencias() {
+  const hoje = new Date().toISOString().slice(0,10);
+  const hojeFormatado = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const respFiltro = document.getElementById('rel-responsavel-pend')?.value||document.getElementById('rel-responsavel')?.value||'';
+  const rows = [];
+  _obras.filter(o=>!o.concluida).forEach(obra => {
+    ETAPAS_ORDER.forEach(etapaId => {
+      const e = obra.etapas?.[etapaId];
+      const cfg = ETAPAS_CONFIG[etapaId];
+      if (!e?.ativa) return;
+      const processSub = (sub, subNome, titulo) => {
+        if (sub.status==='done' || !sub.responsavel) return;
+        rows.push({
+          numero: obra.numero||obra.id.slice(-6),
+          nome: obra.nome,
+          representante: obra.representante||'—',
+          etapa: titulo ? `${cfg.nome} — ${titulo}` : cfg.nome,
+          subEtapa: subNome,
+          responsavel: sub.responsavel,
+          status: sub.dataLimite&&sub.dataLimite<hoje?'Atrasada':sub.status==='active'?'Em andamento':'Pendente',
+          dataLimite: sub.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—',
+        });
+      };
+      if (cfg.isLista) {
+        (e.lista||[]).forEach(item => {
+          (cfg.subEtapasTemplate||[]).forEach(s => processSub(item.subEtapas?.[s.id]||{}, s.nome, item.titulo));
+        });
+      } else {
+        (cfg.subEtapas||[]).forEach(s => processSub(e.subEtapas?.[s.id]||{}, s.nome, null));
+      }
+    });
+  });
+  let rowsFiltrados = respFiltro ? rows.filter(r=>r.responsavel===respFiltro) : rows;
+  if (!rowsFiltrados.length) { showComercialToast('Nenhuma pendência encontrada.','success'); return; }
+  const rowsFinal = rowsFiltrados;
+  if (!rows.length) { showComercialToast('Nenhuma pendência encontrada.','success'); return; }
+  const rowsHtml = rowsFinal.map((r,i) => {
+    const bg=r.status==='Atrasada'?'#fee2e2':r.status==='Em andamento'?'#dbeafe':i%2===0?'#ffffff':'#f9fafb';
+    const badgeCls=r.status==='Atrasada'?'red':r.status==='Em andamento'?'blue':'gray';
+    const td=`style="padding:6px 10px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
+    return `<tr>
+      <td ${td}>#${r.numero}</td>
+      <td ${td}><strong>${r.nome}</strong></td>
+      <td ${td}>${r.representante}</td>
+      <td ${td}>${r.etapa}</td>
+      <td ${td}>${r.subEtapa}</td>
+      <td ${td} style="padding:6px 10px;border-bottom:1px solid #e5e7eb;background:${bg};font-weight:700;">${r.responsavel}</td>
+      <td ${td}><span class="badge ${badgeCls}">${r.status}</span></td>
+      <td ${td}>${r.dataLimite}</td>
+    </tr>`;
+  }).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pendências — Premovale</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
+      .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #ef4444;padding-bottom:12px;margin-bottom:20px;}
+      .header h1{font-size:16px;margin:0;color:#ef4444;font-weight:800;}
+      .header span{font-size:10px;color:#6b7280;}
+      table{width:100%;border-collapse:collapse;}
+      th{background:#1e293b;color:#fff;padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;}
+      td{padding:6px 10px;border-bottom:1px solid #e5e7eb;vertical-align:top;}
+      .badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;}
+      .red{background:#fee2e2;color:#991b1b;}
+      .blue{background:#dbeafe;color:#1e40af;}
+      .gray{background:#f3f4f6;color:#374151;}
+      .footer{margin-top:16px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:10px;}
+    </style></head>
+    <body>
+    <div class="header">
+      <div><h1>Relatório de Pendências</h1><div style="font-size:10px;color:#6b7280;margin-top:3px;">${respFiltro?`Responsável: ${respFiltro}`:'Todos os responsáveis'}</div></div>
+      <span>Gerado em ${hojeFormatado}</span>
+    </div>
+    <table>
+      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Etapa</th><th>Sub-etapa</th><th>Responsável</th><th>Status</th><th>Data Limite</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+    <div class="footer">Premovale T.I — ${rowsFinal.length} pendência(s)</div>
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`;
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
 
 // ── Filtro Minhas Pendências + Período ────────────────────────────────────────
 let _dropdownAberto = false;
