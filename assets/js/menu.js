@@ -149,7 +149,7 @@ function toggleModPai(id) {
 }
 
 function _openModPai(id) {
-  const btn     = document.getElementById('mod-pai-' + id + '-btn');
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
   const submenu = document.getElementById('mod-pai-' + id + '-submenu');
   if (!btn || !submenu) return;
   const isOpen = submenu.classList.contains('open');
@@ -163,7 +163,7 @@ function _openModPai(id) {
 }
 
 function _toggleModPaiFloat(id) {
-  const btn     = document.getElementById('mod-pai-' + id + '-btn');
+  const btn = document.getElementById('mod-pai-' + id + '-btn');
   const submenu = document.getElementById('mod-pai-' + id + '-submenu');
   if (!btn || !submenu) return;
   // Posiciona o float ao lado do botão
@@ -346,11 +346,11 @@ async function loadAlertasEstoque() {
 function loadAlertasComercial(user) {
   // Verificar permissão
   const canVer = user?.isSuperAdmin || user?.isAdminComercial || user?.isComercial ||
-    (user?.acessos||[]).includes('comercial') || (user?.acessos||[]).includes('adminComercial');
+    (user?.acessos || []).includes('comercial') || (user?.acessos || []).includes('adminComercial');
   if (!canVer) return;
 
   const section = document.getElementById('alertas-comercial-section');
-  const list    = document.getElementById('alertas-comercial-list');
+  const list = document.getElementById('alertas-comercial-list');
   if (!section || !list) return;
 
   // Mostrar seção imediatamente com estado de carregamento
@@ -358,9 +358,9 @@ function loadAlertasComercial(user) {
   list.innerHTML = '<div style="font-size:0.75rem;color:var(--muted);padding:0.4rem 0;">Verificando alertas...</div>';
 
   db.collection('obras').get().then(snap => {
-    const hoje  = new Date();
-    hoje.setHours(0,0,0,0);
-    const hojeStr = hoje.toISOString().slice(0,10);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const hojeStr = hoje.toISOString().slice(0, 10);
     const alertas = [];
 
     snap.docs.forEach(doc => {
@@ -368,7 +368,7 @@ function loadAlertasComercial(user) {
       if (!obra.etapas) return;
       // Ignorar obras concluídas — campo explícito OU todas as etapas ativas finalizadas
       if (obra.concluida) return;
-      const ETAPAS_IDS = ['proposta','contrato','documentacoes','aditivos','medicao'];
+      const ETAPAS_IDS = ['proposta', 'contrato', 'documentacoes', 'aditivos', 'medicao'];
       const ativas = ETAPAS_IDS.filter(id => obra.etapas[id]?.ativa);
       const todasDone = ativas.length > 0 && ativas.every(id => obra.etapas[id]?.status === 'done');
       if (todasDone) return;
@@ -376,25 +376,29 @@ function loadAlertasComercial(user) {
       // ── Prazo geral ───────────────────────────────────────────────
       if (obra.prazoEstimado) {
         const prazoDate = new Date(obra.prazoEstimado + 'T12:00:00');
-        const diffMs    = prazoDate.getTime() - hoje.getTime();
-        const diff      = Math.ceil(diffMs / (1000*60*60*24));
+        const diffMs = prazoDate.getTime() - hoje.getTime();
+        const diff = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
         if (diff < 0) {
-          alertas.push({ tipo:'vencido', id:obra.id,
+          alertas.push({
+            tipo: 'vencido', id: obra.id,
             numero: obra.numero || doc.id.slice(-6),
-            nome:   obra.nome,
-            msg:    `Prazo vencido há ${Math.abs(diff)} dia${Math.abs(diff)!==1?'s':''}` });
+            nome: obra.nome,
+            msg: `Prazo vencido há ${Math.abs(diff)} dia${Math.abs(diff) !== 1 ? 's' : ''}`
+          });
         } else if (diff <= 7) {
-          alertas.push({ tipo:'vencendo', id:obra.id,
+          alertas.push({
+            tipo: 'vencendo', id: obra.id,
             numero: obra.numero || doc.id.slice(-6),
-            nome:   obra.nome,
-            msg:    diff === 0 ? 'Vence hoje!' : `Vencendo em ${diff} dia${diff!==1?'s':''}` });
+            nome: obra.nome,
+            msg: diff === 0 ? 'Vence hoje!' : `Vencendo em ${diff} dia${diff !== 1 ? 's' : ''}`
+          });
         }
       }
 
       // ── Sub-etapas atrasadas ──────────────────────────────────────
-      const ORDEM = ['proposta','contrato','documentacoes','aditivos','medicao'];
-      const NOMES = { proposta:'Proposta', contrato:'Contrato', documentacoes:'Documentações', aditivos:'Aditivos', medicao:'Medição' };
+      const ORDEM = ['proposta', 'contrato', 'documentacoes', 'aditivos', 'medicao'];
+      const NOMES = { proposta: 'Proposta', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos', medicao: 'Medição' };
       ORDEM.forEach(etapaId => {
         const e = obra.etapas?.[etapaId];
         if (!e?.ativa || e.status === 'done') return;
@@ -402,7 +406,7 @@ function loadAlertasComercial(user) {
         if (Array.isArray(e.lista)) {
           // isLista: aditivos, medicao
           temAtraso = e.lista.some(item =>
-            Object.values(item.subEtapas||{}).some(sub => sub.status!=='done' && sub.dataLimite && sub.dataLimite < hojeStr)
+            Object.values(item.subEtapas || {}).some(sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hojeStr)
           );
         } else {
           temAtraso = Object.values(e.subEtapas || {}).some(
@@ -410,10 +414,12 @@ function loadAlertasComercial(user) {
           );
         }
         if (temAtraso) {
-          alertas.push({ tipo:'atrasada', id:obra.id,
+          alertas.push({
+            tipo: 'atrasada', id: obra.id,
             numero: obra.numero || doc.id.slice(-6),
-            nome:   obra.nome,
-            msg:    `${NOMES[etapaId]} em atraso` });
+            nome: obra.nome,
+            msg: `${NOMES[etapaId]} em atraso`
+          });
         }
       });
     });
@@ -424,14 +430,19 @@ function loadAlertasComercial(user) {
     }
 
     // Deduplicar por obra — manter alerta mais crítico
+    // Prioridade: vencido > atrasada > vencendo
+    const prioridade = { vencido: 3, atrasada: 2, vencendo: 1 };
     const mapa = new Map();
     alertas.forEach(a => {
-      if (!mapa.has(a.id) || a.tipo === 'vencido') mapa.set(a.id, a);
+      const atual = mapa.get(a.id);
+      if (!atual || (prioridade[a.tipo] || 0) > (prioridade[atual.tipo] || 0)) {
+        mapa.set(a.id, a);
+      }
     });
     const uniq = [...mapa.values()];
 
-    list.innerHTML = uniq.slice(0,6).map(a => {
-      const cor   = a.tipo === 'vencido' || a.tipo === 'atrasada' ? '#ef4444' : '#f59e0b';
+    list.innerHTML = uniq.slice(0, 6).map(a => {
+      const cor = a.tipo === 'vencido' || a.tipo === 'atrasada' ? '#ef4444' : '#f59e0b';
       const bgCor = a.tipo === 'vencido' || a.tipo === 'atrasada' ? '#fee2e2' : '#fef3c7';
       return `<a href="comercial.html?obra=${a.id}" class="alerta-estoque-item" style="border-left:3px solid ${cor};">
         <div class="alerta-estoque-icon" style="background:${bgCor};">
@@ -444,15 +455,15 @@ function loadAlertasComercial(user) {
           <span class="alerta-estoque-nome">${a.nome}</span>
           <span class="alerta-estoque-detalhe">#${a.numero} · ${a.msg}</span>
         </div>
-        <span class="alerta-estoque-badge" style="background:${bgCor};color:${cor};border-color:${cor}44;">${a.tipo==='vencido'?'Vencido':a.tipo==='atrasada'?'Atrasada':'Urgente'}</span>
+        <span class="alerta-estoque-badge" style="background:${bgCor};color:${cor};border-color:${cor}44;">${a.tipo === 'vencido' ? 'Vencido' : a.tipo === 'atrasada' ? 'Atrasada' : 'Urgente'}</span>
       </a>`;
     }).join('');
 
     if (uniq.length > 6) {
-      list.innerHTML += `<a href="comercial.html" style="display:block;font-size:0.72rem;color:var(--accent);text-align:center;padding:0.35rem;text-decoration:none;">+${uniq.length-6} mais — ver em Comercial</a>`;
+      list.innerHTML += `<a href="comercial.html" style="display:block;font-size:0.72rem;color:var(--accent);text-align:center;padding:0.35rem;text-decoration:none;">+${uniq.length - 6} mais — ver em Comercial</a>`;
     }
   }).catch(e => {
     console.error('[Alertas Comercial]', e);
-    list.innerHTML = `<div style="font-size:0.72rem;color:#ef4444;padding:0.4rem 0;">Erro ao carregar alertas: ${e.code||e.message||'?'}</div>`;
+    list.innerHTML = `<div style="font-size:0.72rem;color:#ef4444;padding:0.4rem 0;">Erro ao carregar alertas: ${e.code || e.message || '?'}</div>`;
   });
 }
