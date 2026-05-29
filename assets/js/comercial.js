@@ -402,8 +402,10 @@ function getEtapaAtualId(obra) {
     if (!e?.ativa || e?.status === 'done') continue;
     if (cfg.isLista) {
       if ((e.lista || []).some(item => item.status === 'active')) return id;
+      // Lista ativa com itens mas nenhum active — ainda é a etapa atual
+      if ((e.lista || []).length > 0) return id;
     } else if (cfg.isIndependente) {
-      // Documentações: ativa e não concluída = etapa atual
+      // Documentações: qualquer estado ativo/pending = etapa atual
       return id;
     } else if (e?.status === 'active') return id;
   }
@@ -470,8 +472,8 @@ function renderObras() {
   let lista = [..._obras];
   if (_filtroRep) lista = lista.filter(o => o.representante === _filtroRep);
   if (_filtroEtapa) lista = lista.filter(o => getEtapaAtualId(o) === _filtroEtapa);
-  if (_filtroDataDe) lista = lista.filter(o => o.dataFechamento && o.dataFechamento >= _filtroDataDe);
-  if (_filtroDataAte) lista = lista.filter(o => o.dataFechamento && o.dataFechamento <= _filtroDataAte);
+  if (_filtroDataDe) lista = lista.filter(o => { const d = o.dataFechamento || o.prazoEstimado; return d && d >= _filtroDataDe; });
+  if (_filtroDataAte) lista = lista.filter(o => { const d = o.dataFechamento || o.prazoEstimado; return d && d <= _filtroDataAte; });
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
   if (_filtroVencendo) {
     const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
@@ -1026,10 +1028,10 @@ function _renderObraFooter(obra, canAdmin) {
 
 
 // ── Concluir com data retroativa ─────────────────────────────────────────────
-let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null;
+let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null, _conclCocIdx = null;
 
-function concluirSubEtapaComData(obraId, etapaId, subId, itemId) {
-  _conclObraId = obraId; _conclEtapaId = etapaId; _conclSubId = subId; _conclItemId = itemId || null;
+function concluirSubEtapaComData(obraId, etapaId, subId, itemId, cocIdx) {
+  _conclObraId = obraId; _conclEtapaId = etapaId; _conclSubId = subId; _conclItemId = itemId || null; _conclCocIdx = (cocIdx !== undefined && cocIdx !== null) ? cocIdx : null;
   const cfg = ETAPAS_CONFIG[etapaId];
   const subCfg = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
   const titleEl = document.getElementById('concl-modal-title');
@@ -1044,14 +1046,15 @@ function concluirSubEtapaComData(obraId, etapaId, subId, itemId) {
   }
   document.getElementById('concl-modal').style.display = 'flex';
 }
-function closeConclModal() { document.getElementById('concl-modal').style.display = 'none'; _conclObraId = _conclEtapaId = _conclSubId = _conclItemId = null; }
+function closeConclModal() { document.getElementById('concl-modal').style.display = 'none'; _conclObraId = _conclEtapaId = _conclSubId = _conclItemId = _conclCocIdx = null; }
 async function saveConclData() {
   const data = document.getElementById('concl-data-input')?.value;
   if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
-  // Capturar IDs ANTES de fechar o modal (closeConclModal zeraria os IDs)
-  const obraId = _conclObraId, etapaId = _conclEtapaId, subId = _conclSubId, itemId = _conclItemId;
+  const obraId = _conclObraId, etapaId = _conclEtapaId, subId = _conclSubId, itemId = _conclItemId, cocIdx = _conclCocIdx;
   closeConclModal();
-  if (itemId) {
+  if (cocIdx !== null && cocIdx !== undefined) {
+    await _concluirCocItem(obraId, etapaId, cocIdx, data);
+  } else if (itemId) {
     await _concluirSubDeLista(obraId, etapaId, itemId, subId, null, data);
   } else {
     await _concluirComTipo(obraId, etapaId, subId, null, data);
@@ -1113,6 +1116,7 @@ async function saveRecusaLista() {
     if (!item.subEtapas[s.id]) return;
     item.subEtapas[s.id].status = i === 0 ? 'active' : 'pending';
     item.subEtapas[s.id].dataConclusao = null; item.subEtapas[s.id].motivoAtraso = null;
+    item.subEtapas[s.id].responsavel = null; // Limpar atribuição na revisão
     if (i === 0) item.subEtapas[s.id].dataInicio = hoje;
     else { item.subEtapas[s.id].dataInicio = null; item.subEtapas[s.id].dataLimite = null; }
   });
@@ -1323,11 +1327,11 @@ async function _saveAddCoc() {
   showComercialToast(`COC "${nome}" adicionada! ✅`, 'success');
   _closeAddCocModal();
 }
-async function _concluirCocItem(obraId, etapaId, idx) {
+async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = dataCustom || new Date().toISOString().slice(0, 10);
   item.status = 'done';
   item.dataConclusao = hoje;
   item.concluidoPor = currentUser.username;
@@ -1817,7 +1821,7 @@ function _initAcaoDelegate() {
       }
       case 'coc-concluir': {
         const ci2 = parseInt(btn.dataset.coc);
-        _concluirCocItem(obraId, etapaId, ci2);
+        concluirSubEtapaComData(obraId, etapaId, 'coc', null, ci2);
         break;
       }
       case 'coc-prorrogar': {
@@ -2258,17 +2262,18 @@ async function saveEditarObra() {
   if (!_editandoObraId) return;
   const nome = document.getElementById('editar-obra-nome')?.value.trim();
   if (!nome) { showComercialToast('Informe o nome da obra.', 'error'); return; }
-  await db.collection('obras').doc(_editandoObraId).update({
+  const updates = {
     numero: document.getElementById('editar-obra-numero')?.value.trim() || '',
     nome,
     representante: document.getElementById('editar-obra-rep')?.value || '',
     dataFechamento: document.getElementById('editar-obra-fechamento')?.value || null,
     prazoEstimado: document.getElementById('editar-obra-prazo')?.value || null,
     obs: document.getElementById('editar-obra-obs')?.value.trim() || '',
-  });
-  _audit(_editObraId, 'edicao', 'Dados da obra editados por ' + currentUser.username);
-  showComercialToast('Obra atualizada! ✅', 'success');
+  };
+  await db.collection('obras').doc(_editandoObraId).update(updates);
+  _audit(_editandoObraId, 'edicao', 'Dados da obra editados por ' + currentUser.username);
   closeEditarObraModal();
+  showComercialToast('Obra atualizada! ✅', 'success');
 }
 
 // ── Excluir / Reabrir ─────────────────────────────────────────────────────────

@@ -98,17 +98,17 @@ async function renderAdministracao() {
   renderServidoresAdmin();
 
   const origSla = document.getElementById('panel-sla');
-  const origFb  = document.getElementById('panel-firebase');
-  if (!origSla) { const f=document.createElement('div'); f.id='panel-sla'; f.style.display='none'; document.body.appendChild(f); }
-  if (!origFb)  { const f=document.createElement('div'); f.id='panel-firebase'; f.style.display='none'; document.body.appendChild(f); }
+  const origFb = document.getElementById('panel-firebase');
+  if (!origSla) { const f = document.createElement('div'); f.id = 'panel-sla'; f.style.display = 'none'; document.body.appendChild(f); }
+  if (!origFb) { const f = document.createElement('div'); f.id = 'panel-firebase'; f.style.display = 'none'; document.body.appendChild(f); }
   await renderSlaPanel();
   await renderFirebaseInfo();
   const slaEl = document.getElementById('panel-sla');
-  const fbEl  = document.getElementById('panel-firebase');
+  const fbEl = document.getElementById('panel-firebase');
   const slaTarget = document.getElementById('admin-sla-section');
-  const fbTarget  = document.getElementById('admin-firebase-section');
+  const fbTarget = document.getElementById('admin-firebase-section');
   if (slaEl && slaTarget) slaTarget.innerHTML = slaEl.innerHTML;
-  if (fbEl  && fbTarget)  fbTarget.innerHTML  = fbEl.innerHTML;
+  if (fbEl && fbTarget) fbTarget.innerHTML = fbEl.innerHTML;
 }
 
 // ── Gerenciamento de Servidores (SuperAdmin) ──
@@ -118,7 +118,7 @@ async function loadServidoresAdmin() {
   try {
     const snap = await db.collection('rotinas_config').doc('servidores').get();
     _adminServidores = snap.exists ? (snap.data().lista || []) : [];
-  } catch(e) { _adminServidores = []; }
+  } catch (e) { _adminServidores = []; }
 }
 
 function renderServidoresAdmin() {
@@ -173,7 +173,7 @@ function renderServidoresAdminList() {
         <div style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0.6rem;background:var(--surface2);border-radius:6px;font-size:0.78rem;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="10" ry="5"/><path d="M2 12c0 2.76 4.48 5 10 5s10-2.24 10-5"/></svg>
           <span style="font-weight:600;font-family:var(--font-mono);min-width:28px;">${d.nome}</span>
-          <span style="color:var(--muted);">${d.total} ${d.unidade||"GB"}</span>
+          <span style="color:var(--muted);">${d.total} ${d.unidade || "GB"}</span>
           <button onclick="removeDiscoAdmin('${s.id}','${d.id}')"
             style="background:none;border:none;cursor:pointer;color:var(--muted);margin-left:auto;padding:0.1rem;line-height:1;"
             onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'" title="Remover disco">
@@ -185,7 +185,7 @@ function renderServidoresAdminList() {
       <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:0.6rem;">
         <select id="new-disco-nome-${s.id}"
           style="width:75px;padding:0.3rem 0.4rem;font-size:0.75rem;font-family:var(--font-mono);background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
-          ${['A:','B:','C:','D:','E:','F:','G:','H:','I:','J:','K:','L:','M:','N:','O:','P:','Q:','R:','S:','T:','U:','V:','W:','X:','Y:','Z:'].map(l=>`<option value="${l}"${l==='C:'?' selected':''}>${l}</option>`).join('')}
+          ${['A:', 'B:', 'C:', 'D:', 'E:', 'F:', 'G:', 'H:', 'I:', 'J:', 'K:', 'L:', 'M:', 'N:', 'O:', 'P:', 'Q:', 'R:', 'S:', 'T:', 'U:', 'V:', 'W:', 'X:', 'Y:', 'Z:'].map(l => `<option value="${l}"${l === 'C:' ? ' selected' : ''}>${l}</option>`).join('')}
         </select>
         <input type="number" placeholder="Capacidade" id="new-disco-total-${s.id}"
           style="width:90px;padding:0.3rem 0.5rem;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;color:var(--text);outline:none;">
@@ -215,14 +215,14 @@ async function saveServidorNome(id) {
 }
 
 async function addDiscoAdmin(srvId) {
-  const nome    = document.getElementById(`new-disco-nome-${srvId}`)?.value.trim();
-  const total   = parseFloat(document.getElementById(`new-disco-total-${srvId}`)?.value)||0;
+  const nome = document.getElementById(`new-disco-nome-${srvId}`)?.value.trim();
+  const total = parseFloat(document.getElementById(`new-disco-total-${srvId}`)?.value) || 0;
   const unidade = document.getElementById(`new-disco-unidade-${srvId}`)?.value || 'GB';
-  if (!nome || !total) { showConfigNotification('Preencha nome e capacidade do disco.','error'); return; }
+  if (!nome || !total) { showConfigNotification('Preencha nome e capacidade do disco.', 'error'); return; }
   const srv = _adminServidores.find(s => s.id === srvId);
   if (!srv) return;
   if (!srv.discos) srv.discos = [];
-  srv.discos.push({ id:'disco'+Date.now(), nome, total, unidade });
+  srv.discos.push({ id: 'disco' + Date.now(), nome, total, unidade });
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   document.getElementById(`new-disco-nome-${srvId}`).value = '';
   document.getElementById(`new-disco-total-${srvId}`).value = '';
@@ -233,7 +233,7 @@ async function addDiscoAdmin(srvId) {
 async function removeDiscoAdmin(srvId, discoId) {
   const srv = _adminServidores.find(s => s.id === srvId);
   if (!srv) return;
-  srv.discos = (srv.discos||[]).filter(d => d.id !== discoId);
+  srv.discos = (srv.discos || []).filter(d => d.id !== discoId);
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   renderServidoresAdminList();
   showConfigNotification('Disco removido.', 'success');
@@ -241,12 +241,12 @@ async function removeDiscoAdmin(srvId, discoId) {
 
 async function addServidorAdmin() {
   const nome = document.getElementById('new-srv-nome')?.value.trim();
-  if (!nome) { showConfigNotification('Informe o nome do servidor.','error'); return; }
-  _adminServidores.push({ id:'srv'+Date.now(), nome, discos:[] });
+  if (!nome) { showConfigNotification('Informe o nome do servidor.', 'error'); return; }
+  _adminServidores.push({ id: 'srv' + Date.now(), nome, discos: [] });
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   document.getElementById('new-srv-nome').value = '';
   renderServidoresAdminList();
-  showConfigNotification('Servidor adicionado! ✅','success');
+  showConfigNotification('Servidor adicionado! ✅', 'success');
 }
 
 async function removeServidorAdmin(id) {
@@ -254,7 +254,7 @@ async function removeServidorAdmin(id) {
   _adminServidores = _adminServidores.filter(s => s.id !== id);
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   renderServidoresAdminList();
-  showConfigNotification('Servidor removido.','success');
+  showConfigNotification('Servidor removido.', 'success');
 }
 
 
@@ -380,7 +380,7 @@ async function renderSlaJustificativas() {
 }
 
 function _renderSlaJustPage(container) {
-  const total      = _slaJustDocs.length;
+  const total = _slaJustDocs.length;
   const totalPages = Math.max(1, Math.ceil(total / _SLA_JUST_PER_PAGE));
   if (_slaJustPage > totalPages) _slaJustPage = totalPages;
 
@@ -388,15 +388,15 @@ function _renderSlaJustPage(container) {
   const paged = _slaJustDocs.slice(start, start + _SLA_JUST_PER_PAGE);
 
   const cards = paged.map(j => {
-    const dt  = j.data ? new Date(j.data).toLocaleString('pt-BR', {
-      day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+    const dt = j.data ? new Date(j.data).toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     }) : '—';
-    const def  = SLA_DEFAULTS[j.priority] || {};
-    const tipo = j.tipo === 'sobrevida'           ? '⏱️ Sobrevida'
-               : j.tipo === 'escalacao_admin'     ? '⬆️ Escalação'
-               : j.tipo === 'bloqueio_superadmin' ? '🔒 Bloqueio'
-               : j.tipo === 'vencimento_admin'    ? '🔴 SLA Admin'
-               : '🔴 SLA';
+    const def = SLA_DEFAULTS[j.priority] || {};
+    const tipo = j.tipo === 'sobrevida' ? '⏱️ Sobrevida'
+      : j.tipo === 'escalacao_admin' ? '⬆️ Escalação'
+        : j.tipo === 'bloqueio_superadmin' ? '🔒 Bloqueio'
+          : j.tipo === 'vencimento_admin' ? '🔴 SLA Admin'
+            : '🔴 SLA';
     return `
       <div class="sla-just-card">
         <div class="sla-just-header">
@@ -905,6 +905,13 @@ function openConfigEditUser(userId) {
   document.getElementById('config-user-anydesk-input').style.display = hasAnydesk ? 'block' : 'none';
   const vipInput = document.getElementById('config-user-vip-input');
   if (vipInput) vipInput.checked = !!user.isVip;
+  // SuperAdmin: bloquear campos imutáveis
+  const isSA = !!user.isSuperAdmin;
+  const lockFields = ['config-user-name-input', 'config-user-role-input', 'config-user-admin-input', 'config-user-setor-input', 'config-user-vip-input'];
+  lockFields.forEach(id => { const el = document.getElementById(id); if (el) { el.disabled = isSA; el.style.opacity = isSA ? '0.5' : ''; el.title = isSA ? 'Campo imutável para SuperAdmin' : ''; } });
+  // Aviso visual
+  const notice = document.getElementById('superadmin-lock-notice');
+  if (notice) notice.style.display = isSA ? 'flex' : 'none';
   toggleConfigAdminCheckbox();
   document.getElementById('config-user-form-modal').classList.add('open');
 }
@@ -943,6 +950,35 @@ function toggleConfigAnydeskInput() {
   if (!hasAnydesk) input.value = '';
 }
 
+
+function _acessosPadraoPorSetor(setor) {
+  const mapa = {
+    'T.I': ['chamados', 'materiais', 'inventario', 'rotinas'],
+    'Comercial': ['comercial'],
+    'Engenharia': ['chamados'],
+  };
+  return mapa[setor] || ['chamados'];
+}
+
+function _confirmarResetAcessos(username, setorAnterior, setorNovo) {
+  return new Promise(resolve => {
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#00000066;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);padding:1.5rem;box-shadow:0 20px 60px #00000030;">
+      <div style="font-size:0.95rem;font-weight:700;margin-bottom:0.75rem;">Trocar Setor</div>
+      <p style="font-size:0.85rem;color:var(--text);margin:0 0 0.5rem;"><strong>${username}</strong> está sendo movido de <strong>${setorAnterior}</strong> para <strong>${setorNovo}</strong>.</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin:0 0 1.25rem;">Deseja redefinir os acessos para os padrões do setor ${setorNovo}?</p>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+        <button id="_reset-nao" class="btn-secondary">Manter acessos</button>
+        <button id="_reset-sim" class="btn-primary">Resetar para ${setorNovo}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('#_reset-sim').onclick = () => { document.body.removeChild(modal); resolve(true); };
+    modal.querySelector('#_reset-nao').onclick = () => { document.body.removeChild(modal); resolve(false); };
+  });
+}
+
 async function saveConfigUser() {
   const name = document.getElementById('config-user-name-input').value.trim();
   const passRaw = document.getElementById('config-user-pass-input').value.trim();
@@ -966,9 +1002,30 @@ async function saveConfigUser() {
     if (dup) { alert('Esse nome de usuário já existe!'); return; }
     const idx = users.findIndex(u => u.id === configEditingId);
     if (idx !== -1) {
-      const wasSuperAdmin = users[idx].isSuperAdmin;
-      const finalPass = passRaw ? await hashPassword(passRaw) : users[idx].password;
-      users[idx] = { ...users[idx], username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor, isVip };
+      const user = users[idx];
+      const wasSuperAdmin = user.isSuperAdmin;
+      const finalPass = passRaw ? await hashPassword(passRaw) : user.password;
+
+      if (wasSuperAdmin) {
+        // SuperAdmin: imutável — só atualiza senha, email, whatsapp, anydesk
+        users[idx] = { ...user, password: finalPass, email, whatsapp, anydesk };
+      } else {
+        // Verificar se o setor mudou para oferecer reset de acessos
+        const setorAnterior = user.setor || '';
+        const setorNovo = setor || '';
+        if (setorAnterior && setorNovo && setorAnterior !== setorNovo) {
+          // Setor mudou — perguntar se reseta acessos
+          const resetar = await _confirmarResetAcessos(user.username, setorAnterior, setorNovo);
+          if (resetar) {
+            const novosAcessos = _acessosPadraoPorSetor(setorNovo);
+            users[idx] = { ...user, username: name, password: finalPass, role, isAdmin: false, isSuperAdmin: false, email, whatsapp, anydesk, setor: setorNovo, isVip, acessos: novosAcessos };
+          } else {
+            users[idx] = { ...user, username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor: setorNovo, isVip };
+          }
+        } else {
+          users[idx] = { ...user, username: name, password: finalPass, role, isAdmin: wasSuperAdmin ? true : isAdmin, email, whatsapp, anydesk, setor, isVip };
+        }
+      }
     }
     saveUsers();
     showUserList();
@@ -1146,17 +1203,17 @@ function initConfigSidebar(user) {
     : (user.acessos || ['chamados']);
 
   ['materiais', 'inventario', 'rotinas'].forEach(mod => {
-    const el    = document.getElementById('cs-mod-' + mod);
+    const el = document.getElementById('cs-mod-' + mod);
     const elSub = document.getElementById('sub-' + mod);
-    const show  = acessos.includes(mod) ? 'flex' : 'none';
-    if (el)    el.style.display = show;
+    const show = acessos.includes(mod) ? 'flex' : 'none';
+    if (el) el.style.display = show;
     if (elSub) elSub.style.display = show;
   });
 
 
   // Módulo Comercial — visibilidade na sidebar
   const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
-    (user.acessos||[]).includes('comercial') || (user.acessos||[]).includes('adminComercial');
+    (user.acessos || []).includes('comercial') || (user.acessos || []).includes('adminComercial');
   const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
   if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
 

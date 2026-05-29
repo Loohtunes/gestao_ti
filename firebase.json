@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "scripts/**",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  },
+  "postdeploy": "node scripts/bump-version.js"
+}

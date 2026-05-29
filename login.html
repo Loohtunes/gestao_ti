@@ -58,8 +58,24 @@
                             <path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z" />
                             <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
                         </svg> Senha</label>
-                    <input type="password" class="login-input" id="attendant-pass" placeholder="Digite sua senha"
-                        onkeydown="if(event.key==='Enter')performLogin()">
+                    <div style="position:relative;display:flex;align-items:center;">
+                        <input type="password" class="login-input" id="attendant-pass" placeholder="Digite sua senha"
+                            style="padding-right:2.75rem;" onkeydown="if(event.key==='Enter')performLogin()">
+                        <button type="button" id="toggle-pass-btn" onclick="
+                            const i=document.getElementById('attendant-pass');
+                            const open='<svg width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z\'/><circle cx=\'12\' cy=\'12\' r=\'3\'/></svg>';
+                            const closed='<svg width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94\'/><path d=\'M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19\'/><line x1=\'1\' y1=\'1\' x2=\'23\' y2=\'23\'/></svg>';
+                            if(i.type==='password'){i.type='text';this.innerHTML=closed;}
+                            else{i.type='password';this.innerHTML=open;}
+                        " style="position:absolute;right:0.65rem;background:none;border:none;cursor:pointer;color:var(--muted,#9ca3af);padding:0.2rem;display:flex;align-items:center;line-height:1;"
+                            title="Mostrar/ocultar senha">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <button class="login-btn" onclick="performLogin()">Entrar</button>
                 <div class="login-actions">
