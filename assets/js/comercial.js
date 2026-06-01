@@ -19,12 +19,12 @@ function toggleMenuSidebar() {
 }
 
 // ── Feriados nacionais fixos BR ───────────────────────────────────────────────
-const FERIADOS_BR = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'];
+const FERIADOS_BR = ['01-01','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'];
 
 function isDiaUtil(date) {
   const dow = date.getDay();
   if (dow === 0 || dow === 6) return false;
-  const mmdd = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const mmdd = `${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   return !FERIADOS_BR.includes(mmdd);
 }
 
@@ -39,71 +39,71 @@ function addDiasUteis(dataStr, dias) {
 // ── Config etapas/sub-etapas ──────────────────────────────────────────────────
 const ETAPAS_CONFIG = {
   proposta: {
-    id: 'proposta', nome: 'Proposta Consolidada', short: 'Proposta', opcional: false, cor: '#3b82f6',
-    subEtapas: [
-      { id: 'elaboracao', nome: 'Elaboração', dias: 2, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: false },
-      { id: 'envio', nome: 'Envio', dias: 2, refEtapa: 'proposta', refSub: 'elaboracao', isNovaDataZero: false, dateLivre: false },
-      { id: 'analise_cliente', nome: 'Análise do Cliente', dias: 3, refEtapa: 'proposta', refSub: 'envio', isNovaDataZero: false, dateLivre: false, isAprovacaoRecusa: true },
-      { id: 'assinatura', nome: 'Assinatura', dias: 5, refEtapa: 'proposta', refSub: 'analise_cliente', isNovaDataZero: false, dateLivre: false, isAprovacaoRecusa: true },
+    id:'proposta', nome:'Proposta Consolidada', short:'Proposta', opcional:false, cor:'#3b82f6',
+    subEtapas:[
+      {id:'elaboracao',     nome:'Elaboração',         dias:2,  refEtapa:null,      refSub:null,              isNovaDataZero:false, dateLivre:false},
+      {id:'envio',          nome:'Envio',              dias:2,  refEtapa:'proposta',refSub:'elaboracao',      isNovaDataZero:false, dateLivre:false},
+      {id:'analise_cliente',nome:'Análise do Cliente', dias:3,  refEtapa:'proposta',refSub:'envio',           isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
+      {id:'assinatura',     nome:'Assinatura',         dias:5,  refEtapa:'proposta',refSub:'analise_cliente', isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   contrato: {
-    id: 'contrato', nome: 'Contrato', short: 'Contrato', opcional: false, cor: '#8b5cf6',
-    subEtapas: [
-      { id: 'elaboracao', nome: 'Elaboração', dias: 2, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: false },
-      { id: 'em_analise', nome: 'Em Análise', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true },
-      { id: 'envio', nome: 'Envio', dias: 3, refEtapa: 'contrato', refSub: 'em_analise', isNovaDataZero: false, dateLivre: false },
-      { id: 'analise_cliente', nome: 'Análise do Cliente', dias: 3, refEtapa: 'contrato', refSub: 'envio', isNovaDataZero: false, dateLivre: false, isAprovacaoRecusa: true },
-      { id: 'assinatura', nome: 'Assinatura', dias: 5, refEtapa: 'contrato', refSub: 'analise_cliente', isNovaDataZero: false, dateLivre: false, isAprovacaoRecusa: true },
+    id:'contrato', nome:'Contrato', short:'Contrato', opcional:false, cor:'#8b5cf6',
+    subEtapas:[
+      {id:'elaboracao',     nome:'Elaboração',         dias:2,  refEtapa:null,       refSub:null,               isNovaDataZero:false, dateLivre:false},
+      {id:'em_analise',     nome:'Em Análise',         dias:0,  refEtapa:null,       refSub:null,               isNovaDataZero:false, dateLivre:true,  isAnalise:true},
+      {id:'envio',          nome:'Envio',              dias:3,  refEtapa:'contrato', refSub:'em_analise',       isNovaDataZero:false, dateLivre:false},
+      {id:'analise_cliente',nome:'Análise do Cliente', dias:3,  refEtapa:'contrato', refSub:'envio',            isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
+      {id:'assinatura',     nome:'Assinatura',         dias:5,  refEtapa:'contrato', refSub:'analise_cliente',  isNovaDataZero:false, dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   documentacoes: {
-    id: 'documentacoes', nome: 'Documentações', short: 'Docs', opcional: false, cor: '#f97316',
-    isIndependente: true,
-    subEtapas: [
-      { id: 'coc', nome: 'COC', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true, isCocLista: true },
-      { id: 'art', nome: 'ART', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
-      { id: 'cno_sfobras', nome: 'CNO/SFOBRAS', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
-      { id: 'serasa', nome: 'Serasa', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
+    id:'documentacoes', nome:'Documentações', short:'Docs', opcional:false, cor:'#f97316',
+    isIndependente:true,
+    subEtapas:[
+      {id:'coc',       nome:'COC',         dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true, isCocLista:true},
+      {id:'art',       nome:'ART',         dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
+      {id:'cno_sfobras',nome:'CNO/SFOBRAS', dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
+      {id:'serasa',    nome:'Serasa',      dias:0, refEtapa:null, refSub:null, isNovaDataZero:false, dateLivre:true, isAnalise:true, isIndependente:true},
     ]
   },
   aditivos: {
-    id: 'aditivos', nome: 'Aditivos / Termo', short: 'Aditivos', opcional: true, cor: '#ec4899',
-    isLista: true,
-    subEtapasTemplate: [
-      { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true },
-      { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
-      { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
-      { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true },
-      { id: 'carta_assinatura', nome: 'Assinatura da Carta Aditiva', dias: 2, dateLivre: false, isAprovacaoRecusa: true, podeEncerrar: true },
-      { id: 'termo_envio', nome: 'Envio do Termo Aditivo', dias: 3, dateLivre: false },
-      { id: 'termo_assinatura', nome: 'Assinatura do Termo Aditivo', dias: 5, dateLivre: false, isAprovacaoRecusa: true },
+    id:'aditivos', nome:'Aditivos / Termo', short:'Aditivos', opcional:true, cor:'#ec4899',
+    isLista:true,
+    subEtapasTemplate:[
+      {id:'comparativo_recebimento', nome:'Recebimento do Comparativo', dias:0,  dateLivre:true},
+      {id:'elaboracao',              nome:'Elaboração',                  dias:2,  dateLivre:false},
+      {id:'carta_envio',             nome:'Envio da Carta Aditiva',      dias:2,  dateLivre:false},
+      {id:'carta_aprovacao',         nome:'Aprovação da Carta Aditiva',    dias:3,  dateLivre:false, isAprovacaoRecusa:true},
+      {id:'carta_assinatura',        nome:'Assinatura da Carta Aditiva',   dias:2,  dateLivre:false, isAprovacaoRecusa:true, podeEncerrar:true},
+      {id:'termo_envio',             nome:'Envio do Termo Aditivo',      dias:3,  dateLivre:false},
+      {id:'termo_assinatura',        nome:'Assinatura do Termo Aditivo', dias:5,  dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
   medicao: {
-    id: 'medicao', nome: 'Medição', short: 'Medição', opcional: true, cor: '#6b7280',
-    isLista: true,
-    subEtapasTemplate: [
-      { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
-      { id: 'envio', nome: 'Envio', dias: 0, dateLivre: true },
-      { id: 'aprovacao', nome: 'Aprovação', dias: 2, dateLivre: false, isAprovacaoRecusa: true },
+    id:'medicao', nome:'Medição', short:'Medição', opcional:true, cor:'#6b7280',
+    isLista:true,
+    subEtapasTemplate:[
+      {id:'elaboracao', nome:'Elaboração', dias:2,  dateLivre:false},
+      {id:'envio',      nome:'Envio',      dias:0,  dateLivre:true},
+      {id:'aprovacao',  nome:'Aprovação',  dias:2,  dateLivre:false, isAprovacaoRecusa:true},
     ]
   },
 };
 
-const ETAPAS_ORDER = ['proposta', 'contrato', 'documentacoes', 'aditivos', 'medicao'];
+const ETAPAS_ORDER = ['proposta','contrato','documentacoes','aditivos','medicao'];
 
-const REPRESENTANTES = ['Verdile', 'Ricardo', 'Sebastião', 'Ângelo', 'Sérgio', 'Matheus', 'Henrique', 'Flávio', 'Gazzo'];
+const REPRESENTANTES = ['Verdile','Ricardo','Sebastião','Ângelo','Sérgio','Matheus','Henrique','Flávio','Gazzo'];
 
 
 // ── Helper lista aditivos/medições ───────────────────────────────────────────
 function criarItemLista(etapaId, titulo, dataPrevista) {
   const cfg = ETAPAS_CONFIG[etapaId];
   const subEtapas = {};
-  (cfg.subEtapasTemplate || []).forEach((sub, i) => {
-    subEtapas[sub.id] = { status: i === 0 ? 'active' : 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
+  (cfg.subEtapasTemplate||[]).forEach((sub,i) => {
+    subEtapas[sub.id] = {status:i===0?'active':'pending', dataLimite:null, dataConclusao:null, motivoAtraso:null, revisoes:[], observacoes:[]};
   });
-  return { id: `${etapaId}_${Date.now()}`, titulo, dataPrevista: dataPrevista || null, status: 'active', subEtapas };
+  return { id:`${etapaId}_${Date.now()}`, titulo, dataPrevista:dataPrevista||null, status:'active', subEtapas };
 }
 
 
@@ -114,14 +114,14 @@ function _migrateObraToV3(obra) {
   if (etapas['cno'] && !etapas['documentacoes']) {
     etapas['documentacoes'] = {
       status: etapas['cno'].status || 'pending',
-      ativa: etapas['cno'].ativa !== false,
+      ativa:  etapas['cno'].ativa !== false,
       revisoes: etapas['cno'].revisoes || [],
       observacoes: etapas['cno'].observacoes || [],
       subEtapas: {
-        coc: { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] },
-        art: { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] },
-        cno_sfobras: { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] },
-        serasa: { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] },
+        coc:        {status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]},
+        art:        {status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]},
+        cno_sfobras:{status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]},
+        serasa:     {status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]},
       }
     };
     delete etapas['cno'];
@@ -132,9 +132,9 @@ function _migrateObraToV3(obra) {
     const old = etapas['aditivos'];
     const lista = [];
     if (old.status && old.status !== 'pending') {
-      lista.push({ id: 'aditivo_1', titulo: 'Aditivo 1', dataPrevista: null, status: old.status, subEtapas: old.subEtapas || {} });
+      lista.push({ id:'aditivo_1', titulo:'Aditivo 1', dataPrevista:null, status:old.status, subEtapas:old.subEtapas||{} });
     }
-    etapas['aditivos'] = { status: old.status || 'pending', ativa: old.ativa || false, lista };
+    etapas['aditivos'] = { status:old.status||'pending', ativa:old.ativa||false, lista };
   }
 
   // 3. Converter medicao de objeto para lista
@@ -142,9 +142,9 @@ function _migrateObraToV3(obra) {
     const old = etapas['medicao'];
     const lista = [];
     if (old.status && old.status !== 'pending') {
-      lista.push({ id: 'medicao_1', titulo: 'Medição 1', dataPrevista: null, status: old.status, subEtapas: old.subEtapas || {} });
+      lista.push({ id:'medicao_1', titulo:'Medição 1', dataPrevista:null, status:old.status, subEtapas:old.subEtapas||{} });
     }
-    etapas['medicao'] = { status: old.status || 'pending', ativa: old.ativa || false, lista };
+    etapas['medicao'] = { status:old.status||'pending', ativa:old.ativa||false, lista };
   }
 
   return { etapas };
@@ -154,13 +154,13 @@ function _migrateObraToV3(obra) {
 function _migrateObraToV6(obra) {
   // Adiciona carta_assinatura nos aditivos existentes
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
-  const blank = () => ({ status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] });
-  (etapas.aditivos?.lista || []).forEach(item => {
+  const blank = () => ({status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]});
+  (etapas.aditivos?.lista||[]).forEach(item => {
     if (!item.subEtapas.carta_assinatura) {
-      item.subEtapas.carta_assinatura = { ...blank() };
+      item.subEtapas.carta_assinatura = {...blank()};
       // Se carta_aprovacao está done, carta_assinatura fica active
       if (item.subEtapas.carta_aprovacao?.status === 'done' &&
-        (item.subEtapas.termo_envio?.status === 'pending' || !item.subEtapas.termo_envio)) {
+          (item.subEtapas.termo_envio?.status === 'pending' || !item.subEtapas.termo_envio)) {
         item.subEtapas.carta_assinatura.status = 'active';
       }
     }
@@ -170,13 +170,13 @@ function _migrateObraToV6(obra) {
 
 function _migrateObraToV5(obra) {
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
-  ['aditivos', 'medicao'].forEach(etapaId => {
+  ['aditivos','medicao'].forEach(etapaId => {
     const lista = etapas[etapaId]?.lista || [];
     lista.forEach(item => {
       const subs = item.subEtapas || {};
       // Renomear em_analise → elaboracao nos aditivos e medicao
       if (subs['em_analise'] && !subs['elaboracao']) {
-        subs['elaboracao'] = { ...subs['em_analise'] };
+        subs['elaboracao'] = {...subs['em_analise']};
         delete subs['em_analise'];
       }
       item.subEtapas = subs;
@@ -187,27 +187,27 @@ function _migrateObraToV5(obra) {
 
 function _migrateObraToV4(obra) {
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
-  const hoje = new Date().toISOString().slice(0, 10);
-  const blank = () => ({ status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] });
+  const hoje = new Date().toISOString().slice(0,10);
+  const blank = () => ({status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]});
 
   // Proposta: add elaboracao and analise_cliente if missing
   if (etapas.proposta?.subEtapas) {
     if (!etapas.proposta.subEtapas.elaboracao) {
       // Insert elaboracao as done (old obras already had envio)
-      etapas.proposta.subEtapas.elaboracao = { ...blank(), status: etapas.proposta.subEtapas.envio ? 'done' : 'pending' };
+      etapas.proposta.subEtapas.elaboracao = {...blank(), status: etapas.proposta.subEtapas.envio ? 'done' : 'pending'};
     }
     if (!etapas.proposta.subEtapas.analise_cliente) {
-      etapas.proposta.subEtapas.analise_cliente = { ...blank() };
+      etapas.proposta.subEtapas.analise_cliente = {...blank()};
     }
   }
 
   // Contrato: add elaboracao and analise_cliente if missing
   if (etapas.contrato?.subEtapas) {
     if (!etapas.contrato.subEtapas.elaboracao) {
-      etapas.contrato.subEtapas.elaboracao = { ...blank(), status: etapas.contrato.subEtapas.em_analise ? 'done' : 'pending' };
+      etapas.contrato.subEtapas.elaboracao = {...blank(), status: etapas.contrato.subEtapas.em_analise ? 'done' : 'pending'};
     }
     if (!etapas.contrato.subEtapas.analise_cliente) {
-      etapas.contrato.subEtapas.analise_cliente = { ...blank() };
+      etapas.contrato.subEtapas.analise_cliente = {...blank()};
     }
   }
 
@@ -219,24 +219,24 @@ function _migrateObraToV4(obra) {
 function initObraEtapas(dataFechamento) {
   const etapas = {};
   ETAPAS_ORDER.forEach(etapaId => {
-    const cfg = ETAPAS_CONFIG[etapaId];
+    const cfg   = ETAPAS_CONFIG[etapaId];
     const isFirst = etapaId === 'proposta';
     if (cfg.isLista) {
-      etapas[etapaId] = { status: 'pending', ativa: false, lista: [] };
+      etapas[etapaId] = { status:'pending', ativa:false, lista:[] };
       return;
     }
-    etapas[etapaId] = { status: isFirst ? 'active' : 'pending', ativa: !cfg.opcional, subEtapas: {}, revisoes: [], observacoes: [] };
+    etapas[etapaId] = { status: isFirst ? 'active' : 'pending', ativa: !cfg.opcional, subEtapas:{}, revisoes:[], observacoes:[] };
     const subs = cfg.subEtapas || [];
     subs.forEach((sub, idx) => {
       const isFirstSub = isFirst && idx === 0;
       etapas[etapaId].subEtapas[sub.id] = {
-        status: isFirstSub ? 'active' : 'pending',
-        dataInicio: isFirstSub ? dataFechamento : null,
-        dataLimite: isFirstSub && sub.dias ? addDiasUteis(dataFechamento, sub.dias) : null,
+        status:        isFirstSub ? 'active' : 'pending',
+        dataInicio:    isFirstSub ? dataFechamento : null,
+        dataLimite:    isFirstSub && sub.dias ? addDiasUteis(dataFechamento, sub.dias) : null,
         dataConclusao: null,
-        motivoAtraso: null,
-        revisoes: [],
-        observacoes: [],
+        motivoAtraso:  null,
+        revisoes:      [],
+        observacoes:   [],
       };
     });
   });
@@ -252,28 +252,28 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 }
 
 // ── Estado ────────────────────────────────────────────────────────────────────
-let _obras = [], _obraAtual = null, _filtroRep = '', _filtroEtapa = '', _unsubObras = null;
-let _filtroDataDe = '', _filtroDataAte = '', _filtroEtapaAtraso = '', _filtroBusca = '', _filtroVencendo = false;
-let _ordenacao = 'recente';
-let _filtroPeriodoDe = '', _filtroPeriodoAte = '';
-let _filtroMinhasPendencias = false;
-let _currentObraId = null; // ID da obra aberta no modal
-let _filtroUsuarioPendencia = ''; // Para visualização do gestor
-let _paginaAtual = 0;
-let _obrasPorPagina = parseInt(localStorage.getItem('comercial-per-page') || '12');
+let _obras=[], _obraAtual=null, _filtroRep='', _filtroEtapa='', _unsubObras=null;
+let _filtroDataDe='', _filtroDataAte='', _filtroEtapaAtraso='', _filtroBusca='', _filtroVencendo=false;
+let _ordenacao='recente';
+let _filtroPeriodoDe='', _filtroPeriodoAte='';
+let _filtroMinhasPendencias=false;
+let _currentObraId=null; // ID da obra aberta no modal
+let _filtroUsuarioPendencia=''; // Para visualização do gestor
+let _paginaAtual=0;
+let _obrasPorPagina=parseInt(localStorage.getItem('comercial-per-page')||'12');
 
-function setFiltroRep(val) { _filtroRep = val; _paginaAtual = 0; renderObras(); }
-function setFiltroEtapa(val) { _filtroEtapa = val; _paginaAtual = 0; renderObras(); }
-function setFiltroDataDe(val) { _filtroDataDe = val; _paginaAtual = 0; renderObras(); }
-function setFiltroDataAte(val) { _filtroDataAte = val; _paginaAtual = 0; renderObras(); }
-function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso = val; _paginaAtual = 0; renderObras(); }
-function toggleFiltroVencendo(btn) { _filtroVencendo = !_filtroVencendo; _paginaAtual = 0; if (btn) { btn.style.background = _filtroVencendo ? 'var(--accent)' : ''; btn.style.color = _filtroVencendo ? '#fff' : 'var(--text)'; } renderObras(); }
-function setFiltroBusca(val) { _filtroBusca = val.toLowerCase().trim(); _paginaAtual = 0; renderObras(); }
-function setOrdenacao(val) { _ordenacao = val; _paginaAtual = 0; renderObras(); }
-function setFiltroPeriodoDe(val) { _filtroPeriodoDe = val; _paginaAtual = 0; renderObras(); }
-function setFiltroPeriodoAte(val) { _filtroPeriodoAte = val; _paginaAtual = 0; renderObras(); }
-function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.setItem('comercial-per-page', val); _paginaAtual = 0; renderObras(); }
-function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function setFiltroRep(val)     { _filtroRep=val;     _paginaAtual=0; renderObras(); }
+function setFiltroEtapa(val)   { _filtroEtapa=val;   _paginaAtual=0; renderObras(); }
+function setFiltroDataDe(val)  { _filtroDataDe=val;  _paginaAtual=0; renderObras(); }
+function setFiltroDataAte(val)    { _filtroDataAte=val;      _paginaAtual=0; renderObras(); }
+function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso=val; _paginaAtual=0; renderObras(); }
+function toggleFiltroVencendo(btn) { _filtroVencendo=!_filtroVencendo; _paginaAtual=0; if(btn){btn.style.background=_filtroVencendo?'var(--accent)':'';btn.style.color=_filtroVencendo?'#fff':'var(--text)';} renderObras(); }
+function setFiltroBusca(val)       { _filtroBusca=val.toLowerCase().trim(); _paginaAtual=0; renderObras(); }
+function setOrdenacao(val)         { _ordenacao=val; _paginaAtual=0; renderObras(); }
+function setFiltroPeriodoDe(val)   { _filtroPeriodoDe=val; _paginaAtual=0; renderObras(); }
+function setFiltroPeriodoAte(val)  { _filtroPeriodoAte=val; _paginaAtual=0; renderObras(); }
+function setObrasPorPagina(val){ _obrasPorPagina=parseInt(val); localStorage.setItem('comercial-per-page',val); _paginaAtual=0; renderObras(); }
+function irParaPagina(p)       { _paginaAtual=p; renderObras(); window.scrollTo({top:0,behavior:'smooth'}); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
 const SCHEMA_VERSION = 6;
@@ -289,19 +289,19 @@ async function migrateObras() {
         const data = doc.data();
         const ver = data._schemaVersion || 1;
         let migrated = data;
-        if (ver < 2) migrated = { ...migrated, ..._migrateObraToV2(migrated) };
-        if (ver < 3) migrated = { ...migrated, ..._migrateObraToV3(migrated) };
-        if (ver < 4) migrated = { ...migrated, ..._migrateObraToV4(migrated) };
-        if (ver < 5) migrated = { ...migrated, ..._migrateObraToV5(migrated) };
-        if (ver < 6) migrated = { ...migrated, ..._migrateObraToV6(migrated) };
+        if (ver < 2) migrated = {...migrated, ..._migrateObraToV2(migrated)};
+        if (ver < 3) migrated = {...migrated, ..._migrateObraToV3(migrated)};
+        if (ver < 4) migrated = {...migrated, ..._migrateObraToV4(migrated)};
+        if (ver < 5) migrated = {...migrated, ..._migrateObraToV5(migrated)};
+        if (ver < 6) migrated = {...migrated, ..._migrateObraToV6(migrated)};
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
-      } catch (e) {
+      } catch(e) {
         console.warn(`[Migração] Erro na obra ${doc.id}:`, e);
       }
     }
     console.log(`[Migração] Concluída! ${toMigrate.length} obra(s) migrada(s).`);
-  } catch (e) {
+  } catch(e) {
     console.error('[Migração] Erro geral:', e);
     // Não relançar — onSnapshot deve iniciar mesmo se migração falhar
   }
@@ -314,35 +314,35 @@ function _migrateObraToV2(obra) {
   const etapaAtualIdx = obra.etapaAtual ?? 0;
   const etapasAntigas = Array.isArray(obra.etapas) ? obra.etapas : [];
   const dataFechamento = obra.dataFechamento
-    || (obra.createdAt?.toDate ? obra.createdAt.toDate().toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+    || (obra.createdAt?.toDate ? obra.createdAt.toDate().toISOString().slice(0,10) : new Date().toISOString().slice(0,10));
 
   const novasEtapas = {};
   ETAPAS_ORDER.forEach((etapaId, idx) => {
     const cfg = ETAPAS_CONFIG[etapaId];
     const antigaEtapa = etapasAntigas[idx] || {};
     let etapaStatus = 'pending';
-    if (idx < etapaAtualIdx) etapaStatus = 'done';
+    if (idx < etapaAtualIdx)   etapaStatus = 'done';
     if (idx === etapaAtualIdx) etapaStatus = 'active';
-    if (obra.concluida) etapaStatus = 'done';
+    if (obra.concluida)        etapaStatus = 'done';
     const eraAtiva = idx <= etapaAtualIdx || obra.concluida;
     novasEtapas[etapaId] = {
-      status: etapaStatus,
-      ativa: cfg.opcional ? eraAtiva : true,
+      status:   etapaStatus,
+      ativa:    cfg.opcional ? eraAtiva : true,
       revisoes: antigaEtapa.revisoes || [],
       subEtapas: {},
     };
     if (cfg.isLista) { novasEtapas[etapaId].lista = []; return; }
-    (cfg.subEtapas || []).forEach((sub, subIdx) => {
+    (cfg.subEtapas||[]).forEach((sub, subIdx) => {
       let subStatus = 'pending';
-      if (idx < etapaAtualIdx) subStatus = 'done';
+      if (idx < etapaAtualIdx)   subStatus = 'done';
       if (idx === etapaAtualIdx) subStatus = subIdx === 0 ? 'active' : 'pending';
-      if (obra.concluida) subStatus = 'done';
+      if (obra.concluida)        subStatus = 'done';
       novasEtapas[etapaId].subEtapas[sub.id] = {
-        status: subStatus,
-        dataLimite: null,
+        status:        subStatus,
+        dataLimite:    null,
         dataConclusao: subStatus === 'done' ? (antigaEtapa.dataConclusao || null) : null,
-        motivoAtraso: null,
-        revisoes: [],
+        motivoAtraso:  null,
+        revisoes:      [],
       };
     });
   });
@@ -350,9 +350,9 @@ function _migrateObraToV2(obra) {
   // Não usar FieldValue.delete() para evitar erros — sobrescrever com undefined é suficiente
   return {
     _schemaVersion: SCHEMA_VERSION,
-    etapas: novasEtapas,
+    etapas:         novasEtapas,
     dataFechamento: dataFechamento,
-    numero: String(obra.numero || obra.id?.slice(-6).toUpperCase() || '—'),
+    numero:         String(obra.numero || obra.id?.slice(-6).toUpperCase() || '—'),
   };
 }
 
@@ -369,7 +369,7 @@ function initComercial() {
           const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
           return tb - ta;
         });
-      try { renderObras(); highlightObraFromUrl(); } catch (e) {
+      try { renderObras(); highlightObraFromUrl(); } catch(e) {
         console.error('[renderObras get]', e);
         const el = document.getElementById('obras-grid');
         if (el) el.innerHTML = `<div class="obras-empty"><h3 style="color:#ef4444;">Erro ao renderizar obras</h3><span style="font-size:0.78rem;">${e.message}</span></div>`;
@@ -381,7 +381,7 @@ function initComercial() {
       if (el) el.innerHTML = `<div class="obras-empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <h3 style="color:#ef4444;">Sem permissão para ler obras</h3>
-        <span style="font-size:0.78rem;color:var(--muted);">Verifique as regras do Firestore para a coleção "obras" no projeto <strong>${e.code || '?'}</strong></span>
+        <span style="font-size:0.78rem;color:var(--muted);">Verifique as regras do Firestore para a coleção "obras" no projeto <strong>${e.code||'?'}</strong></span>
       </div>`;
     });
 
@@ -396,15 +396,15 @@ function initComercial() {
             const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
             return tb - ta;
           });
-        try { renderObras(); } catch (e) { console.error('[renderObras snap]', e); }
+        try { renderObras(); } catch(e) { console.error('[renderObras snap]', e); }
         if (_obraAtual) {
           const obra = _obras.find(o => o.id === _obraAtual);
-          if (obra) try { _saveAccordionState(); renderObraModal(obra); _restoreAccordionState(); } catch (e) { console.error('[renderObraModal]', e); }
+          if (obra) try { _saveAccordionState(); renderObraModal(obra); _restoreAccordionState(); } catch(e) { console.error('[renderObraModal]', e); }
         }
       },
       err => console.error('[onSnapshot obras]', err)
     );
-  } catch (e) {
+  } catch(e) {
     console.error('[initComercial onSnapshot setup]', e);
   }
 
@@ -416,13 +416,13 @@ function initComercial() {
 function getEtapaAtualId(obra) {
   if (!obra.etapas) return 'proposta';
   for (const id of ETAPAS_ORDER) {
-    const e = obra.etapas[id];
+    const e   = obra.etapas[id];
     const cfg = ETAPAS_CONFIG[id];
     if (!e?.ativa || e?.status === 'done') continue;
     if (cfg.isLista) {
-      if ((e.lista || []).some(item => item.status === 'active')) return id;
+      if ((e.lista||[]).some(item => item.status==='active')) return id;
       // Lista ativa com itens mas nenhum active — ainda é a etapa atual
-      if ((e.lista || []).length > 0) return id;
+      if ((e.lista||[]).length > 0) return id;
     } else if (cfg.isIndependente) {
       // Documentações: qualquer estado ativo/pending = etapa atual
       return id;
@@ -437,13 +437,13 @@ function getEtapaAtualId(obra) {
 }
 
 function getPrazoInfo(prazo) {
-  if (!prazo) return { texto: 'Sem prazo definido', cls: '' };
-  const d = new Date(prazo + 'T12:00:00'), hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((d - hoje) / (1000 * 60 * 60 * 24));
-  const fmt = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  if (diff <= 0) return { texto: diff === 0 ? 'Vencido hoje!' : `Vencido em ${fmt}`, cls: 'vencido' };
-  if (diff <= 7) return { texto: `Vencendo em ${diff} dia${diff !== 1 ? 's' : ''}`, cls: 'urgente' };
-  return { texto: `Prazo: ${fmt}`, cls: '' };
+  if (!prazo) return {texto:'Sem prazo definido', cls:''};
+  const d=new Date(prazo+'T12:00:00'), hoje=new Date(); hoje.setHours(0,0,0,0);
+  const diff=Math.ceil((d-hoje)/(1000*60*60*24));
+  const fmt=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  if (diff <= 0) return {texto: diff===0 ? 'Vencido hoje!' : `Vencido em ${fmt}`, cls:'vencido'};
+  if (diff <= 7) return {texto:`Vencendo em ${diff} dia${diff!==1?'s':''}`, cls:'urgente'};
+  return {texto:`Prazo: ${fmt}`, cls:''};
 }
 
 
@@ -453,8 +453,8 @@ function hasEtapaAtrasadaPorId(obra, etapaId) {
   const e = obra.etapas[etapaId];
   if (!e?.ativa) return false;
   if (Array.isArray(e.lista)) {
-    return e.lista.some(item => Object.values(item.subEtapas || {}).some(
-      sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje));
+    return e.lista.some(item => Object.values(item.subEtapas||{}).some(
+      sub => sub.status!=='done' && sub.dataLimite && sub.dataLimite < hoje));
   }
   return Object.values(e.subEtapas || {}).some(
     sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje);
@@ -489,85 +489,85 @@ function renderObras() {
 
   // Aplicar filtros
   let lista = [..._obras];
-  if (_filtroRep) lista = lista.filter(o => o.representante === _filtroRep);
-  if (_filtroEtapa) lista = lista.filter(o => getEtapaAtualId(o) === _filtroEtapa);
+  if (_filtroRep)     lista = lista.filter(o => o.representante===_filtroRep);
+  if (_filtroEtapa)   lista = lista.filter(o => getEtapaAtualId(o)===_filtroEtapa);
   if (_filtroDataDe || _filtroDataAte) {
     lista = lista.filter(obra => {
       return ETAPAS_ORDER.some(etapaId => {
         const e = obra.etapas?.[etapaId]; if (!e?.ativa) return false;
         const cfg = ETAPAS_CONFIG[etapaId];
         const checkSub = sub => {
-          if (!sub || sub.status === 'done' || !sub.dataLimite) return false;
+          if (!sub || sub.status==='done' || !sub.dataLimite) return false;
           if (_filtroDataDe && sub.dataLimite < _filtroDataDe) return false;
           if (_filtroDataAte && sub.dataLimite > _filtroDataAte) return false;
           return true;
         };
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(checkSub));
-        return Object.values(e.subEtapas || {}).some(checkSub);
+        if (cfg.isLista) return (e.lista||[]).some(item=>Object.values(item.subEtapas||{}).some(checkSub));
+        return Object.values(e.subEtapas||{}).some(checkSub);
       });
     });
   }
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
   if (_filtroVencendo) {
-    const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
+    const daqui7=new Date(); daqui7.setDate(daqui7.getDate()+7);
     lista = lista.filter(o => {
       if (!o.prazoEstimado || o.concluida) return false;
-      const d = new Date(o.prazoEstimado + 'T12:00:00');
+      const d=new Date(o.prazoEstimado+'T12:00:00');
       return d >= new Date() && d <= daqui7;
     });
   }
   // Ordenação
-  if (_ordenacao === 'num-asc') lista = [...lista].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
-  if (_ordenacao === 'num-desc') lista = [...lista].sort((a, b) => (parseInt(b.numero) || 0) - (parseInt(a.numero) || 0));
+  if (_ordenacao === 'num-asc')  lista = [...lista].sort((a,b) => (parseInt(a.numero)||0)-(parseInt(b.numero)||0));
+  if (_ordenacao === 'num-desc') lista = [...lista].sort((a,b) => (parseInt(b.numero)||0)-(parseInt(a.numero)||0));
   // Filtro por período — obras com sub-etapas pendentes com dataLimite no intervalo
   if (_filtroPeriodoDe || _filtroPeriodoAte) {
     lista = lista.filter(obra => {
       if (obra.concluida) return false;
       return ETAPAS_ORDER.some(etapaId => {
-        const e = obra.etapas?.[etapaId];
+        const e   = obra.etapas?.[etapaId];
         const cfg = ETAPAS_CONFIG[etapaId];
         if (!e?.ativa) return false;
         const checkSub = sub => {
-          if (sub.status === 'done' || !sub.dataLimite) return false;
+          if (sub.status==='done'||!sub.dataLimite) return false;
           if (_filtroPeriodoDe && sub.dataLimite < _filtroPeriodoDe) return false;
           if (_filtroPeriodoAte && sub.dataLimite > _filtroPeriodoAte) return false;
           return true;
         };
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(checkSub));
-        return Object.values(e.subEtapas || {}).some(checkSub);
+        if (cfg.isLista) return (e.lista||[]).some(item=>Object.values(item.subEtapas||{}).some(checkSub));
+        return Object.values(e.subEtapas||{}).some(checkSub);
       });
     });
   }
   if (_filtroMinhasPendencias) {
-    const alvo = _filtroUsuarioPendencia || currentUser?.username;
+    const alvo=_filtroUsuarioPendencia||currentUser?.username;
     lista = lista.filter(obra => {
       if (obra.concluida) return false;
       return ETAPAS_ORDER.some(etapaId => {
-        const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa) return false;
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(s => s.status !== 'done' && s.responsavel === alvo));
-        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && sub.responsavel === alvo);
+        const e=obra.etapas?.[etapaId]; const cfg=ETAPAS_CONFIG[etapaId]; if(!e?.ativa) return false;
+        if(cfg.isLista) return (e.lista||[]).some(item=>Object.values(item.subEtapas||{}).some(s=>s.status!=='done'&&s.responsavel===alvo));
+        return Object.values(e.subEtapas||{}).some(sub=>sub.status!=='done'&&sub.responsavel===alvo);
       });
     });
   }
-  if (_filtroBusca) lista = lista.filter(o =>
-    String(o.numero || '').toLowerCase().includes(_filtroBusca) ||
-    (o.nome || '').toLowerCase().includes(_filtroBusca) ||
-    (o.representante || '').toLowerCase().includes(_filtroBusca));
+  if (_filtroBusca)      lista = lista.filter(o =>
+    String(o.numero||'').toLowerCase().includes(_filtroBusca) ||
+    (o.nome||'').toLowerCase().includes(_filtroBusca) ||
+    (o.representante||'').toLowerCase().includes(_filtroBusca));
 
-  const total = lista.length;
-  const totalPags = Math.max(1, Math.ceil(total / _obrasPorPagina));
-  _paginaAtual = Math.min(_paginaAtual, totalPags - 1);
-  const inicio = _paginaAtual * _obrasPorPagina;
-  const paginada = lista.slice(inicio, inicio + _obrasPorPagina);
+  const total      = lista.length;
+  const totalPags  = Math.max(1, Math.ceil(total / _obrasPorPagina));
+  _paginaAtual     = Math.min(_paginaAtual, totalPags - 1);
+  const inicio     = _paginaAtual * _obrasPorPagina;
+  const paginada   = lista.slice(inicio, inicio + _obrasPorPagina);
 
   // Atualizar contador
   const counter = document.getElementById('obras-counter');
-  if (counter) counter.textContent = `${total} obra${total !== 1 ? 's' : ''}`;
+  if (counter) counter.textContent = `${total} obra${total!==1?'s':''}`;
 
   if (!total) {
-    el.innerHTML = `<div class="obras-empty">
+    el.innerHTML=`<div class="obras-empty">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-      <h3>${_filtroRep || _filtroEtapa || _filtroDataDe || _filtroDataAte ? 'Nenhuma obra com esses filtros' : 'Nenhuma obra cadastrada'}</h3>
+      <h3>${_filtroRep||_filtroEtapa||_filtroDataDe||_filtroDataAte?'Nenhuma obra com esses filtros':'Nenhuma obra cadastrada'}</h3>
       <span style="font-size:0.78rem;">Clique em "+ Nova Obra" para começar</span>
     </div>`;
     _renderPaginacao(0, 0, 0);
@@ -575,16 +575,14 @@ function renderObras() {
   }
 
   el.innerHTML = paginada.map(obra => {
-    const etapaId = getEtapaAtualId(obra);
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const cor = obra.concluida ? '#22c55e' : cfg?.cor || 'var(--muted)';
+    const etapaId   = getEtapaAtualId(obra);
+    const cfg       = ETAPAS_CONFIG[etapaId];
+    const cor       = obra.concluida ? '#22c55e' : cfg?.cor || 'var(--muted)';
     const etapaNome = obra.concluida ? 'Concluída' : (cfg?.short || '—');
     const prazoInfo = obra.concluida
-      ? {
-        texto: obra.dataConclusao
-          ? `Concluída em ${new Date(obra.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}`
-          : 'Concluída', cls: 'concluida'
-      }
+      ? { texto: obra.dataConclusao
+            ? `Concluída em ${new Date(obra.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})}`
+            : 'Concluída', cls: 'concluida' }
       : getPrazoInfo(obra.prazoEstimado);
     const hoje2 = new Date().toISOString().slice(0, 10);
 
@@ -593,8 +591,8 @@ function renderObras() {
     if (obra.concluida) {
       corBorda = '#22c55e'; // verde
     } else {
-      const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
-      const daqui7Str = daqui7.toISOString().slice(0, 10);
+      const daqui7 = new Date(); daqui7.setDate(daqui7.getDate()+7);
+      const daqui7Str = daqui7.toISOString().slice(0,10);
       // Vermelho: alguma sub-etapa atrasada
       const temAtrasada = hasSubEtapaAtrasada(obra);
       if (temAtrasada) {
@@ -603,12 +601,12 @@ function renderObras() {
         // Amarelo: sub-etapa vencendo em ≤7 dias OU prazo geral vencendo em ≤7 dias
         const temVencendo = ETAPAS_ORDER.some(etapaId => {
           const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId];
-          if (!e?.ativa || e.status === 'done') return false;
-          if (cfg.isLista) return (e.lista || []).some(item =>
-            item.status !== 'done' && Object.values(item.subEtapas || {}).some(s =>
-              s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str));
-          return Object.values(e.subEtapas || {}).some(s =>
-            s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str);
+          if (!e?.ativa || e.status==='done') return false;
+          if (cfg.isLista) return (e.lista||[]).some(item =>
+            item.status!=='done' && Object.values(item.subEtapas||{}).some(s =>
+              s.status!=='done' && s.status!=='pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str));
+          return Object.values(e.subEtapas||{}).some(s =>
+            s.status!=='done' && s.status!=='pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str);
         });
         const prazoVencendo = obra.prazoEstimado && obra.prazoEstimado >= hoje2 && obra.prazoEstimado <= daqui7Str;
         if (temVencendo || prazoVencendo) corBorda = '#f59e0b';
@@ -617,7 +615,7 @@ function renderObras() {
 
     // Linhas de status por etapa
     const etapaLinhas = ETAPAS_ORDER.map(id => {
-      const cfg2 = ETAPAS_CONFIG[id];
+      const cfg2  = ETAPAS_CONFIG[id];
       const eData = obra.etapas?.[id];
       if (!eData?.ativa) return `
         <div class="card-etapa-row inativa">
@@ -626,49 +624,49 @@ function renderObras() {
           <span class="card-etapa-info">—</span>
         </div>`;
       const eStatus = eData.status || 'pending';
-      let dot = '', dotStyle = '', info = '';
+      let dot='', dotStyle='', info='';
       // Lista (aditivos/medicao)
       if (cfg2.isLista) {
         const lista = eData.lista || [];
         const total = lista.length;
-        const done = lista.filter(i => i.status === 'done').length;
-        if (!eData.ativa || eStatus === 'pulada') {
-          dot = '⏭'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
-          info = '<span style="font-size:0.65rem;color:var(--muted);">Pulada</span>';
-        } else if (obra.concluida || eStatus === 'done') {
-          dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
-          info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídos</span>`;
-        } else if (total === 0) {
-          dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
-          info = '<span style="font-size:0.65rem;color:var(--muted);">Não iniciado</span>';
+        const done  = lista.filter(i=>i.status==='done').length;
+        if (!eData.ativa || eStatus==='pulada') {
+          dot='⏭'; dotStyle='background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+          info='<span style="font-size:0.65rem;color:var(--muted);">Pulada</span>';
+        } else if (obra.concluida || eStatus==='done') {
+          dot='✓'; dotStyle='background:#22c55e;border-color:#22c55e;color:#fff;';
+          info=`<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídos</span>`;
+        } else if (total===0) {
+          dot='·'; dotStyle='background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+          info='<span style="font-size:0.65rem;color:var(--muted);">Não iniciado</span>';
         } else {
           // Verificar vencidas e próximas do vencimento
-          let vencidas = 0, vencendo = 0;
-          const _hj7 = new Date(); _hj7.setDate(_hj7.getDate() + 7);
-          const _hj7s = _hj7.toISOString().slice(0, 10);
+          let vencidas=0, vencendo=0;
+          const _hj7 = new Date(); _hj7.setDate(_hj7.getDate()+7);
+          const _hj7s = _hj7.toISOString().slice(0,10);
           lista.forEach(item => {
-            if (item.status === 'done') return;
+            if (item.status==='done') return;
             // Sub-etapa ativa
             const cfg3 = ETAPAS_CONFIG[id];
-            (cfg3.subEtapasTemplate || []).forEach(st => {
+            (cfg3.subEtapasTemplate||[]).forEach(st => {
               const s = item.subEtapas?.[st.id];
-              if (!s || s.status === 'done' || s.status === 'pulada') return;
+              if (!s || s.status==='done' || s.status==='pulada') return;
               // Usar dataLimite da sub-etapa ou dataPrevista do item como fallback
-              const ref = s.dataLimite || (s.status === 'active' ? item.dataPrevista : null);
+              const ref = s.dataLimite || (s.status==='active' ? item.dataPrevista : null);
               if (!ref) return;
               if (ref < hoje2) vencidas++;
               else if (ref <= _hj7s) vencendo++;
             });
           });
           if (vencidas > 0) {
-            dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
-            info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${vencidas} item${vencidas > 1 ? 'ns' : ''} vencido${vencidas > 1 ? 's' : ''}</span>`;
+            dot='!'; dotStyle='background:#ef4444;border-color:#ef4444;color:#fff;';
+            info=`<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${vencidas} item${vencidas>1?'ns':''} vencido${vencidas>1?'s':''}</span>`;
           } else if (vencendo > 0) {
-            dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
-            info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${vencendo} item${vencendo > 1 ? 'ns' : ''} próximo${vencendo > 1 ? 's' : ''} do vencimento</span>`;
+            dot='!'; dotStyle='background:#f59e0b;border-color:#f59e0b;color:#fff;';
+            info=`<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${vencendo} item${vencendo>1?'ns':''} próximo${vencendo>1?'s':''} do vencimento</span>`;
           } else {
-            dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
-            info = `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${done}/${total} concluídos</span>`;
+            dot='›'; dotStyle=`background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
+            info=`<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${done}/${total} concluídos</span>`;
           }
         }
         return `<div class="card-etapa-row">
@@ -679,28 +677,28 @@ function renderObras() {
       }
       // Documentações independentes
       if (cfg2.isIndependente) {
-        const subVals = Object.values(eData.subEtapas || {}).filter(s => !s.isCocLista);
-        const cocItems = (eData.cocLista || []);
-        const done = subVals.filter(s => s.status === 'done').length + cocItems.filter(ci => ci.status === 'done').length;
-        const total = subVals.length + (cocItems.length || 0);
-        const daqui7doc = new Date(); daqui7doc.setDate(daqui7doc.getDate() + 7);
-        const daqui7docs = daqui7doc.toISOString().slice(0, 10);
-        const nAtras = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2).length
-          + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista < hoje2).length;
-        const nVenc = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7docs).length
-          + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista >= hoje2 && ci.dataPrevista <= daqui7docs).length;
-        if (obra.concluida || eStatus === 'done') {
-          dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
-          info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídas</span>`;
+        const subVals = Object.values(eData.subEtapas||{}).filter(s=>!s.isCocLista);
+        const cocItems = (eData.cocLista||[]);
+        const done = subVals.filter(s=>s.status==='done').length + cocItems.filter(ci=>ci.status==='done').length;
+        const total = subVals.length + (cocItems.length||0);
+        const daqui7doc = new Date(); daqui7doc.setDate(daqui7doc.getDate()+7);
+        const daqui7docs = daqui7doc.toISOString().slice(0,10);
+        const nAtras = subVals.filter(s=>s.status!=='done'&&s.dataLimite&&s.dataLimite<hoje2).length
+                     + cocItems.filter(ci=>ci.status!=='done'&&ci.dataPrevista&&ci.dataPrevista<hoje2).length;
+        const nVenc  = subVals.filter(s=>s.status!=='done'&&s.dataLimite&&s.dataLimite>=hoje2&&s.dataLimite<=daqui7docs).length
+                     + cocItems.filter(ci=>ci.status!=='done'&&ci.dataPrevista&&ci.dataPrevista>=hoje2&&ci.dataPrevista<=daqui7docs).length;
+        if (obra.concluida || eStatus==='done') {
+          dot='✓'; dotStyle='background:#22c55e;border-color:#22c55e;color:#fff;';
+          info=`<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídas</span>`;
         } else if (nAtras > 0) {
-          dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
-          info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${nAtras} item${nAtras > 1 ? 'ns' : ''} vencido${nAtras > 1 ? 's' : ''}</span>`;
+          dot='!'; dotStyle='background:#ef4444;border-color:#ef4444;color:#fff;';
+          info=`<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${nAtras} item${nAtras>1?'ns':''} vencido${nAtras>1?'s':''}</span>`;
         } else if (nVenc > 0) {
-          dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
-          info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${nVenc} item${nVenc > 1 ? 'ns' : ''} próximo${nVenc > 1 ? 's' : ''} do vencimento</span>`;
+          dot='!'; dotStyle='background:#f59e0b;border-color:#f59e0b;color:#fff;';
+          info=`<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${nVenc} item${nVenc>1?'ns':''} próximo${nVenc>1?'s':''} do vencimento</span>`;
         } else {
-          dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
-          info = `<span style="font-size:0.65rem;color:var(--muted);">${done}/${total} concluídas</span>`;
+          dot='›'; dotStyle=`background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
+          info=`<span style="font-size:0.65rem;color:var(--muted);">${done}/${total} concluídas</span>`;
         }
         return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
@@ -709,47 +707,47 @@ function renderObras() {
         </div>`;
       }
       // Sub-etapas normais
-      const subs = Object.values(eData.subEtapas || {});
-      const atras = subs.some(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2);
-      const ultima = subs.findLast?.(s => s.status === 'active') || subs.find(s => s.status === 'active');
-      const limite = ultima?.dataLimite;
-      const concl = eData.status === 'done' ? subs.findLast?.(s => s.dataConclusao)?.dataConclusao : null;
-      if (obra.concluida || eStatus === 'done') {
-        dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
-        info = concl ? `<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(concl + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>` : '<span style="color:#22c55e;font-size:0.68rem;">Concluída</span>';
+      const subs    = Object.values(eData.subEtapas || {});
+      const atras   = subs.some(s=>s.status!=='done'&&s.dataLimite&&s.dataLimite<hoje2);
+      const ultima  = subs.findLast?.(s=>s.status==='active')||subs.find(s=>s.status==='active');
+      const limite  = ultima?.dataLimite;
+      const concl   = eData.status==='done'?subs.findLast?.(s=>s.dataConclusao)?.dataConclusao:null;
+      if (obra.concluida||eStatus==='done') {
+        dot='✓'; dotStyle='background:#22c55e;border-color:#22c55e;color:#fff;';
+        info=concl?`<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(concl+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>`:'<span style="color:#22c55e;font-size:0.68rem;">Concluída</span>';
       } else if (atras) {
-        dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
+        dot='!'; dotStyle='background:#ef4444;border-color:#ef4444;color:#fff;';
         // Mostrar nome da sub-etapa vencida + prazo
         const subAtras = cfg2.subEtapas?.find(sc => {
           const sd = eData.subEtapas?.[sc.id];
-          return sd?.status !== 'done' && sd?.dataLimite && sd.dataLimite < hoje2;
+          return sd?.status!=='done' && sd?.dataLimite && sd.dataLimite < hoje2;
         });
         const sdAtras = subAtras ? eData.subEtapas?.[subAtras.id] : null;
         const nomeAtras = subAtras?.nome || '';
-        const dtAtras = sdAtras?.dataLimite ? new Date(sdAtras.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '?';
-        info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;" title="${nomeAtras}">⚠ ${nomeAtras.length > 22 ? nomeAtras.slice(0, 22) + '…' : nomeAtras} · ${dtAtras}</span>`;
-      } else if (eStatus === 'active') {
-        dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
+        const dtAtras = sdAtras?.dataLimite ? new Date(sdAtras.dataLimite+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}) : '?';
+        info=`<span style="color:#ef4444;font-size:0.65rem;font-weight:700;" title="${nomeAtras}">⚠ ${nomeAtras.length>22?nomeAtras.slice(0,22)+'…':nomeAtras} · ${dtAtras}</span>`;
+      } else if (eStatus==='active') {
+        dot='›'; dotStyle=`background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
         // Mostrar se há sub-etapa próxima do vencimento
-        const daqui7s2 = new Date(); daqui7s2.setDate(daqui7s2.getDate() + 7);
-        const daqui7str2 = daqui7s2.toISOString().slice(0, 10);
+        const daqui7s2 = new Date(); daqui7s2.setDate(daqui7s2.getDate()+7);
+        const daqui7str2 = daqui7s2.toISOString().slice(0,10);
         const subVenc = cfg2.subEtapas?.find(sc => {
           const sd = eData.subEtapas?.[sc.id];
-          return sd?.status !== 'done' && sd?.dataLimite && sd.dataLimite >= hoje2 && sd.dataLimite <= daqui7str2;
+          return sd?.status!=='done' && sd?.dataLimite && sd.dataLimite >= hoje2 && sd.dataLimite <= daqui7str2;
         });
         if (subVenc) {
           const sdVenc = eData.subEtapas?.[subVenc.id];
-          const dias2 = sdVenc?.dataLimite ? Math.ceil((new Date(sdVenc.dataLimite + 'T12:00:00') - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)) : null;
-          const prazoLabel = dias2 === 0 ? 'hoje' : dias2 === 1 ? 'amanhã' : `${dias2}d`;
-          const nomeVenc = subVenc.nome.length > 20 ? subVenc.nome.slice(0, 20) + '…' : subVenc.nome;
-          dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
-          info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;" title="${subVenc.nome}">⚠ ${nomeVenc} · ${prazoLabel}</span>`;
+          const dias2 = sdVenc?.dataLimite ? Math.ceil((new Date(sdVenc.dataLimite+'T12:00:00')-new Date().setHours(0,0,0,0))/(1000*60*60*24)) : null;
+          const prazoLabel = dias2===0 ? 'hoje' : dias2===1 ? 'amanhã' : `${dias2}d`;
+          const nomeVenc = subVenc.nome.length>20 ? subVenc.nome.slice(0,20)+'…' : subVenc.nome;
+          dot='!'; dotStyle='background:#f59e0b;border-color:#f59e0b;color:#fff;';
+          info=`<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;" title="${subVenc.nome}">⚠ ${nomeVenc} · ${prazoLabel}</span>`;
         } else {
-          info = limite ? `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${new Date(limite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>` : '<span style="font-size:0.65rem;color:var(--muted);">Em andamento</span>';
+          info=limite?`<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${new Date(limite+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</span>`:'<span style="font-size:0.65rem;color:var(--muted);">Em andamento</span>';
         }
       } else {
-        dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
-        info = '<span style="font-size:0.65rem;color:var(--muted);">Pendente</span>';
+        dot='·'; dotStyle='background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+        info='<span style="font-size:0.65rem;color:var(--muted);">Pendente</span>';
       }
       return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
@@ -763,39 +761,39 @@ function renderObras() {
       ${(() => {
         const azul = _contarTarefasAtribuidas(obra);
         return azul > 0
-          ? `<span style="position:absolute;top:-7px;left:8px;background:#3b82f6;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${azul} tarefa${azul > 1 ? 's' : ''} atribuída${azul > 1 ? 's' : ''} a você">${azul}</span>`
+          ? `<span style="position:absolute;top:-7px;left:8px;background:#3b82f6;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${azul} tarefa${azul>1?'s':''} atribuída${azul>1?'s':''} a você">${azul}</span>`
           : '';
       })()}
       ${(() => {
         // Badge vermelho — sub-etapas em atraso
         let atraso = 0;
-        const hj = new Date().toISOString().slice(0, 10);
+        const hj = new Date().toISOString().slice(0,10);
         ETAPAS_ORDER.forEach(etapaId => {
-          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa || e.status === 'done') return;
-          if (cfg.isLista) (e.lista || []).forEach(item => { if (item.status === 'done') return; Object.values(item.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; }); });
-          else Object.values(e.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; });
+          const e=obra.etapas?.[etapaId]; const cfg=ETAPAS_CONFIG[etapaId]; if(!e?.ativa||e.status==='done') return;
+          if(cfg.isLista)(e.lista||[]).forEach(item=>{if(item.status==='done')return;Object.values(item.subEtapas||{}).forEach(s=>{if(s.status!=='done'&&s.status!=='pulada'&&s.dataLimite&&s.dataLimite<hj)atraso++;});});
+          else Object.values(e.subEtapas||{}).forEach(s=>{if(s.status!=='done'&&s.status!=='pulada'&&s.dataLimite&&s.dataLimite<hj)atraso++;});
         });
         return atraso > 0
-          ? `<span style="position:absolute;top:-7px;right:8px;background:#ef4444;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${atraso} sub-etapa${atraso > 1 ? 's' : ''} em atraso">${atraso}</span>`
+          ? `<span style="position:absolute;top:-7px;right:8px;background:#ef4444;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${atraso} sub-etapa${atraso>1?'s':''} em atraso">${atraso}</span>`
           : '';
       })()}
       <div class="obra-card-header">
         <div>
-          <div class="obra-card-numero">#${obra.numero || obra.id.slice(-6).toUpperCase()}</div>
+          <div class="obra-card-numero">#${obra.numero||obra.id.slice(-6).toUpperCase()}</div>
           <div class="obra-card-nome">${obra.nome}</div>
         </div>
-        ${obra.concluida ? '<span class="obra-etapa-badge etapa-concluida">Concluída</span>' : ''}
+        ${obra.concluida?'<span class="obra-etapa-badge etapa-concluida">Concluída</span>':''}
       </div>
       ${(() => {
         const n = _contarTarefasAtribuidas(obra);
         return n > 0
-          ? `<div style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.3rem;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${n} pendência${n > 1 ? 's' : ''} atribuída${n > 1 ? 's' : ''} a você</div>`
+          ? `<div style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.3rem;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${n} pendência${n>1?'s':''} atribuída${n>1?'s':''} a você</div>`
           : '';
       })()}
       <div class="obra-card-rep" style="justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:0.35rem;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante || '—'}
+          <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante||'—'}
         </div>
         <button onclick="event.stopPropagation();exportarObraPDF('${obra.id}')"
           title="Exportar PDF da obra"
@@ -820,78 +818,78 @@ function _renderPaginacao(total, totalPags, inicio) {
   const el = document.getElementById('obras-paginacao');
   if (!el) return;
 
-  if (total === 0) { el.style.display = 'none'; return; }
+  if (total === 0) { el.style.display='none'; return; }
   el.style.display = 'flex';
 
   const fim = Math.min(inicio + _obrasPorPagina, total);
 
   el.innerHTML = `
     <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--muted);">
-      Mostrando <strong style="color:var(--text);">${inicio + 1}–${fim}</strong> de <strong style="color:var(--text);">${total}</strong> obras
+      Mostrando <strong style="color:var(--text);">${inicio+1}–${fim}</strong> de <strong style="color:var(--text);">${total}</strong> obras
     </div>
     <div style="display:flex;align-items:center;gap:0.4rem;">
-      <button class="pag-btn" onclick="irParaPagina(0)" ${_paginaAtual === 0 ? 'disabled' : ''} title="Primeira">«</button>
-      <button class="pag-btn" onclick="irParaPagina(${_paginaAtual - 1})" ${_paginaAtual === 0 ? 'disabled' : ''} title="Anterior">‹</button>
-      ${Array.from({ length: totalPags }, (_, i) => i).filter(i => Math.abs(i - _paginaAtual) <= 2).map(i => `
-        <button class="pag-btn${i === _paginaAtual ? ' active' : ''}" onclick="irParaPagina(${i})">${i + 1}</button>
+      <button class="pag-btn" onclick="irParaPagina(0)" ${_paginaAtual===0?'disabled':''} title="Primeira">«</button>
+      <button class="pag-btn" onclick="irParaPagina(${_paginaAtual-1})" ${_paginaAtual===0?'disabled':''} title="Anterior">‹</button>
+      ${Array.from({length:totalPags},(_,i)=>i).filter(i=>Math.abs(i-_paginaAtual)<=2).map(i=>`
+        <button class="pag-btn${i===_paginaAtual?' active':''}" onclick="irParaPagina(${i})">${i+1}</button>
       `).join('')}
-      <button class="pag-btn" onclick="irParaPagina(${_paginaAtual + 1})" ${_paginaAtual >= totalPags - 1 ? 'disabled' : ''} title="Próxima">›</button>
-      <button class="pag-btn" onclick="irParaPagina(${totalPags - 1})" ${_paginaAtual >= totalPags - 1 ? 'disabled' : ''} title="Última">»</button>
+      <button class="pag-btn" onclick="irParaPagina(${_paginaAtual+1})" ${_paginaAtual>=totalPags-1?'disabled':''} title="Próxima">›</button>
+      <button class="pag-btn" onclick="irParaPagina(${totalPags-1})" ${_paginaAtual>=totalPags-1?'disabled':''} title="Última">»</button>
     </div>`;
 }
 
 // ── Modal nova obra ───────────────────────────────────────────────────────────
-function openNovaObraModal() { document.getElementById('nova-obra-modal').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
-function closeNovaObraModal() { document.getElementById('nova-obra-modal').style.display = 'none'; document.body.style.overflow = ''; document.getElementById('nova-obra-form').reset(); }
+function openNovaObraModal()  { document.getElementById('nova-obra-modal').style.display='flex'; document.body.style.overflow='hidden'; }
+function closeNovaObraModal() { document.getElementById('nova-obra-modal').style.display='none'; document.body.style.overflow=''; document.getElementById('nova-obra-form').reset(); }
 
 async function saveNovaObra() {
-  const numero = document.getElementById('nova-obra-numero')?.value.trim();
-  const nome = document.getElementById('nova-obra-nome')?.value.trim();
-  const rep = document.getElementById('nova-obra-rep')?.value;
-  const fechamento = document.getElementById('nova-obra-fechamento')?.value;
-  const prazo = document.getElementById('nova-obra-prazo')?.value;
-  const obs = document.getElementById('nova-obra-obs')?.value.trim();
-  if (!numero) { showComercialToast('Informe o número da obra.', 'error'); return; }
+  const numero=document.getElementById('nova-obra-numero')?.value.trim();
+  const nome=document.getElementById('nova-obra-nome')?.value.trim();
+  const rep=document.getElementById('nova-obra-rep')?.value;
+  const fechamento=document.getElementById('nova-obra-fechamento')?.value;
+  const prazo=document.getElementById('nova-obra-prazo')?.value;
+  const obs=document.getElementById('nova-obra-obs')?.value.trim();
+  if (!numero)     {showComercialToast('Informe o número da obra.','error');return;}
   if (_obras.some(o => String(o.numero).trim() === String(numero).trim())) {
-    showComercialToast(`Já existe uma obra com o número #${numero}.`, 'error');
+    showComercialToast(`Já existe uma obra com o número #${numero}.`,'error');
     return;
   }
-  if (!nome) { showComercialToast('Informe o nome da obra.', 'error'); return; }
-  if (!rep) { showComercialToast('Selecione o representante.', 'error'); return; }
-  if (!fechamento) { showComercialToast('Informe a data de fechamento.', 'error'); return; }
-  if (!prazo) { showComercialToast('Informe o prazo estimado de finalização.', 'error'); return; }
-  const btn = document.getElementById('btn-save-nova-obra');
-  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  if (!nome)       {showComercialToast('Informe o nome da obra.','error');return;}
+  if (!rep)        {showComercialToast('Selecione o representante.','error');return;}
+  if (!fechamento) {showComercialToast('Informe a data de fechamento.','error');return;}
+  if (!prazo)       {showComercialToast('Informe o prazo estimado de finalização.','error');return;}
+  const btn=document.getElementById('btn-save-nova-obra');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   try {
     const etapas = initObraEtapas(fechamento);
     await db.collection('obras').add({
-      numero, nome, representante: rep, dataFechamento: fechamento,
-      prazoEstimado: prazo || null, obs: obs || '', concluida: false, etapas,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: currentUser.username,
+      numero, nome, representante:rep, dataFechamento:fechamento,
+      prazoEstimado:prazo||null, obs:obs||'', concluida:false, etapas,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(), createdBy:currentUser.username,
     });
-    showComercialToast(`Obra #${numero} cadastrada! ✅`, 'success');
+    showComercialToast(`Obra #${numero} cadastrada! ✅`,'success');
     closeNovaObraModal();
-  } catch (e) { showComercialToast('Erro ao salvar.', 'error'); console.error(e); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Cadastrar Obra'; } }
+  } catch(e) {showComercialToast('Erro ao salvar.','error');console.error(e);}
+  finally {if(btn){btn.disabled=false;btn.textContent='Cadastrar Obra';}}
 }
 
 // ── Modal detalhes ────────────────────────────────────────────────────────────
 function openObraModal(obraId) {
-  _currentObraId = obraId;
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  _currentObraId=obraId;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
   try {
-    _obraAtual = obraId; renderObraModal(obra);
-    document.getElementById('obra-modal-overlay').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-  } catch (e) {
+    _obraAtual=obraId; renderObraModal(obra);
+    document.getElementById('obra-modal-overlay').style.display='flex';
+    document.body.style.overflow='hidden';
+  } catch(e) {
     console.error('[openObraModal] ERRO:', e.message, e.stack);
-    showComercialToast('Erro ao abrir obra: ' + e.message, 'error');
+    showComercialToast('Erro ao abrir obra: '+e.message,'error');
   }
 }
 function closeObraModal() {
-  _currentObraId = null;
-  document.getElementById('obra-modal-overlay').style.display = 'none';
-  document.body.style.overflow = ''; _obraAtual = null;
+  _currentObraId=null;
+  document.getElementById('obra-modal-overlay').style.display='none';
+  document.body.style.overflow=''; _obraAtual=null;
 }
 
 // ── Accordion state preservation ─────────────────────────────────────────────
@@ -912,37 +910,37 @@ function _restoreAccordionState() {
 }
 
 function renderObraModal(obra) {
-  document.getElementById('obra-modal-numero').textContent = `#${obra.numero || obra.id.slice(-6).toUpperCase()}`;
-  document.getElementById('obra-modal-nome').textContent = obra.nome;
-  const prazoInfo = getPrazoInfo(obra.prazoEstimado);
-  const canAdmin = currentUser?.isSuperAdmin ||
-    (currentUser?.acessos || []).includes('adminComercial') ||
-    (currentUser?.acessos || []).includes('comercial');
-  const canEditar = currentUser?.isSuperAdmin ||
-    (currentUser?.acessos || []).includes('adminComercial') ||
-    (currentUser?.acessos || []).includes('comercial');
-  document.getElementById('obra-modal-meta').innerHTML = `
-    <span>👤 ${obra.representante || '—'}</span>
-    <span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
+  document.getElementById('obra-modal-numero').textContent=`#${obra.numero||obra.id.slice(-6).toUpperCase()}`;
+  document.getElementById('obra-modal-nome').textContent=obra.nome;
+  const prazoInfo=getPrazoInfo(obra.prazoEstimado);
+  const canAdmin=currentUser?.isSuperAdmin||
+    (currentUser?.acessos||[]).includes('adminComercial')||
+    (currentUser?.acessos||[]).includes('comercial');
+  const canEditar=currentUser?.isSuperAdmin||
+    (currentUser?.acessos||[]).includes('adminComercial')||
+    (currentUser?.acessos||[]).includes('comercial');
+  document.getElementById('obra-modal-meta').innerHTML=`
+    <span>👤 ${obra.representante||'—'}</span>
+    <span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>
     <span class="${prazoInfo.cls}">⏱ ${prazoInfo.texto}</span>`;
-  const tl = document.getElementById('obra-timeline'); if (!tl) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  tl.innerHTML = ETAPAS_ORDER.map(etapaId => {
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const eData = obra.etapas?.[etapaId];
+  const tl=document.getElementById('obra-timeline'); if(!tl) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  tl.innerHTML=ETAPAS_ORDER.map(etapaId => {
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const eData=obra.etapas?.[etapaId];
     // ── Etapa pulada ou inativa: mostrar antes de qualquer outro check ──────
     if (!eData?.ativa || eData?.status === 'pulada') {
       const isPulada = eData?.status === 'pulada';
       const canIniciarX = !obra.concluida;
       return `<div class="etapa-item">
-        <div class="etapa-icon pending" style="${isPulada ? 'opacity:0.5;' : 'opacity:0.4;'}">⏭</div>
+        <div class="etapa-icon pending" style="${isPulada?'opacity:0.5;':'opacity:0.4;'}">⏭</div>
         <div class="etapa-content">
-          <div class="etapa-nome" style="opacity:${isPulada ? '0.7' : '0.6'};">
+          <div class="etapa-nome" style="opacity:${isPulada?'0.7':'0.6'};">
             ${cfg.nome}
-            ${isPulada ? `<span style="font-size:0.65rem;font-weight:700;color:#6b7280;background:var(--surface3);padding:0.1rem 0.4rem;border-radius:4px;margin-left:0.25rem;">Pulada</span>` : '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>'}
-            ${canIniciarX ? `<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.15rem 0.5rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>` : ''}
+            ${isPulada?`<span style="font-size:0.65rem;font-weight:700;color:#6b7280;background:var(--surface3);padding:0.1rem 0.4rem;border-radius:4px;margin-left:0.25rem;">Pulada</span>`:'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>'}
+            ${canIniciarX?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.15rem 0.5rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
           </div>
-          ${isPulada && eData.puladaPor ? `<div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem;">Pulada por ${eData.puladaPor}</div>` : ''}
+          ${isPulada&&eData.puladaPor?`<div style="font-size:0.68rem;color:var(--muted);font-family:var(--font-mono);margin-top:0.2rem;">Pulada por ${eData.puladaPor}</div>`:''}
         </div>
       </div>`;
     }
@@ -951,36 +949,36 @@ function renderObraModal(obra) {
       const eActive = eData?.ativa;
       const eStatus = eData?.status || 'pending';
       const cor2 = cfg.cor;
-      const listaIconCls = eStatus === 'done' ? 'done' : eStatus === 'active' ? 'active' : 'pending';
-      const listaIconStyle = eStatus === 'active' ? `style="background:${cor2};border-color:${cor2};"` : eStatus === 'done' ? `style="background:${cor2};border-color:${cor2};"` : '';
+      const listaIconCls = eStatus==='done'?'done':eStatus==='active'?'active':'pending';
+      const listaIconStyle = eStatus==='active'?`style="background:${cor2};border-color:${cor2};"`:eStatus==='done'?`style="background:${cor2};border-color:${cor2};"` :'';
       return `<div class="etapa-item">
-        <div class="etapa-icon ${listaIconCls}" ${listaIconStyle}>${eStatus === 'done' ? '✓' : ''}</div>
+        <div class="etapa-icon ${listaIconCls}" ${listaIconStyle}>${eStatus==='done'?'✓':''}</div>
         <div class="etapa-content">
-          <div class="etapa-nome" style="${eStatus === 'active' ? `color:${cor2};` : ''}">
+          <div class="etapa-nome" style="${eStatus==='active'?`color:${cor2};`:''}">
             ${cfg.nome}
-            ${cfg.opcional ? '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>' : ''}
-            ${!obra.concluida && eStatus !== 'done' ? `<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>` : ''}
+            ${cfg.opcional?'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>':''}
+            ${!obra.concluida&&eStatus!=='done'?`<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>`:''}
           </div>
           <div>${renderListaEtapa(obra, etapaId, hoje)}</div>
         </div>
       </div>`;
     }
 
-    const etapaStatus = eData.status || 'pending';
-    const cor = cfg.cor;
-    const subsHtml = cfg.subEtapas.map(subCfg => {
-      const subData = eData.subEtapas?.[subCfg.id] || {};
-      const subStatus = subData.status || 'pending';
-      const limite = subData.dataLimite;
-      const atrasada = subStatus !== 'done' && limite && limite < hoje;
+    const etapaStatus=eData.status||'pending';
+    const cor=cfg.cor;
+    const subsHtml=cfg.subEtapas.map(subCfg => {
+      const subData=eData.subEtapas?.[subCfg.id]||{};
+      const subStatus=subData.status||'pending';
+      const limite=subData.dataLimite;
+      const atrasada=subStatus!=='done'&&limite&&limite<hoje;
       const isIndependenteSub = subCfg.isIndependente || cfg.isIndependente;
-      const canConcluir = subStatus === 'active' && !obra.concluida;
-      const canIniciarSub = isIndependenteSub && subStatus === 'pending' && !obra.concluida;
-      const canMotivo = atrasada && !subData.motivoAtraso;
-      const canRevisaoSub = subStatus !== 'pending' && !obra.concluida;
-      const canProrrogar = subStatus === 'active' && !obra.concluida;
-      const subRevisoes = (subData.revisoes || []);
-      const subDotStyle = atrasada ? `style="background:#ef4444;border-color:#ef4444;"` : subStatus === 'done' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : subStatus === 'active' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : '';
+      const canConcluir = subStatus==='active' && !obra.concluida;
+      const canIniciarSub = isIndependenteSub && subStatus==='pending' && !obra.concluida;
+      const canMotivo=atrasada&&!subData.motivoAtraso;
+      const canRevisaoSub=subStatus!=='pending'&&!obra.concluida;
+      const canProrrogar=subStatus==='active'&&!obra.concluida;
+      const subRevisoes=(subData.revisoes||[]);
+      const subDotStyle=atrasada?`style="background:#ef4444;border-color:#ef4444;"`:subStatus==='done'?`style="background:${cfg.cor};border-color:${cfg.cor};"`:subStatus==='active'?`style="background:${cfg.cor};border-color:${cfg.cor};"`:'';
 
       // Badge responsável na sub-etapa
       const _alvoDestaque = _filtroUsuarioPendencia || currentUser?.username;
@@ -994,16 +992,16 @@ function renderObraModal(obra) {
         : '';
       // COC com lista dinâmica — não precisa de subData
       if (subCfg.isCocLista) {
-        const cocLst = eData.cocLista || [];
-        const allDone = cocLst.length > 0 && cocLst.every(i => i.status === 'done');
-        const hasActive = cocLst.some(i => i.status === 'active');
-        const cocIconChar = allDone ? '✓' : hasActive ? '›' : '·';
-        const cocIconCls = allDone ? 'done' : hasActive ? 'active' : 'pending';
+        const cocLst = eData.cocLista||[];
+        const allDone = cocLst.length>0 && cocLst.every(i=>i.status==='done');
+        const hasActive = cocLst.some(i=>i.status==='active');
+        const cocIconChar = allDone?'✓':hasActive?'›':'·';
+        const cocIconCls  = allDone?'done':hasActive?'active':'pending';
         const cocIconInlineStyle = allDone
           ? 'background:#22c55e;border-color:#22c55e;'
           : hasActive
-            ? `background:${cfg.cor};border-color:${cfg.cor};`
-            : '';
+          ? `background:${cfg.cor};border-color:${cfg.cor};`
+          : '';
         return `<div class="sub-etapa-item" style="align-items:flex-start;">
           <div class="sub-etapa-icon ${cocIconCls}" style="${cocIconInlineStyle}">${cocIconChar}</div>
           <div class="sub-etapa-content" style="flex:1;min-width:0;">
@@ -1014,80 +1012,80 @@ function renderObraModal(obra) {
       }
       if (!subData) return '';
 
-      let dataInfo = '';
+      let dataInfo='';
       // Sub-etapa Em Análise: mostrar "A X dias nessa sub-etapa"
-      if (subCfg.isAnalise && subStatus === 'active' && subData.dataInicio) {
-        const ini = new Date(subData.dataInicio + 'T12:00:00');
-        const agora = new Date(); agora.setHours(0, 0, 0, 0);
-        const dias = Math.floor((agora - ini) / (1000 * 60 * 60 * 24));
-        const prevStr = subData.dataPrevista ? new Date(subData.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '';
-        dataInfo = `<span class="sub-data" style="color:#8b5cf6;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
-          🕐 A ${dias} dia${dias !== 1 ? 's' : ''} nesta sub-etapa
-          ${prevStr ? `<span style="font-size:0.65rem;color:var(--muted);font-weight:400;">· Previsto: ${prevStr}</span>` : ''}
+      if (subCfg.isAnalise && subStatus==='active' && subData.dataInicio) {
+        const ini  = new Date(subData.dataInicio+'T12:00:00');
+        const agora= new Date(); agora.setHours(0,0,0,0);
+        const dias = Math.floor((agora-ini)/(1000*60*60*24));
+        const prevStr = subData.dataPrevista ? new Date(subData.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR') : '';
+        dataInfo=`<span class="sub-data" style="color:#8b5cf6;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
+          🕐 A ${dias} dia${dias!==1?'s':''} nesta sub-etapa
+          ${prevStr?`<span style="font-size:0.65rem;color:var(--muted);font-weight:400;">· Previsto: ${prevStr}</span>`:''}
         </span>`;
       } else if (subData.dataConclusao) {
-        const por = subData.concluidoPor ? ` — por ${subData.concluidoPor}` : '';
+        const por  = subData.concluidoPor ? ` — por ${subData.concluidoPor}` : '';
         const tipo = subData.tipoConclusao ? ` · <strong>${subData.tipoConclusao}</strong>` : '';
-        dataInfo = `<span class="sub-data concluida">✓ ${new Date(subData.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}${por}${tipo}</span>`;
+        dataInfo=`<span class="sub-data concluida">✓ ${new Date(subData.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}${tipo}</span>`;
       } else if (limite) {
-        const limFmt = new Date(limite + 'T12:00:00').toLocaleDateString('pt-BR');
-        dataInfo = atrasada ? `<span class="sub-data atrasada">⚠ Limite: ${limFmt}</span>` : `<span class="sub-data">Limite: ${limFmt}</span>`;
-      } else if (subCfg.dateLivre || subCfg.isNovaDataZero) {
-        dataInfo = `<span class="sub-data" style="color:var(--muted);">Data livre</span>`;
+        const limFmt=new Date(limite+'T12:00:00').toLocaleDateString('pt-BR');
+        dataInfo=atrasada?`<span class="sub-data atrasada">⚠ Limite: ${limFmt}</span>`:`<span class="sub-data">Limite: ${limFmt}</span>`;
+      } else if (subCfg.dateLivre||subCfg.isNovaDataZero) {
+        dataInfo=`<span class="sub-data" style="color:var(--muted);">Data livre</span>`;
       }
-      const statusIcon = subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
-      const iconCls = subStatus === 'done' ? 'done' : atrasada ? 'atrasada' : subStatus === 'active' ? 'active' : 'pending';
-      const motivoBadge = subData.motivoAtraso ? `<div class="sub-motivo-atraso">📌 ${subData.motivoAtraso}</div>` : '';
+      const statusIcon=subStatus==='done'?'✓':atrasada?'!':subStatus==='active'?'›':'·';
+      const iconCls=subStatus==='done'?'done':atrasada?'atrasada':subStatus==='active'?'active':'pending';
+      const motivoBadge=subData.motivoAtraso?`<div class="sub-motivo-atraso">📌 ${subData.motivoAtraso}</div>`:'';
 
       // Revisões da sub-etapa
-      const subRevHtml = subRevisoes.length ? `<div class="sub-revisoes">
-        ${subRevisoes.map(r => `<div class="sub-revisao-item">
+      const subRevHtml=subRevisoes.length?`<div class="sub-revisoes">
+        ${subRevisoes.map(r=>`<div class="sub-revisao-item">
           <span class="etapa-revisao-badge">REV.${r.numero}</span>
           <div class="etapa-revisao-info">
             <div class="etapa-revisao-motivo">${r.motivo}</div>
-            <div class="etapa-revisao-data">${r.data ? new Date(r.data + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} — por ${r.por || '—'}</div>
+            <div class="etapa-revisao-data">${r.data?new Date(r.data+'T12:00:00').toLocaleDateString('pt-BR'):'—'} — por ${r.por||'—'}</div>
           </div>
         </div>`).join('')}
-      </div>`: '';
+      </div>`:'';
 
-      const dropId = `acao-sub-${etapaId}-${subCfg.id}`;
-      const resp = subData.responsavel || '';
-      const _menuItems = [
-        canIniciarSub ? `<button class="acao-item concluir" data-action="iniciar-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : '',
-        subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>` : '',
-        subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
-        !subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
-        canProrrogar ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-        `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${resp || 'Atribuir'}</button>`,
+      const dropId=`acao-sub-${etapaId}-${subCfg.id}`;
+      const resp=subData.responsavel||'';
+      const _menuItems=[
+        canIniciarSub?`<button class="acao-item concluir" data-action="iniciar-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>`:'',
+        subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>`:'',
+        subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>`:'',
+        !subCfg.isAprovacaoRecusa&&canConcluir?`<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
+        canProrrogar?`<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>`:'',
+        `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${resp||'Atribuir'}</button>`,
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
-        subCfg.isAnalise && subStatus !== 'done' ? `<button class="acao-item" data-action="dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>` : '',
-        canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
+        subCfg.isAnalise&&subStatus!=='done'?`<button class="acao-item" data-action="dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>`:'',
+        canMotivo?`<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>`:'',
       ].filter(Boolean).join('');
-      const actions = (subStatus === 'done' && !isIndependenteSub) || obra.concluida ? '' : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
+      const actions = (subStatus==='done'&&!isIndependenteSub)||obra.concluida ? '' : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
       return `<div class="sub-etapa-item">
-        <div class="sub-etapa-icon ${iconCls}" ${iconCls === 'active' ? `style="background:${cor};border-color:${cor};"` : iconCls === 'atrasada' ? 'style="background:#ef4444;border-color:#ef4444;"' : ''}>${statusIcon}</div>
+        <div class="sub-etapa-icon ${iconCls}" ${iconCls==='active'?`style="background:${cor};border-color:${cor};"`:iconCls==='atrasada'?'style="background:#ef4444;border-color:#ef4444;"':''}>${statusIcon}</div>
         <div class="sub-etapa-content">
-          <div class="sub-etapa-nome">${subCfg.nome}${atrasada ? ' <span class="sub-atraso-label">ATRASADO</span>' : ''}${respBadge}</div>
+          <div class="sub-etapa-nome">${subCfg.nome}${atrasada?' <span class="sub-atraso-label">ATRASADO</span>':''}${respBadge}</div>
           <div class="sub-etapa-meta">${dataInfo}</div>
           ${motivoBadge}
           ${subRevHtml}
-          ${actions ? `<div class="sub-etapa-actions">${actions}</div>` : ''}
+          ${actions?`<div class="sub-etapa-actions">${actions}</div>`:''}
         </div>
       </div>`;
     }).join('');
-    const etapaIconCls = etapaStatus === 'done' ? 'done' : etapaStatus === 'active' ? 'active' : 'pending';
-    const etapaIconStyle = etapaStatus === 'active' ? `style="background:${cor};border-color:${cor};"` : etapaStatus === 'done' ? `style="background:${cor};border-color:${cor};"` : '';
-    const canRevisao = etapaStatus !== 'pending' && !obra.concluida;
-    const canIniciar = etapaStatus === 'pending' && !obra.concluida;
+    const etapaIconCls=etapaStatus==='done'?'done':etapaStatus==='active'?'active':'pending';
+    const etapaIconStyle=etapaStatus==='active'?`style="background:${cor};border-color:${cor};"`:etapaStatus==='done'?`style="background:${cor};border-color:${cor};"` :'';
+    const canRevisao=etapaStatus!=='pending'&&!obra.concluida;
+    const canIniciar=etapaStatus==='pending'&&!obra.concluida;
     return `<div class="etapa-item">
-      <div class="etapa-icon ${etapaIconCls}" ${etapaIconStyle}>${etapaStatus === 'done' ? '✓' : ''}</div>
+      <div class="etapa-icon ${etapaIconCls}" ${etapaIconStyle}>${etapaStatus==='done'?'✓':''}</div>
       <div class="etapa-content">
-        <div class="etapa-nome" style="${etapaStatus === 'active' ? `color:${cor};` : ''}" title="${(eData.observacoes || []).length} observação(ões)">
+        <div class="etapa-nome" style="${etapaStatus==='active'?`color:${cor};`:''}" title="${(eData.observacoes||[]).length} observação(ões)">
           ${cfg.nome}
-          ${(eData.revisoes || []).length > 0 ? `<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>` : ''}
-          ${cfg.opcional ? '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>' : ''}
-          ${canIniciar ? `<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>` : ''}
-          ${!obra.concluida && etapaStatus !== 'done' ? `
+          ${(eData.revisoes||[]).length>0?`<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>`:''}
+          ${cfg.opcional?'<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>':''}
+          ${canIniciar?`<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>`:''}
+          ${!obra.concluida&&etapaStatus!=='done'?`
             <div style="position:relative;display:inline-block;">
               <button class="sub-action-btn" data-dropdown="acao-etapa-${etapaId}"
                 style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">
@@ -1098,7 +1096,7 @@ function renderObraModal(obra) {
                 <button class="acao-item" data-action="obs-etapa" data-obra="${obra.id}" data-etapa="${etapaId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
                 <button class="acao-item" data-action="pular-etapa" data-obra="${obra.id}" data-etapa="${etapaId}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg> Pular</button>
               </div>
-            </div>`: ''}
+            </div>`:''}
         </div>
 
         <div class="sub-etapas-container">${subsHtml}</div>
@@ -1110,24 +1108,24 @@ function renderObraModal(obra) {
 }
 
 function _renderObraFooter(obra, canAdmin) {
-  const footer = document.getElementById('obra-modal-footer'); if (!footer) return;
-  const adminBtns = canAdmin && !obra.concluida ? `
+  const footer=document.getElementById('obra-modal-footer'); if(!footer) return;
+  const adminBtns=canAdmin&&!obra.concluida?`
     <button class="btn-secondary" onclick="openEditarObraModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar
     </button>
     <button class="btn-secondary" onclick="excluirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;color:#ef4444;border-color:#ef4444;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> Excluir
-    </button>`: '';
+    </button>`:'';
   const _histNovo = _historicoTemNovos(obra);
-  const histBtn = `<button class="btn-secondary" onclick="openHistoricoModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;position:relative;">
+  const histBtn=`<button class="btn-secondary" onclick="openHistoricoModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;position:relative;">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
     Histórico
-    ${_histNovo ? `<span style="position:absolute;top:-5px;right:-5px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px #ef4444;"></span>` : ''}
+    ${_histNovo?`<span style="position:absolute;top:-5px;right:-5px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px #ef4444;"></span>`:''}
   </button>`;
   if (obra.concluida) {
-    footer.innerHTML = `
+    footer.innerHTML=`
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}
-        ${canAdmin ? `<button class="btn-secondary" onclick="reabrirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">↩ Reabrir</button>` : ''}
+        ${canAdmin?`<button class="btn-secondary" onclick="reabrirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">↩ Reabrir</button>`:''}
         ${histBtn}
       </div>
       <div style="display:flex;gap:0.6rem;align-items:center;">
@@ -1135,7 +1133,7 @@ function _renderObraFooter(obra, canAdmin) {
         <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>
       </div>`;
   } else {
-    footer.innerHTML = `
+    footer.innerHTML=`
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}${histBtn}</div>
       <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>`;
   }
@@ -1144,199 +1142,199 @@ function _renderObraFooter(obra, canAdmin) {
 
 
 // ── Concluir com data retroativa ─────────────────────────────────────────────
-let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null, _conclCocIdx = null;
+let _conclObraId=null, _conclEtapaId=null, _conclSubId=null, _conclItemId=null, _conclCocIdx=null;
 
 function concluirSubEtapaComData(obraId, etapaId, subId, itemId, cocIdx) {
-  _conclObraId = obraId; _conclEtapaId = etapaId; _conclSubId = subId; _conclItemId = itemId || null; _conclCocIdx = (cocIdx !== undefined && cocIdx !== null) ? cocIdx : null;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
-  const titleEl = document.getElementById('concl-modal-title');
-  if (titleEl) titleEl.textContent = `Concluir — ${cfg.nome} · ${subCfg?.nome || subId}`;
-  const input = document.getElementById('concl-data-input');
-  if (input) {
-    const hoje = new Date(), min7 = new Date(hoje);
-    min7.setDate(min7.getDate() - 7);
-    input.max = hoje.toISOString().slice(0, 10);
-    input.min = min7.toISOString().slice(0, 10);
-    input.value = hoje.toISOString().slice(0, 10);
+  _conclObraId=obraId; _conclEtapaId=etapaId; _conclSubId=subId; _conclItemId=itemId||null; _conclCocIdx=(cocIdx!==undefined&&cocIdx!==null)?cocIdx:null;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(cfg.subEtapas||cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  const titleEl=document.getElementById('concl-modal-title');
+  if(titleEl) titleEl.textContent=`Concluir — ${cfg.nome} · ${subCfg?.nome||subId}`;
+  const input=document.getElementById('concl-data-input');
+  if(input){
+    const hoje=new Date(), min7=new Date(hoje);
+    min7.setDate(min7.getDate()-7);
+    input.max=hoje.toISOString().slice(0,10);
+    input.min=min7.toISOString().slice(0,10);
+    input.value=hoje.toISOString().slice(0,10);
   }
-  document.getElementById('concl-modal').style.display = 'flex';
+  document.getElementById('concl-modal').style.display='flex';
 }
-function closeConclModal() { document.getElementById('concl-modal').style.display = 'none'; _conclObraId = _conclEtapaId = _conclSubId = _conclItemId = _conclCocIdx = null; }
-async function saveConclData() {
-  const data = document.getElementById('concl-data-input')?.value;
-  if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
-  const obraId = _conclObraId, etapaId = _conclEtapaId, subId = _conclSubId, itemId = _conclItemId, cocIdx = _conclCocIdx;
+function closeConclModal(){ document.getElementById('concl-modal').style.display='none'; _conclObraId=_conclEtapaId=_conclSubId=_conclItemId=_conclCocIdx=null; }
+async function saveConclData(){
+  const data=document.getElementById('concl-data-input')?.value;
+  if(!data){showComercialToast('Selecione uma data.','error');return;}
+  const obraId=_conclObraId, etapaId=_conclEtapaId, subId=_conclSubId, itemId=_conclItemId, cocIdx=_conclCocIdx;
   closeConclModal();
-  if (cocIdx !== null && cocIdx !== undefined) {
+  if(cocIdx!==null && cocIdx!==undefined) {
     await _concluirCocItem(obraId, etapaId, cocIdx, data);
-  } else if (itemId) {
-    await _concluirSubDeLista(obraId, etapaId, itemId, subId, null, data);
+  } else if(itemId) {
+    await _concluirSubDeLista(obraId,etapaId,itemId,subId,null,data);
   } else {
-    await _concluirComTipo(obraId, etapaId, subId, null, data);
+    await _concluirComTipo(obraId,etapaId,subId,null,data);
   }
 }
 
 // ── Aprovado / Recusado ───────────────────────────────────────────────────────
-let _arObraId = null, _arEtapaId = null, _arSubId = null;
+let _arObraId=null, _arEtapaId=null, _arSubId=null;
 
 function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
-  if (tipo === 'aprovado') {
+  if(tipo==='aprovado') {
     concluirSubEtapaComData(obraId, etapaId, subId);
   } else {
-    _arObraId = obraId; _arEtapaId = etapaId; _arSubId = subId;
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const subCfg = (cfg.subEtapas || []).find(s => s.id === subId);
-    const titleEl = document.getElementById('recusa-modal-title');
-    if (titleEl) titleEl.textContent = `Recusado — ${cfg.nome} · ${subCfg?.nome || subId}`;
-    const input = document.getElementById('recusa-justificativa');
-    if (input) input.value = '';
-    document.getElementById('recusa-modal').style.display = 'flex';
+    _arObraId=obraId; _arEtapaId=etapaId; _arSubId=subId;
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const subCfg=(cfg.subEtapas||[]).find(s=>s.id===subId);
+    const titleEl=document.getElementById('recusa-modal-title');
+    if(titleEl) titleEl.textContent=`Recusado — ${cfg.nome} · ${subCfg?.nome||subId}`;
+    const input=document.getElementById('recusa-justificativa');
+    if(input) input.value='';
+    document.getElementById('recusa-modal').style.display='flex';
   }
 }
-function closeRecusaModal() { document.getElementById('recusa-modal').style.display = 'none'; _arObraId = _arEtapaId = _arSubId = null; }
+function closeRecusaModal(){ document.getElementById('recusa-modal').style.display='none'; _arObraId=_arEtapaId=_arSubId=null; }
 // ── Aprovado/Recusado em item de lista (aditivos/medicao) ─────────────────────
 async function processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, tipo) {
-  if (tipo === 'aprovado') {
+  if (tipo==='aprovado') {
     await _concluirSubDeLista(obraId, etapaId, itemId, subId, 'Aprovado');
   } else {
-    const obra = _obras.find(o => o.id === obraId);
-    const lista = obra?.etapas?.[etapaId]?.lista || [];
-    const item = lista.find(i => i.id === itemId);
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const subCfg = (cfg.subEtapasTemplate || []).find(s => s.id === subId);
-    const titleEl = document.getElementById('recusa-modal-title');
-    if (titleEl) titleEl.textContent = `Recusado — ${item?.titulo || cfg.nome} · ${subCfg?.nome || subId}`;
-    const input = document.getElementById('recusa-justificativa');
-    if (input) input.value = '';
+    const obra=_obras.find(o=>o.id===obraId);
+    const lista=obra?.etapas?.[etapaId]?.lista||[];
+    const item=lista.find(i=>i.id===itemId);
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const subCfg=(cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+    const titleEl=document.getElementById('recusa-modal-title');
+    if(titleEl) titleEl.textContent=`Recusado — ${item?.titulo||cfg.nome} · ${subCfg?.nome||subId}`;
+    const input=document.getElementById('recusa-justificativa');
+    if(input) input.value='';
     // Armazenar contexto para saveRecusa
-    _arObraId = obraId; _arEtapaId = etapaId; _arSubId = subId;
-    window._arListaItemId = itemId;
-    document.getElementById('recusa-modal').style.display = 'flex';
+    _arObraId=obraId; _arEtapaId=etapaId; _arSubId=subId;
+    window._arListaItemId=itemId;
+    document.getElementById('recusa-modal').style.display='flex';
   }
 }
 
 async function saveRecusaLista() {
-  const just = document.getElementById('recusa-justificativa')?.value.trim();
-  if (!just) { showComercialToast('Justificativa obrigatória.', 'error'); return; }
-  const obraId = _arObraId, etapaId = _arEtapaId, itemId = window._arListaItemId;
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].lista.find(i => i.id === itemId); if (!item) return;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  if (!item.revisoes) item.revisoes = [];
-  const revNum = item.revisoes.length + 1;
-  item.revisoes.push({ numero: revNum, motivo: `Recusado: ${just}`, data: hoje, por: currentUser.username });
-  (cfg.subEtapasTemplate || []).forEach((s, i) => {
-    if (!item.subEtapas[s.id]) return;
-    item.subEtapas[s.id].status = i === 0 ? 'active' : 'pending';
-    item.subEtapas[s.id].dataConclusao = null; item.subEtapas[s.id].motivoAtraso = null;
-    item.subEtapas[s.id].responsavel = null; // Limpar atribuição na revisão
-    if (i === 0) item.subEtapas[s.id].dataInicio = hoje;
-    else { item.subEtapas[s.id].dataInicio = null; item.subEtapas[s.id].dataLimite = null; }
+  const just=document.getElementById('recusa-justificativa')?.value.trim();
+  if(!just){showComercialToast('Justificativa obrigatória.','error');return;}
+  const obraId=_arObraId, etapaId=_arEtapaId, itemId=window._arListaItemId;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  if(!item.revisoes) item.revisoes=[];
+  const revNum=item.revisoes.length+1;
+  item.revisoes.push({numero:revNum,motivo:`Recusado: ${just}`,data:hoje,por:currentUser.username});
+  (cfg.subEtapasTemplate||[]).forEach((s,i)=>{
+    if(!item.subEtapas[s.id]) return;
+    item.subEtapas[s.id].status=i===0?'active':'pending';
+    item.subEtapas[s.id].dataConclusao=null; item.subEtapas[s.id].motivoAtraso=null;
+    item.subEtapas[s.id].responsavel=null; // Limpar atribuição na revisão
+    if(i===0) item.subEtapas[s.id].dataInicio=hoje;
+    else { item.subEtapas[s.id].dataInicio=null; item.subEtapas[s.id].dataLimite=null; }
   });
-  item.status = 'active';
-  _audit(obraId, 'recusa', `REV.${revNum} — ${item.titulo}: recusado. Motivo: "${just}"`);
-  window._arListaItemId = null;
+  item.status='active';
+  _audit(obraId,'recusa',`REV.${revNum} — ${item.titulo}: recusado. Motivo: "${just}"`);
+  window._arListaItemId=null;
   closeRecusaModal();
-  await db.collection('obras').doc(obraId).update({ etapas });
-  showComercialToast(`REV.${revNum} registrada — item reiniciado ✅`, 'success');
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast(`REV.${revNum} registrada — item reiniciado ✅`,'success');
 }
 
 // ── Encerrar aditivo sem termo (conclui na carta_aprovacao) ──────────────────
-let _encerrarObraId = null, _encerrarEtapaId = null, _encerrarItemId = null;
+let _encerrarObraId=null, _encerrarEtapaId=null, _encerrarItemId=null;
 
 function openEncerrarAditivoModal(obraId, etapaId, itemId) {
-  _encerrarObraId = obraId; _encerrarEtapaId = etapaId; _encerrarItemId = itemId;
-  const obra = _obras.find(o => o.id === obraId);
-  const item = (obra?.etapas?.[etapaId]?.lista || []).find(i => i.id === itemId);
-  const titleEl = document.getElementById('encerrar-aditivo-title');
-  if (titleEl) titleEl.textContent = `Encerrar: ${item?.titulo || 'Aditivo'}`;
-  document.getElementById('encerrar-aditivo-modal').style.display = 'flex';
+  _encerrarObraId=obraId; _encerrarEtapaId=etapaId; _encerrarItemId=itemId;
+  const obra=_obras.find(o=>o.id===obraId);
+  const item=(obra?.etapas?.[etapaId]?.lista||[]).find(i=>i.id===itemId);
+  const titleEl=document.getElementById('encerrar-aditivo-title');
+  if(titleEl) titleEl.textContent=`Encerrar: ${item?.titulo||'Aditivo'}`;
+  document.getElementById('encerrar-aditivo-modal').style.display='flex';
 }
 function closeEncerrarAditivoModal() {
-  document.getElementById('encerrar-aditivo-modal').style.display = 'none';
-  _encerrarObraId = _encerrarEtapaId = _encerrarItemId = null;
+  document.getElementById('encerrar-aditivo-modal').style.display='none';
+  _encerrarObraId=_encerrarEtapaId=_encerrarItemId=null;
 }
 async function confirmarEncerrarAditivo() {
-  const obraId = _encerrarObraId, etapaId = _encerrarEtapaId, itemId = _encerrarItemId;
+  const obraId=_encerrarObraId, etapaId=_encerrarEtapaId, itemId=_encerrarItemId;
   closeEncerrarAditivoModal();
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].lista.find(i => i.id === itemId); if (!item) return;
-  const cfg = ETAPAS_CONFIG[etapaId];
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
+  const cfg=ETAPAS_CONFIG[etapaId];
   // Marcar sub-etapa atual (carta_aprovacao) como done e as posteriores como pulada
-  const subs = cfg.subEtapasTemplate || [];
-  let passouEncerramento = false;
-  subs.forEach(s => {
-    if (!item.subEtapas[s.id]) item.subEtapas[s.id] = { status: 'pending', dataLimite: null, dataConclusao: null };
-    if (s.podeEncerrar) {
+  const subs=cfg.subEtapasTemplate||[];
+  let passouEncerramento=false;
+  subs.forEach(s=>{
+    if(!item.subEtapas[s.id]) item.subEtapas[s.id]={status:'pending',dataLimite:null,dataConclusao:null};
+    if(s.podeEncerrar) {
       // Concluir a sub-etapa de encerramento (carta_aprovacao)
-      item.subEtapas[s.id].status = 'done';
-      item.subEtapas[s.id].dataConclusao = hoje;
-      item.subEtapas[s.id].concluidoPor = currentUser.username;
-      passouEncerramento = true;
-    } else if (passouEncerramento) {
+      item.subEtapas[s.id].status='done';
+      item.subEtapas[s.id].dataConclusao=hoje;
+      item.subEtapas[s.id].concluidoPor=currentUser.username;
+      passouEncerramento=true;
+    } else if(passouEncerramento) {
       // Marcar sub-etapas POSTERIORES como puladas
-      item.subEtapas[s.id].status = 'pulada';
-      item.subEtapas[s.id].dataLimite = null;
-      item.subEtapas[s.id].dataConclusao = null;
-      item.subEtapas[s.id].puladoPor = currentUser.username;
-      item.subEtapas[s.id].puladoEm = hoje;
-    } else if (item.subEtapas[s.id].status === 'active') {
+      item.subEtapas[s.id].status='pulada';
+      item.subEtapas[s.id].dataLimite=null;
+      item.subEtapas[s.id].dataConclusao=null;
+      item.subEtapas[s.id].puladoPor=currentUser.username;
+      item.subEtapas[s.id].puladoEm=hoje;
+    } else if(item.subEtapas[s.id].status==='active') {
       // Marcar sub-etapas ativas anteriores como done (ex: carta_envio pode estar active)
-      item.subEtapas[s.id].status = 'done';
-      item.subEtapas[s.id].dataConclusao = hoje;
+      item.subEtapas[s.id].status='done';
+      item.subEtapas[s.id].dataConclusao=hoje;
     }
   });
-  item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username; item.encerradoSemTermo = true;
-  const todosItemsDone = (etapas[etapaId].lista || []).every(i => i.status === 'done');
-  if (todosItemsDone) etapas[etapaId].status = 'done';
-  _audit(obraId, 'conclusao', `${item.titulo} encerrado sem Termo Aditivo`);
-  await db.collection('obras').doc(obraId).update({ etapas });
-  showComercialToast('Aditivo encerrado! ✅', 'success');
+  item.status='done'; item.dataConclusao=hoje; item.concluidoPor=currentUser.username; item.encerradoSemTermo=true;
+  const todosItemsDone=(etapas[etapaId].lista||[]).every(i=>i.status==='done');
+  if(todosItemsDone) etapas[etapaId].status='done';
+  _audit(obraId,'conclusao',`${item.titulo} encerrado sem Termo Aditivo`);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('Aditivo encerrado! ✅','success');
 }
 
 async function encerrarItemLista(obraId, etapaId, itemId) {
   openEncerrarAditivoModal(obraId, etapaId, itemId);
 }
 
-async function saveRecusa() {
-  if (window._arListaItemId) { await saveRecusaLista(); return; }
-  const just = document.getElementById('recusa-justificativa')?.value.trim();
-  if (!just) { showComercialToast('Justificativa obrigatória.', 'error'); return; }
-  const obraId = _arObraId, etapaId = _arEtapaId, subId = _arSubId;
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const cfg = ETAPAS_CONFIG[etapaId];
+async function saveRecusa(){
+  if(window._arListaItemId) { await saveRecusaLista(); return; }
+  const just=document.getElementById('recusa-justificativa')?.value.trim();
+  if(!just){showComercialToast('Justificativa obrigatória.','error');return;}
+  const obraId=_arObraId, etapaId=_arEtapaId, subId=_arSubId;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const cfg=ETAPAS_CONFIG[etapaId];
   // Registrar revisão
-  if (!etapas[etapaId].revisoes) etapas[_arEtapaId].revisoes = [];
-  const revNum = etapas[etapaId].revisoes.length + 1;
-  etapas[etapaId].revisoes.push({ numero: revNum, motivo: `Recusado: ${just}`, data: hoje, por: currentUser.username });
+  if(!etapas[etapaId].revisoes) etapas[_arEtapaId].revisoes=[];
+  const revNum=etapas[etapaId].revisoes.length+1;
+  etapas[etapaId].revisoes.push({numero:revNum, motivo:`Recusado: ${just}`, data:hoje, por:currentUser.username});
   // Reiniciar todas as sub-etapas
-  const subs = cfg.subEtapas || [];
-  subs.forEach((s, idx) => {
-    if (!etapas[etapaId].subEtapas[s.id]) return;
-    etapas[etapaId].subEtapas[s.id].status = idx === 0 ? 'active' : 'pending';
-    etapas[etapaId].subEtapas[s.id].dataConclusao = null;
-    etapas[etapaId].subEtapas[s.id].motivoAtraso = null;
-    etapas[etapaId].subEtapas[s.id].tipoConclusao = null;
-    if (idx === 0) { etapas[etapaId].subEtapas[s.id].dataInicio = hoje; etapas[etapaId].subEtapas[s.id].dataLimite = s.dias ? addDiasUteis(hoje, s.dias) : null; }
-    else { etapas[etapaId].subEtapas[s.id].dataInicio = null; etapas[etapaId].subEtapas[s.id].dataLimite = null; }
+  const subs=cfg.subEtapas||[];
+  subs.forEach((s,idx)=>{
+    if(!etapas[etapaId].subEtapas[s.id]) return;
+    etapas[etapaId].subEtapas[s.id].status=idx===0?'active':'pending';
+    etapas[etapaId].subEtapas[s.id].dataConclusao=null;
+    etapas[etapaId].subEtapas[s.id].motivoAtraso=null;
+    etapas[etapaId].subEtapas[s.id].tipoConclusao=null;
+    if(idx===0){etapas[etapaId].subEtapas[s.id].dataInicio=hoje;etapas[etapaId].subEtapas[s.id].dataLimite=s.dias?addDiasUteis(hoje,s.dias):null;}
+    else{etapas[etapaId].subEtapas[s.id].dataInicio=null;etapas[etapaId].subEtapas[s.id].dataLimite=null;}
   });
-  etapas[etapaId].status = 'active';
-  await db.collection('obras').doc(obraId).update({ etapas });
-  _audit(obraId, 'recusa', `REV.${revNum} — ${ETAPAS_CONFIG[etapaId]?.nome}: recusado. Motivo: "${just}"`);
-  showComercialToast(`REV.${revNum} registrada — etapa reiniciada ✅`, 'success');
+  etapas[etapaId].status='active';
+  await db.collection('obras').doc(obraId).update({etapas});
+  _audit(obraId,'recusa',`REV.${revNum} — ${ETAPAS_CONFIG[etapaId]?.nome}: recusado. Motivo: "${just}"`);
+  showComercialToast(`REV.${revNum} registrada — etapa reiniciada ✅`,'success');
   closeRecusaModal();
 }
 
 
 // ── COC Lista — múltiplas COCs por obra ───────────────────────────────────────
-let _cocObraId = null;
+let _cocObraId=null;
 
 function _toggleCocItem(id) {
   const el = document.getElementById(id);
@@ -1344,21 +1342,21 @@ function _toggleCocItem(id) {
 }
 
 function _renderCocLista(obra, etapaId, subId) {
-  const e = obra.etapas?.[etapaId];
+  const e       = obra.etapas?.[etapaId];
   const cocLista = e?.cocLista || [];
   // Dot status for COC is based on cocLista state
   // (subEtapas.coc is a stub — actual state in cocLista)
-  const canAct = !obra.concluida;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const canAct  = !obra.concluida;
+  const hoje    = new Date().toISOString().slice(0,10);
 
   const itemsHtml = cocLista.map((item, idx) => {
-    const isDone = item.status === 'done';
+    const isDone   = item.status === 'done';
     const toggleId = `coc-item-${idx}`;
-    const dtPrev = item.dataPrevista
-      ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
-    const dtConc = item.dataConclusao
-      ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
-    const dropId = `acao-coc-${idx}`;
+    const dtPrev   = item.dataPrevista
+      ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">${new Date(item.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+    const dtConc   = item.dataConclusao
+      ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+    const dropId   = `acao-coc-${idx}`;
     const cocStatus = item.status || 'pending';
     const cocActive = cocStatus === 'active';
     const btnAcoes = canAct && !isDone ? `<div style="position:relative;display:inline-block;">
@@ -1366,10 +1364,10 @@ function _renderCocLista(obra, etapaId, subId) {
         Ações<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">
-        ${cocStatus === 'pending' ? `<button class="acao-item concluir" data-action="coc-iniciar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : ''}
+        ${cocStatus==='pending' ? `<button class="acao-item concluir" data-action="coc-iniciar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : ''}
         ${cocActive ? `<button class="acao-item concluir" data-action="coc-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : ''}
         ${cocActive ? `<button class="acao-item" data-action="coc-prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : ''}
-        <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${item.responsavel || ''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.responsavel || 'Atribuir'}</button>
+        <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${item.responsavel||''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.responsavel||'Atribuir'}</button>
         <button class="acao-item" data-action="coc-obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
         ${cocActive ? `<button class="acao-item" data-action="coc-dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>` : ''}
       </div>
@@ -1384,26 +1382,26 @@ function _renderCocLista(obra, etapaId, subId) {
     return `<div style="border:1px solid var(--border2);border-radius:8px;margin-top:0.5rem;">
       <div onclick="_toggleCocItem('${toggleId}')"
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
-        <span style="font-size:0.8rem;font-weight:700;color:${isDone ? '#22c55e' : '#f97316'};flex:1;">${isDone ? '✓ ' : ''} ${item.nome}</span>
-        ${dtConc}${!isDone ? dtPrev : ''}
-        ${item.responsavel && !isDone ? item.responsavel === currentUser?.username
-        ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">📍 Você</span>`
-        : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">👤 ${item.responsavel}</span>`
-        : ''}
+        <span style="font-size:0.8rem;font-weight:700;color:${isDone?'#22c55e':'#f97316'};flex:1;">${isDone?'✓ ':''} ${item.nome}</span>
+        ${dtConc}${!isDone?dtPrev:''}
+        ${item.responsavel&&!isDone ? item.responsavel===currentUser?.username
+          ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">📍 Você</span>`
+          : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">👤 ${item.responsavel}</span>`
+          : ''}
         ${btnAcoes}${delBtn}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div id="${toggleId}" style="display:none;padding:0.5rem 0.75rem;font-size:0.78rem;color:var(--muted);">
-        ${(item.observacoes || []).length === 0
-        ? `<div style="font-size:0.75rem;color:var(--muted);font-style:italic;">Nenhuma observação registrada.</div>`
-        : `<div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding-right:0.25rem;">
-              ${[...(item.observacoes || [])].reverse().map(o => `
+        ${(item.observacoes||[]).length === 0
+          ? `<div style="font-size:0.75rem;color:var(--muted);font-style:italic;">Nenhuma observação registrada.</div>`
+          : `<div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:0.5rem;padding-right:0.25rem;">
+              ${[...(item.observacoes||[])].reverse().map(o=>`
                 <div style="background:var(--surface3,var(--surface2));border-radius:6px;padding:0.45rem 0.6rem;">
                   <div style="font-size:0.8rem;color:var(--text);line-height:1.4;">${o.texto}</div>
-                  <div style="font-size:0.65rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);">${o.data}${o.hora ? ' · ' + o.hora : ''} — ${o.por}</div>
+                  <div style="font-size:0.65rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);">${o.data}${o.hora?' · '+o.hora:''} — ${o.por}</div>
                 </div>`).join('')}
              </div>`
-      }
+        }
       </div>
     </div>`;
   }).join('');
@@ -1431,11 +1429,11 @@ function _closeAddCocModal() {
   document.getElementById('add-coc-modal').style.display = 'none';
 }
 async function _saveAddCoc() {
-  const obraId = document.getElementById('add-coc-obra-id').value;
+  const obraId  = document.getElementById('add-coc-obra-id').value;
   const etapaId = document.getElementById('add-coc-etapa-id').value;
-  const nome = document.getElementById('add-coc-nome').value.trim();
-  const data = document.getElementById('add-coc-data').value || null;
-  if (!nome) { showComercialToast('Informe o nome da COC.', 'error'); return; }
+  const nome    = document.getElementById('add-coc-nome').value.trim();
+  const data    = document.getElementById('add-coc-data').value || null;
+  if (!nome) { showComercialToast('Informe o nome da COC.','error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   if (!etapas[etapaId].cocLista) etapas[etapaId].cocLista = [];
@@ -1451,18 +1449,18 @@ async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
-  const hoje = dataCustom || new Date().toISOString().slice(0, 10);
+  const hoje = dataCustom || new Date().toISOString().slice(0,10);
   item.status = 'done';
   item.dataConclusao = hoje;
   item.concluidoPor = currentUser.username;
 
   // Garantir que subEtapas existe
   if (!etapas[etapaId].subEtapas) etapas[etapaId].subEtapas = {};
-  if (!etapas[etapaId].subEtapas.coc) etapas[etapaId].subEtapas.coc = { status: 'pending', dataLimite: null, dataConclusao: null };
+  if (!etapas[etapaId].subEtapas.coc) etapas[etapaId].subEtapas.coc = {status:'pending',dataLimite:null,dataConclusao:null};
 
   // Verificar se TODOS os COCs estão done
-  const allCocDone = (etapas[etapaId].cocLista || []).length > 0 &&
-    (etapas[etapaId].cocLista || []).every(i => i.status === 'done');
+  const allCocDone = (etapas[etapaId].cocLista||[]).length > 0 &&
+                     (etapas[etapaId].cocLista||[]).every(i => i.status==='done');
 
   // Sincronizar subEtapas.coc com o estado real da cocLista
   etapas[etapaId].subEtapas.coc.status = allCocDone ? 'done' : 'active';
@@ -1471,7 +1469,7 @@ async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
   // Verificar se toda a etapa de Documentações está concluída
   const cfgDoc = ETAPAS_CONFIG[etapaId];
   if (cfgDoc?.isIndependente && allCocDone) {
-    const todasDocDone = (cfgDoc.subEtapas || []).every(s =>
+    const todasDocDone = (cfgDoc.subEtapas||[]).every(s =>
       etapas[etapaId].subEtapas?.[s.id]?.status === 'done'
     );
     if (todasDocDone) {
@@ -1494,104 +1492,104 @@ async function _deleteCocItem(obraId, etapaId, idx) {
 }
 
 async function _iniciarCocItem(obraId, etapaId, idx) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
-  item.status = 'active'; item.dataInicio = new Date().toISOString().slice(0, 10);
-  await db.collection('obras').doc(obraId).update({ etapas });
-  showComercialToast('COC iniciada! ✅', 'success');
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].cocLista?.[idx]; if(!item) return;
+  item.status='active'; item.dataInicio=new Date().toISOString().slice(0,10);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('COC iniciada! ✅','success');
 }
 
 // ── COC state para modais ────────────────────────────────────────────────────
-let _cocActionObraId = null, _cocActionEtapaId = null, _cocActionIdx = null;
+let _cocActionObraId=null, _cocActionEtapaId=null, _cocActionIdx=null;
 
 async function _prorrogarCocItem(obraId, etapaId, idx) {
-  _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
-  const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
-  const titleEl = document.getElementById('prorrogar-modal-title');
-  if (titleEl) titleEl.textContent = `Prorrogar — COC · ${item?.nome || ''}`;
-  const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
-  const input = document.getElementById('prorrogar-data-input');
-  if (input) { input.min = amanha.toISOString().slice(0, 10); input.value = item?.dataPrevista || ''; }
-  const info = document.getElementById('prorrogar-modal-info');
-  if (info) { info.textContent = `Data prevista atual: ${item?.dataPrevista ? new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}`; }
-  const just = document.getElementById('prorrogar-justificativa'); if (just) just.value = '';
-  document.getElementById('prorrogar-modal').dataset.cocMode = '1';
-  document.getElementById('prorrogar-modal').style.display = 'flex';
+  _cocActionObraId=obraId; _cocActionEtapaId=etapaId; _cocActionIdx=idx;
+  const item=_obras.find(o=>o.id===obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
+  const titleEl=document.getElementById('prorrogar-modal-title');
+  if(titleEl) titleEl.textContent=`Prorrogar — COC · ${item?.nome||''}`;
+  const amanha=new Date(); amanha.setDate(amanha.getDate()+1);
+  const input=document.getElementById('prorrogar-data-input');
+  if(input){ input.min=amanha.toISOString().slice(0,10); input.value=item?.dataPrevista||''; }
+  const info=document.getElementById('prorrogar-modal-info');
+  if(info){ info.textContent=`Data prevista atual: ${item?.dataPrevista?new Date(item.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR'):'—'}`; }
+  const just=document.getElementById('prorrogar-justificativa'); if(just) just.value='';
+  document.getElementById('prorrogar-modal').dataset.cocMode='1';
+  document.getElementById('prorrogar-modal').style.display='flex';
 }
 
 async function _atribuirCocItem(obraId, etapaId, idx) {
-  _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
-  const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
-  const allUsers = typeof users !== 'undefined' ? users : [];
-  const lista = allUsers.filter(u => (u.acessos || []).includes('comercial') || (u.acessos || []).includes('adminComercial') || u.isSuperAdmin);
-  const usrList = lista.length ? lista : allUsers;
-  const sel = document.getElementById('atrib-usuario-sel');
-  if (sel) { sel.innerHTML = usrList.map(u => `<option value="${u.username}"${u.username === item?.responsavel ? ' selected' : ''}>${u.username}</option>`).join(''); }
-  const titleEl = document.getElementById('atrib-modal-title');
-  if (titleEl) titleEl.textContent = `Atribuir — COC · ${item?.nome || ''}`;
-  const justWrap = document.getElementById('atrib-justificativa-wrap');
-  if (justWrap) justWrap.style.display = 'none';
-  document.getElementById('atrib-modal').dataset.cocMode = '1';
-  document.getElementById('atrib-modal').style.display = 'flex';
+  _cocActionObraId=obraId; _cocActionEtapaId=etapaId; _cocActionIdx=idx;
+  const item=_obras.find(o=>o.id===obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
+  const allUsers=typeof users!=='undefined'?users:[];
+  const lista=allUsers.filter(u=>(u.acessos||[]).includes('comercial')||(u.acessos||[]).includes('adminComercial')||u.isSuperAdmin);
+  const usrList=lista.length?lista:allUsers;
+  const sel=document.getElementById('atrib-usuario-sel');
+  if(sel){ sel.innerHTML=usrList.map(u=>`<option value="${u.username}"${u.username===item?.responsavel?' selected':''}>${u.username}</option>`).join(''); }
+  const titleEl=document.getElementById('atrib-modal-title');
+  if(titleEl) titleEl.textContent=`Atribuir — COC · ${item?.nome||''}`;
+  const justWrap=document.getElementById('atrib-justificativa-wrap');
+  if(justWrap) justWrap.style.display='none';
+  document.getElementById('atrib-modal').dataset.cocMode='1';
+  document.getElementById('atrib-modal').style.display='flex';
 }
 async function _obsCocItem(obraId, etapaId, idx) {
   _openObsModalCoc(obraId, etapaId, idx);
 }
 
 async function _dataPrevistaCocItem(obraId, etapaId, idx) {
-  _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
-  const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
-  const titleEl = document.getElementById('dp-modal-title');
-  if (titleEl) titleEl.textContent = `Data Prevista — COC · ${item?.nome || ''}`;
-  const input = document.getElementById('dp-data-input');
-  if (input) input.value = item?.dataPrevista || '';
-  document.getElementById('dp-modal').dataset.cocMode = '1';
-  document.getElementById('dp-modal').style.display = 'flex';
+  _cocActionObraId=obraId; _cocActionEtapaId=etapaId; _cocActionIdx=idx;
+  const item=_obras.find(o=>o.id===obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
+  const titleEl=document.getElementById('dp-modal-title');
+  if(titleEl) titleEl.textContent=`Data Prevista — COC · ${item?.nome||''}`;
+  const input=document.getElementById('dp-data-input');
+  if(input) input.value=item?.dataPrevista||'';
+  document.getElementById('dp-modal').dataset.cocMode='1';
+  document.getElementById('dp-modal').style.display='flex';
 }
 
 async function iniciarSubEtapa(obraId, etapaId, subId) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const sub = etapas[etapaId].subEtapas[subId]; if (!sub) return;
-  sub.status = 'active';
-  sub.dataInicio = new Date().toISOString().slice(0, 10);
-  await db.collection('obras').doc(obraId).update({ etapas });
-  showComercialToast('Sub-etapa iniciada! ✅', 'success');
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const sub=etapas[etapaId].subEtapas[subId]; if(!sub) return;
+  sub.status='active';
+  sub.dataInicio=new Date().toISOString().slice(0,10);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast('Sub-etapa iniciada! ✅','success');
 }
 
 
-let _addItemEtapaId = null, _addItemObraId = null;
+let _addItemEtapaId=null, _addItemObraId=null;
 
 function openAddItemModal(obraId, etapaId) {
-  _addItemObraId = obraId; _addItemEtapaId = etapaId;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const obra = _obras.find(o => o.id === obraId);
-  const n = (obra?.etapas?.[etapaId]?.lista?.length || 0) + 1;
-  const label = cfg.nome === 'Aditivos / Termo' ? 'Aditivo' : 'Medição';
-  document.getElementById('add-item-title').textContent = `Adicionar ${label}`;
-  document.getElementById('add-item-nome').value = `${label} ${n}`;
-  document.getElementById('add-item-data').value = '';
-  document.getElementById('add-item-modal').style.display = 'flex';
+  _addItemObraId=obraId; _addItemEtapaId=etapaId;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const obra=_obras.find(o=>o.id===obraId);
+  const n=(obra?.etapas?.[etapaId]?.lista?.length||0)+1;
+  const label=cfg.nome==='Aditivos / Termo'?'Aditivo':'Medição';
+  document.getElementById('add-item-title').textContent=`Adicionar ${label}`;
+  document.getElementById('add-item-nome').value=`${label} ${n}`;
+  document.getElementById('add-item-data').value='';
+  document.getElementById('add-item-modal').style.display='flex';
 }
 function closeAddItemModal() {
-  document.getElementById('add-item-modal').style.display = 'none';
-  _addItemObraId = _addItemEtapaId = null;
+  document.getElementById('add-item-modal').style.display='none';
+  _addItemObraId=_addItemEtapaId=null;
 }
 async function saveAddItem() {
-  const titulo = document.getElementById('add-item-nome')?.value.trim();
-  if (!titulo) { showComercialToast('Informe o título.', 'error'); return; }
-  const dataPrevista = document.getElementById('add-item-data')?.value || null;
-  const obra = _obras.find(o => o.id === _addItemObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  if (!etapas[_addItemEtapaId].lista) etapas[_addItemEtapaId].lista = [];
-  etapas[_addItemEtapaId].ativa = true;
-  if (etapas[_addItemEtapaId].status === 'pending') etapas[_addItemEtapaId].status = 'active';
+  const titulo=document.getElementById('add-item-nome')?.value.trim();
+  if(!titulo){showComercialToast('Informe o título.','error');return;}
+  const dataPrevista=document.getElementById('add-item-data')?.value||null;
+  const obra=_obras.find(o=>o.id===_addItemObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  if(!etapas[_addItemEtapaId].lista) etapas[_addItemEtapaId].lista=[];
+  etapas[_addItemEtapaId].ativa=true;
+  if(etapas[_addItemEtapaId].status==='pending') etapas[_addItemEtapaId].status='active';
   etapas[_addItemEtapaId].lista.push(criarItemLista(_addItemEtapaId, titulo, dataPrevista));
-  const tipoItem = ETAPAS_CONFIG[_addItemEtapaId]?.nome === 'Aditivos / Termo' ? 'aditivo_add' : 'medicao_add';
-  _audit(_addItemObraId, tipoItem, `Novo item adicionado: "${titulo}"${dataPrevista ? ' (Previsto: ' + dataPrevista + ')' : ''}`);
-  await db.collection('obras').doc(_addItemObraId).update({ etapas });
-  showComercialToast(`"${titulo}" adicionado! ✅`, 'success');
+  const tipoItem = ETAPAS_CONFIG[_addItemEtapaId]?.nome==='Aditivos / Termo'?'aditivo_add':'medicao_add';
+  _audit(_addItemObraId, tipoItem, `Novo item adicionado: "${titulo}"${dataPrevista?' (Previsto: '+dataPrevista+')':''}`);
+  await db.collection('obras').doc(_addItemObraId).update({etapas});
+  showComercialToast(`"${titulo}" adicionado! ✅`,'success');
   closeAddItemModal();
 }
 
@@ -1600,81 +1598,81 @@ async function adicionarItemLista(obraId, etapaId) {
 }
 
 // ── Excluir item da lista ──────────────────────────────────────────────────────
-let _excluirObraId = null, _excluirEtapaId = null, _excluirItemId = null;
+let _excluirObraId=null, _excluirEtapaId=null, _excluirItemId=null;
 
 function confirmarExcluirItem(obraId, etapaId, itemId, titulo) {
-  _excluirObraId = obraId; _excluirEtapaId = etapaId; _excluirItemId = itemId;
-  document.getElementById('excluir-item-titulo').textContent = titulo;
-  document.getElementById('excluir-item-modal').style.display = 'flex';
+  _excluirObraId=obraId; _excluirEtapaId=etapaId; _excluirItemId=itemId;
+  document.getElementById('excluir-item-titulo').textContent=titulo;
+  document.getElementById('excluir-item-modal').style.display='flex';
 }
 function closeExcluirItemModal() {
-  document.getElementById('excluir-item-modal').style.display = 'none';
-  _excluirObraId = _excluirEtapaId = _excluirItemId = null;
+  document.getElementById('excluir-item-modal').style.display='none';
+  _excluirObraId=_excluirEtapaId=_excluirItemId=null;
 }
 async function confirmarExcluir() {
-  const obra = _obras.find(o => o.id === _excluirObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  etapas[_excluirEtapaId].lista = (etapas[_excluirEtapaId].lista || []).filter(i => i.id !== _excluirItemId);
-  if (etapas[_excluirEtapaId].lista.length === 0) {
-    etapas[_excluirEtapaId].status = 'pending';
-    etapas[_excluirEtapaId].ativa = false;
+  const obra=_obras.find(o=>o.id===_excluirObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[_excluirEtapaId].lista=(etapas[_excluirEtapaId].lista||[]).filter(i=>i.id!==_excluirItemId);
+  if(etapas[_excluirEtapaId].lista.length===0){
+    etapas[_excluirEtapaId].status='pending';
+    etapas[_excluirEtapaId].ativa=false;
   }
-  const obraEx = _obras.find(o => o.id === _excluirObraId);
-  const itemEx = (obraEx?.etapas?.[_excluirEtapaId]?.lista || []).find(i => i.id === _excluirItemId);
-  const tipoEx = ETAPAS_CONFIG[_excluirEtapaId]?.nome === 'Aditivos / Termo' ? 'aditivo_del' : 'medicao_del';
-  _audit(_excluirObraId, tipoEx, `Item excluído: "${itemEx?.titulo || _excluirItemId}"`);
-  await db.collection('obras').doc(_excluirObraId).update({ etapas });
-  showComercialToast('Item excluído. ✅', 'success');
+  const obraEx=_obras.find(o=>o.id===_excluirObraId);
+  const itemEx=(obraEx?.etapas?.[_excluirEtapaId]?.lista||[]).find(i=>i.id===_excluirItemId);
+  const tipoEx=ETAPAS_CONFIG[_excluirEtapaId]?.nome==='Aditivos / Termo'?'aditivo_del':'medicao_del';
+  _audit(_excluirObraId, tipoEx, `Item excluído: "${itemEx?.titulo||_excluirItemId}"`);
+  await db.collection('obras').doc(_excluirObraId).update({etapas});
+  showComercialToast('Item excluído. ✅','success');
   closeExcluirItemModal();
 }
 
 async function concluirItemLista(obraId, etapaId, itemId) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
+  const obra = _obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje = new Date().toISOString().slice(0,10);
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].lista.find(i => i.id === itemId);
-  if (!item) return;
-  item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username;
+  const item = etapas[etapaId].lista.find(i=>i.id===itemId);
+  if(!item) return;
+  item.status='done'; item.dataConclusao=hoje; item.concluidoPor=currentUser.username;
   // Verificar se todos itens done → etapa done → verificar conclusão obra
-  const todosDone = etapas[etapaId].lista.every(i => i.status === 'done');
-  if (todosDone) etapas[etapaId].status = 'done';
-  const todasDone = ETAPAS_ORDER.filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada').every(id => etapas[id]?.status === 'done');
-  if (todasDone) {
-    await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-    showComercialToast('Obra concluída! 🎉', 'success');
+  const todosDone = etapas[etapaId].lista.every(i=>i.status==='done');
+  if(todosDone) etapas[etapaId].status='done';
+  const todasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
+  if(todasDone){
+    await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+    showComercialToast('Obra concluída! 🎉','success');
   } else {
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast('Item concluído! ✅', 'success');
+    await db.collection('obras').doc(obraId).update({etapas});
+    showComercialToast('Item concluído! ✅','success');
   }
 }
 
 function renderListaEtapa(obra, etapaId, hoje) {
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const e = obra.etapas?.[etapaId];
-  const lista = e?.lista || [];
+  const cfg    = ETAPAS_CONFIG[etapaId];
+  const e      = obra.etapas?.[etapaId];
+  const lista  = e?.lista || [];
   const canAdd = !obra.concluida;
-  const label = cfg.nome === 'Aditivos / Termo' ? 'Aditivo' : 'Medição';
+  const label  = cfg.nome === 'Aditivos / Termo' ? 'Aditivo' : 'Medição';
 
   const itemsHtml = lista.map((item, idx) => {
-    const isDone = item.status === 'done';
+    const isDone  = item.status === 'done';
     const corItem = isDone ? '#22c55e' : cfg.cor;
-    const dtPrev = item.dataPrevista
+    const dtPrev  = item.dataPrevista
       ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">
            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-           ${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
-    const dtConc = item.dataConclusao
-      ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+           ${new Date(item.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+    const dtConc  = item.dataConclusao
+      ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const toggleId = `lista-item-${etapaId}-${idx}`;
 
     // Sub-etapas do item
-    const subsHtml = (cfg.subEtapasTemplate || []).map(subCfg => {
-      const sub = item.subEtapas?.[subCfg.id];
+    const subsHtml = (cfg.subEtapasTemplate||[]).map(subCfg => {
+      const sub    = item.subEtapas?.[subCfg.id];
       if (!sub) return '';
-      const subStatus = sub.status || 'pending';
+      const subStatus  = sub.status || 'pending';
       // Sub-etapa pulada — card igual aos demais, mas com tachado e badge Pulado
       if (subStatus === 'pulada') {
         const puladoFmt = sub.puladoEm
-          ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);flex-shrink:0;">⏭ ${new Date(sub.puladoEm + 'T12:00:00').toLocaleDateString('pt-BR')}${sub.puladoPor ? ' · ' + sub.puladoPor : ''}</span>`
+          ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);flex-shrink:0;">⏭ ${new Date(sub.puladoEm+'T12:00:00').toLocaleDateString('pt-BR')}${sub.puladoPor?' · '+sub.puladoPor:''}</span>`
           : `<span style="font-size:0.62rem;font-weight:700;color:var(--muted);padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);flex-shrink:0;border:1px solid var(--border2);">Pulada</span>`;
         return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
           <span style="width:16px;height:16px;border-radius:50%;background:#9ca3af;color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">⏭</span>
@@ -1682,40 +1680,40 @@ function renderListaEtapa(obra, etapaId, hoje) {
           ${puladoFmt}
         </div>`;
       }
-      const atrasada = subStatus !== 'done' && sub.dataLimite && sub.dataLimite < hoje;
-      const diasCount = sub.dataInicio ? Math.floor((new Date() - new Date(sub.dataInicio + 'T12:00:00')) / (1000 * 60 * 60 * 24)) : 0;
+      const atrasada   = subStatus!=='done' && sub.dataLimite && sub.dataLimite < hoje;
+      const diasCount  = sub.dataInicio ? Math.floor((new Date()-new Date(sub.dataInicio+'T12:00:00'))/(1000*60*60*24)) : 0;
       let dataInfo = '';
-      if (subCfg.isAnalise && subStatus === 'active' && sub.dataInicio) {
+      if (subCfg.isAnalise && subStatus==='active' && sub.dataInicio) {
         dataInfo = `<span style="color:#8b5cf6;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           ${diasCount}d nesta sub-etapa</span>`;
       } else if (sub.dataConclusao) {
         const por = sub.concluidoPor ? ` · ${sub.concluidoPor}` : '';
         const tipo = sub.tipoConclusao ? ` (${sub.tipoConclusao})` : '';
-        dataInfo = `<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}${por}${tipo}</span>`;
+        dataInfo = `<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(sub.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}${tipo}</span>`;
       } else if (atrasada && sub.dataLimite) {
-        dataInfo = `<span style="color:#ef4444;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;">⚠ ${new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR')}</span>`;
+        dataInfo = `<span style="color:#ef4444;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;">⚠ ${new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR')}</span>`;
       } else if (sub.dataLimite) {
-        dataInfo = `<span style="color:var(--muted);font-family:var(--font-mono);font-size:0.65rem;">${new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR')}</span>`;
+        dataInfo = `<span style="color:var(--muted);font-family:var(--font-mono);font-size:0.65rem;">${new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR')}</span>`;
       }
 
-      const dotColor = subStatus === 'done' ? '#22c55e' : atrasada ? '#ef4444' : subStatus === 'active' ? cfg.cor : 'var(--muted)';
-      const dotSymbol = subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
-      const dropId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
-      const canConc = subStatus !== 'done' && !obra.concluida;
-      const resp = sub.responsavel;
+      const dotColor  = subStatus==='done'?'#22c55e':atrasada?'#ef4444':subStatus==='active'?cfg.cor:'var(--muted)';
+      const dotSymbol = subStatus==='done'?'✓':atrasada?'!':subStatus==='active'?'›':'·';
+      const dropId    = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
+      const canConc   = subStatus!=='done' && !obra.concluida;
+      const resp      = sub.responsavel;
 
       const acoesDropdown = !obra.concluida && subStatus !== 'done' ? (() => {
         const _dId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
-        const _resp = sub.responsavel || '';
+        const _resp = sub.responsavel||'';
         const _items = [
-          subStatus === 'active' && subCfg.podeEncerrar ? `<button class="acao-item" data-action="encerrar-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#f59e0b;font-weight:600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Encerrar Aditivo</button>` : '',
-          subStatus === 'active' && !subCfg.isAprovacaoRecusa ? `<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
-          subStatus === 'active' && subCfg.isAprovacaoRecusa ? `<button class="acao-item concluir" data-action="aprovado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>` : '',
-          subStatus === 'active' && subCfg.isAprovacaoRecusa ? `<button class="acao-item motivo" data-action="recusado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
+          subStatus==='active'&&subCfg.podeEncerrar?`<button class="acao-item" data-action="encerrar-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#f59e0b;font-weight:600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Encerrar Aditivo</button>`:'',
+          subStatus==='active'&&!subCfg.isAprovacaoRecusa?`<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`:'',
+          subStatus==='active'&&subCfg.isAprovacaoRecusa?`<button class="acao-item concluir" data-action="aprovado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>`:'',
+          subStatus==='active'&&subCfg.isAprovacaoRecusa?`<button class="acao-item motivo" data-action="recusado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>`:'',
 
-          subStatus === 'active' ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-          `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_resp || 'Atribuir'}</button>`,
+          subStatus==='active'?`<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>`:'',
+          `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_resp||'Atribuir'}</button>`,
           `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         ].join('');
         return `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${_dId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${_dId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_items}</div></div>`;
@@ -1724,7 +1722,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
       return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
         <span style="width:16px;height:16px;border-radius:50%;background:${dotColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">${dotSymbol}</span>
         <span style="flex:1;font-size:0.78rem;">${subCfg.nome}</span>
-        ${sub.responsavel ? sub.responsavel === currentUser?.username
+        ${sub.responsavel ? sub.responsavel===currentUser?.username
           ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);">📍 Você</span>`
           : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);">👤 ${sub.responsavel}</span>`
           : ''}
@@ -1736,15 +1734,15 @@ function renderListaEtapa(obra, etapaId, hoje) {
     <div style="border:1px solid var(--border2);border-radius:8px;margin-top:0.5rem;">
       <div onclick="document.getElementById('${toggleId}').style.display=document.getElementById('${toggleId}').style.display==='none'?'block':'none'"
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
-        <span style="font-size:0.8rem;font-weight:700;color:${corItem};flex:1;">${isDone ? '✓ ' : ''} ${item.titulo}${(item.revisoes || []).length > 0 ? ` <span style="background:#f59e0b;color:#fff;font-size:0.58rem;font-weight:800;padding:0.1rem 0.35rem;border-radius:4px;font-family:var(--font-mono);vertical-align:middle;">REV.${item.revisoes.length}</span>` : ''}</span>
-        ${dtConc}${!isDone ? dtPrev : ''}
-        ${canAdd ? `<button
+        <span style="font-size:0.8rem;font-weight:700;color:${corItem};flex:1;">${isDone?'✓ ':''} ${item.titulo}${(item.revisoes||[]).length>0?` <span style="background:#f59e0b;color:#fff;font-size:0.58rem;font-weight:800;padding:0.1rem 0.35rem;border-radius:4px;font-family:var(--font-mono);vertical-align:middle;">REV.${item.revisoes.length}</span>`:''}</span>
+        ${dtConc}${!isDone?dtPrev:''}
+        ${canAdd?`<button
             onclick="event.stopPropagation();confirmarExcluirItem('${obra.id}','${etapaId}','${item.id}','${item.titulo}')"
             title="Excluir ${item.titulo}"
             style="background:none;border:none;cursor:pointer;padding:0.15rem 0.25rem;color:var(--muted);border-radius:4px;flex-shrink:0;"
             onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='var(--muted)'">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-          </button>`: ''}
+          </button>`:''}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div id="${toggleId}" style="display:none;padding:0.5rem 0.75rem;">${subsHtml}</div>
@@ -1770,18 +1768,18 @@ function contarMinhasPendencias(obra) {
   if (!obra.etapas || obra.concluida) return 0;
   let count = 0;
   ETAPAS_ORDER.forEach(id => {
-    const e = obra.etapas[id];
+    const e   = obra.etapas[id];
     const cfg = ETAPAS_CONFIG[id];
     if (!e?.ativa) return;
     if (cfg.isLista) {
-      (e.lista || []).forEach(item => {
-        Object.values(item.subEtapas || {}).forEach(s => {
-          if (s.status !== 'done' && s.responsavel === currentUser?.username) count++;
+      (e.lista||[]).forEach(item => {
+        Object.values(item.subEtapas||{}).forEach(s => {
+          if (s.status!=='done' && s.responsavel===currentUser?.username) count++;
         });
       });
     } else {
-      Object.values(e.subEtapas || {}).forEach(s => {
-        if (s.status !== 'done' && s.responsavel === currentUser?.username) count++;
+      Object.values(e.subEtapas||{}).forEach(s => {
+        if (s.status!=='done' && s.responsavel===currentUser?.username) count++;
       });
     }
   });
@@ -1795,19 +1793,19 @@ function _getHistKey(obraId) { return `hist-visto-${obraId}`; }
 function _contarHistoricoTotal(obra) {
   let total = 0;
   ETAPAS_ORDER.forEach(etapaId => {
-    const e = obra.etapas?.[etapaId]; if (!e) return;
+    const e = obra.etapas?.[etapaId]; if(!e) return;
     const cfg = ETAPAS_CONFIG[etapaId];
-    total += (e.observacoes || []).length + (e.revisoes || []).length;
+    total += (e.observacoes||[]).length + (e.revisoes||[]).length;
     if (!cfg.isLista) {
-      (cfg.subEtapas || []).forEach(sub => {
+      (cfg.subEtapas||[]).forEach(sub => {
         const sd = e.subEtapas?.[sub.id];
-        total += (sd?.observacoes || []).length + (sd?.revisoes || []).length;
+        total += (sd?.observacoes||[]).length + (sd?.revisoes||[]).length;
       });
     } else {
-      (e.lista || []).forEach(item => {
-        (cfg.subEtapasTemplate || []).forEach(sub => {
+      (e.lista||[]).forEach(item => {
+        (cfg.subEtapasTemplate||[]).forEach(sub => {
           const sd = item.subEtapas?.[sub.id];
-          total += (sd?.observacoes || []).length + (sd?.revisoes || []).length;
+          total += (sd?.observacoes||[]).length + (sd?.revisoes||[]).length;
         });
       });
     }
@@ -1816,9 +1814,9 @@ function _contarHistoricoTotal(obra) {
 }
 
 function _historicoTemNovos(obra) {
-  const key = _getHistKey(obra.id);
-  const visto = parseInt(localStorage.getItem(key) || '0');
-  const total = _contarHistoricoTotal(obra);
+  const key    = _getHistKey(obra.id);
+  const visto  = parseInt(localStorage.getItem(key)||'0');
+  const total  = _contarHistoricoTotal(obra);
   return total > visto;
 }
 
@@ -1832,15 +1830,15 @@ async function _audit(obraId, tipo, descricao, extra) {
   try {
     const entrada = {
       tipo, descricao,
-      extra: extra || null,
-      por: currentUser?.username || '—',
-      em: new Date().toISOString(),
+      extra: extra||null,
+      por:   currentUser?.username||'—',
+      em:    new Date().toISOString(),
     };
     // Salva no array _auditoria dentro do documento da obra (sem subcoleção)
     await db.collection('obras').doc(obraId).update({
       _auditoria: firebase.firestore.FieldValue.arrayUnion(entrada)
     });
-  } catch (e) { console.warn('[Auditoria]', e); }
+  } catch(e) { console.warn('[Auditoria]', e); }
 }
 
 let _auditoriaCache = {}; // { obraId: [{...}] }
@@ -1849,9 +1847,9 @@ async function _loadAuditoria(obraId) {
     const doc = await db.collection('obras').doc(obraId).get();
     const entries = doc.data()?._auditoria || [];
     // Ordenar do mais recente para o mais antigo
-    entries.sort((a, b) => (b.em || '').localeCompare(a.em || ''));
+    entries.sort((a,b) => (b.em||'').localeCompare(a.em||''));
     _auditoriaCache[obraId] = entries;
-  } catch (e) {
+  } catch(e) {
     console.warn('[Auditoria load]', e);
     _auditoriaCache[obraId] = [];
   }
@@ -1859,22 +1857,22 @@ async function _loadAuditoria(obraId) {
 }
 
 const _AUDIT_ICONS = {
-  edicao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
-  atribuicao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  edicao:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  atribuicao:  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
   aditivo_add: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   aditivo_del: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>',
   medicao_add: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
   medicao_del: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>',
-  conclusao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
-  revisao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg>',
-  recusa: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  conclusao:   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+  revisao:     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg>',
+  recusa:      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   prorrogacao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
 };
 
 const _AUDIT_CORES = {
-  edicao: '#3b82f6', atribuicao: '#8b5cf6', aditivo_add: '#ec4899', aditivo_del: '#6b7280',
-  medicao_add: '#ec4899', medicao_del: '#6b7280', conclusao: '#22c55e',
-  revisao: '#f59e0b', recusa: '#ef4444', prorrogacao: '#f97316',
+  edicao:'#3b82f6', atribuicao:'#8b5cf6', aditivo_add:'#ec4899', aditivo_del:'#6b7280',
+  medicao_add:'#ec4899', medicao_del:'#6b7280', conclusao:'#22c55e',
+  revisao:'#f59e0b', recusa:'#ef4444', prorrogacao:'#f97316',
 };
 
 
@@ -1884,27 +1882,27 @@ function _contarTarefasAtribuidas(obra) {
   let count = 0;
   const me = currentUser.username;
   ETAPAS_ORDER.forEach(etapaId => {
-    const e = obra.etapas?.[etapaId];
+    const e   = obra.etapas?.[etapaId];
     const cfg = ETAPAS_CONFIG[etapaId];
     if (!e?.ativa || e.status === 'done') return;
     if (cfg.isLista) {
-      (e.lista || []).forEach(item => {
+      (e.lista||[]).forEach(item => {
         if (item.status === 'done') return;
-        Object.values(item.subEtapas || {}).forEach(s => {
+        Object.values(item.subEtapas||{}).forEach(s => {
           if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
         });
       });
     } else if (cfg.isIndependente) {
       // COC
-      (e.cocLista || []).forEach(coc => {
+      (e.cocLista||[]).forEach(coc => {
         if (coc.status !== 'done' && coc.responsavel === me) count++;
       });
       // Outras sub-etapas de documentações
-      Object.values(e.subEtapas || {}).forEach(s => {
+      Object.values(e.subEtapas||{}).forEach(s => {
         if (!s.isCocLista && s.status !== 'done' && s.responsavel === me) count++;
       });
     } else {
-      Object.values(e.subEtapas || {}).forEach(s => {
+      Object.values(e.subEtapas||{}).forEach(s => {
         if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
       });
     }
@@ -1917,14 +1915,14 @@ let _acaoListenerActive = false;
 
 function _acaoCloseAll(e) {
   if (!e.target.closest('[data-dropdown]') && !e.target.closest('.acao-dropdown-menu')) {
-    document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display='none');
   }
 }
 
-function toggleAcaoDropdown(id) { } // mantido para compatibilidade
+function toggleAcaoDropdown(id) {} // mantido para compatibilidade
 
 function closeAcaoDropdown(id) {
-  const el = document.getElementById(id); if (el) el.style.display = 'none';
+  const el = document.getElementById(id); if(el) el.style.display='none';
 }
 
 function _initAcaoDelegate() {
@@ -1936,17 +1934,17 @@ function _initAcaoDelegate() {
     const trigger = e.target.closest('[data-dropdown]');
     if (trigger) {
       e.stopPropagation();
-      const id = trigger.dataset.dropdown;
+      const id  = trigger.dataset.dropdown;
       const menu = document.getElementById(id);
       if (!menu) return;
       const isOpen = menu.style.display === 'block';
-      document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display = 'none');
+      document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display='none');
       if (!isOpen) menu.style.display = 'block';
       return;
     }
     // Fechar ao clicar fora
     if (!e.target.closest('.acao-dropdown-menu')) {
-      document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display = 'none');
+      document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display='none');
     }
   });
 
@@ -1955,60 +1953,60 @@ function _initAcaoDelegate() {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     e.stopPropagation();
-    document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display = 'none');
+    document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display='none');
 
     const action = btn.dataset.action;
     const obraId = btn.dataset.obra;
-    const etapaId = btn.dataset.etapa;
-    const subId = btn.dataset.sub;
+    const etapaId= btn.dataset.etapa;
+    const subId  = btn.dataset.sub;
     const itemId = btn.dataset.item;
-    const resp = btn.dataset.resp;
+    const resp   = btn.dataset.resp;
 
-    switch (action) {
-      case 'concluir': concluirSubEtapaComData(obraId, etapaId, subId); break;
-      case 'aprovado': processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
-      case 'recusado': processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
-      case 'iniciar-sub': iniciarSubEtapa(obraId, etapaId, subId); break;
+    switch(action) {
+      case 'concluir':       concluirSubEtapaComData(obraId, etapaId, subId); break;
+      case 'aprovado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
+      case 'recusado':       processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
+      case 'iniciar-sub':    iniciarSubEtapa(obraId, etapaId, subId); break;
       case 'coc-iniciar': {
-        const ci = parseInt(btn.dataset.coc);
+        const ci=parseInt(btn.dataset.coc);
         _iniciarCocItem(obraId, etapaId, ci);
         break;
       }
       case 'coc-concluir': {
-        const ci2 = parseInt(btn.dataset.coc);
+        const ci2=parseInt(btn.dataset.coc);
         concluirSubEtapaComData(obraId, etapaId, 'coc', null, ci2);
         break;
       }
       case 'coc-prorrogar': {
-        const ci3 = parseInt(btn.dataset.coc);
+        const ci3=parseInt(btn.dataset.coc);
         _prorrogarCocItem(obraId, etapaId, ci3);
         break;
       }
       case 'coc-atribuir': {
-        const ci4 = parseInt(btn.dataset.coc);
+        const ci4=parseInt(btn.dataset.coc);
         _atribuirCocItem(obraId, etapaId, ci4, btn.dataset.resp);
         break;
       }
       case 'coc-obs': {
-        const ci5 = parseInt(btn.dataset.coc);
+        const ci5=parseInt(btn.dataset.coc);
         _obsCocItem(obraId, etapaId, ci5);
         break;
       }
       case 'coc-dataprevista': {
-        const ci6 = parseInt(btn.dataset.coc);
+        const ci6=parseInt(btn.dataset.coc);
         _dataPrevistaCocItem(obraId, etapaId, ci6);
         break;
       }
       case 'concluir-lista': concluirSubEtapaComData(obraId, etapaId, subId, itemId); break;
-      case 'revisao': openRevisaoModal(obraId, etapaId, subId, itemId); break;
-      case 'prorrogar': openProrrogarModal(obraId, etapaId, subId, itemId); break;
-      case 'atribuir': openAtribuirModal(obraId, etapaId, subId, resp ? 'reatribuir' : 'atribuir', itemId); break;
-      case 'obs': openObsModal(obraId, etapaId, subId, itemId); break;
-      case 'motivo': openMotivoAtrasoModal(obraId, etapaId, subId, itemId); break;
-      case 'revisao-etapa': openRevisaoModal(obraId, etapaId); break;
-      case 'obs-etapa': openObsModal(obraId, etapaId); break;
-      case 'pular-etapa': pularEtapa(obraId, etapaId); break;
-      case 'dataprevista': openDataPrevistaModal(obraId, etapaId, subId); break;
+      case 'revisao':        openRevisaoModal(obraId, etapaId, subId, itemId); break;
+      case 'prorrogar':      openProrrogarModal(obraId, etapaId, subId, itemId); break;
+      case 'atribuir':       openAtribuirModal(obraId, etapaId, subId, resp?'reatribuir':'atribuir', itemId); break;
+      case 'obs':            openObsModal(obraId, etapaId, subId, itemId); break;
+      case 'motivo':         openMotivoAtrasoModal(obraId, etapaId, subId, itemId); break;
+      case 'revisao-etapa':  openRevisaoModal(obraId, etapaId); break;
+      case 'obs-etapa':      openObsModal(obraId, etapaId); break;
+      case 'pular-etapa':    pularEtapa(obraId, etapaId); break;
+      case 'dataprevista':   openDataPrevistaModal(obraId, etapaId, subId); break;
       case 'aprovado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'aprovado'); break;
       case 'recusado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'recusado'); break;
       case 'encerrar-lista': encerrarItemLista(obraId, etapaId, itemId); break;
@@ -2020,129 +2018,129 @@ function _initAcaoDelegate() {
 // ── Concluir sub-etapa de dentro de uma lista (aditivo/medicao) ───────────
 async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
   const cfg = ETAPAS_CONFIG[etapaId];
-  const precisaTipo = subId === 'termo_assinatura';
+  const precisaTipo = subId==='termo_assinatura';
   if (precisaTipo) {
-    _tipoConclObraId = obraId; _tipoConclEtapaId = etapaId; _tipoConclSubId = subId;
-    _tipoConclItemId = itemId;
-    document.getElementById('tipo-conclusao-modal').style.display = 'flex';
+    _tipoConclObraId=obraId; _tipoConclEtapaId=etapaId; _tipoConclSubId=subId;
+    _tipoConclItemId=itemId;
+    document.getElementById('tipo-conclusao-modal').style.display='flex';
     return;
   }
   await _concluirSubDeLista(obraId, etapaId, itemId, subId, null);
 }
-let _tipoConclItemId = null;
+let _tipoConclItemId=null;
 async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = dataCustom || new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].lista.find(i => i.id === itemId); if (!item) return;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const sub = item.subEtapas[subId];
-  sub.status = 'done'; sub.dataConclusao = hoje; sub.concluidoPor = currentUser.username;
-  if (tipo) sub.tipoConclusao = tipo;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=dataCustom||new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const item=etapas[etapaId].lista.find(i=>i.id===itemId); if(!item) return;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const sub=item.subEtapas[subId];
+  sub.status='done'; sub.dataConclusao=hoje; sub.concluidoPor=currentUser.username;
+  if(tipo) sub.tipoConclusao=tipo;
   // Ativar próxima sub-etapa
-  const subArr = cfg.subEtapasTemplate || [];
-  const idx = subArr.findIndex(s => s.id === subId);
-  const prox = subArr[idx + 1];
-  if (prox && !item.subEtapas[prox.id]) item.subEtapas[prox.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
-  if (prox) { item.subEtapas[prox.id].status = 'active'; item.subEtapas[prox.id].dataInicio = hoje; }
+  const subArr=cfg.subEtapasTemplate||[];
+  const idx=subArr.findIndex(s=>s.id===subId);
+  const prox=subArr[idx+1];
+  if(prox && !item.subEtapas[prox.id]) item.subEtapas[prox.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]};
+  if(prox) { item.subEtapas[prox.id].status='active'; item.subEtapas[prox.id].dataInicio=hoje; }
   // Verificar se todas as sub-etapas do item estão done ou pulada
   const todasSubDone = subArr.every(s => {
     const st = item.subEtapas[s.id]?.status;
     return st === 'done' || st === 'pulada';
   });
-  if (todasSubDone) { item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username; }
+  if(todasSubDone){ item.status='done'; item.dataConclusao=hoje; item.concluidoPor=currentUser.username; }
   // Verificar conclusão da etapa
-  const todosItensDone = (etapas[etapaId].lista || []).every(i => i.status === 'done');
-  if (todosItensDone) etapas[etapaId].status = 'done';
-  const todasEtapasDone = ETAPAS_ORDER.filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada').every(id => etapas[id]?.status === 'done');
-  if (todasEtapasDone) {
-    await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-    showComercialToast('Obra concluída! 🎉', 'success');
+  const todosItensDone=(etapas[etapaId].lista||[]).every(i=>i.status==='done');
+  if(todosItensDone) etapas[etapaId].status='done';
+  const todasEtapasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
+  if(todasEtapasDone){
+    await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+    showComercialToast('Obra concluída! 🎉','success');
   } else {
-    const _cfgL = ETAPAS_CONFIG[etapaId];
-    const _subNmL = (_cfgL.subEtapasTemplate || []).find(s => s.id === subId)?.nome || subId;
-    _audit(obraId, 'conclusao', `${item.titulo} · ${_subNmL} concluída${tipo ? ' (' + tipo + ')' : ''}${dataCustom && dataCustom !== new Date().toISOString().slice(0, 10) ? ' com data ' + dataCustom : ''}`);
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast('Sub-etapa concluída! ✅', 'success');
+    const _cfgL=ETAPAS_CONFIG[etapaId];
+  const _subNmL=(_cfgL.subEtapasTemplate||[]).find(s=>s.id===subId)?.nome||subId;
+  _audit(obraId,'conclusao',`${item.titulo} · ${_subNmL} concluída${tipo?' ('+tipo+')':''}${dataCustom&&dataCustom!==new Date().toISOString().slice(0,10)?' com data '+dataCustom:''}`);
+  await db.collection('obras').doc(obraId).update({etapas});
+    showComercialToast('Sub-etapa concluída! ✅','success');
   }
 }
 
 // ── Concluir sub-etapa ────────────────────────────────────────────────────────
 async function concluirSubEtapa(obraId, etapaId, subId) {
   // Sub-etapas com escolha de tipo (Aditivos/Contrato assinatura)
-  const precisaTipo = (etapaId === 'aditivos' && subId === 'termo_assinatura') ||
-    (etapaId === 'contrato' && subId === 'assinatura');
-  if (precisaTipo) { openTipoConclusaoModal(obraId, etapaId, subId); return; }
-  await _concluirComTipo(obraId, etapaId, subId, null);
+  const precisaTipo = (etapaId==='aditivos'&&subId==='termo_assinatura') ||
+                      (etapaId==='contrato'&&subId==='assinatura');
+  if (precisaTipo) { openTipoConclusaoModal(obraId,etapaId,subId); return; }
+  await _concluirComTipo(obraId,etapaId,subId,null);
 }
 
 async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = dataCustom || new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const cfg = ETAPAS_CONFIG[etapaId];
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=dataCustom||new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const cfg=ETAPAS_CONFIG[etapaId];
   const subEtapasArr = cfg.subEtapas || [];
-  const subCfg = subEtapasArr.find(s => s.id === subId) || (cfg.subEtapasTemplate || []).find(s => s.id === subId);
-  etapas[etapaId].subEtapas[subId].status = 'done';
-  etapas[etapaId].subEtapas[subId].dataConclusao = hoje;
-  etapas[etapaId].subEtapas[subId].concluidoPor = currentUser.username;
-  if (tipo) etapas[etapaId].subEtapas[subId].tipoConclusao = tipo;
-  const subIdx = subEtapasArr.findIndex(s => s.id === subId);
-  const proxSub = subEtapasArr[subIdx + 1];
+  const subCfg=subEtapasArr.find(s=>s.id===subId)||(cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  etapas[etapaId].subEtapas[subId].status='done';
+  etapas[etapaId].subEtapas[subId].dataConclusao=hoje;
+  etapas[etapaId].subEtapas[subId].concluidoPor=currentUser.username;
+  if (tipo) etapas[etapaId].subEtapas[subId].tipoConclusao=tipo;
+  const subIdx=subEtapasArr.findIndex(s=>s.id===subId);
+  const proxSub=subEtapasArr[subIdx+1];
   // Sub-etapas independentes (Documentações): não ativar a próxima automaticamente
   const isIndSub = subCfg?.isIndependente || cfg.isIndependente;
   if (proxSub && !isIndSub) {
     // Análise do cliente aprovada → avança para assinatura
     if (!etapas[etapaId].subEtapas[proxSub.id]) {
-      etapas[etapaId].subEtapas[proxSub.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
+      etapas[etapaId].subEtapas[proxSub.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null,revisoes:[],observacoes:[]};
     }
-    etapas[etapaId].subEtapas[proxSub.id].status = 'active';
-    etapas[etapaId].subEtapas[proxSub.id].dataInicio = hoje;
-    etapas[etapaId].subEtapas[proxSub.id].dataLimite = calcDataLimite(proxSub, etapas, obra.dataFechamento);
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast(`"${proxSub.nome}" liberada! ✅`, 'success');
+    etapas[etapaId].subEtapas[proxSub.id].status='active';
+    etapas[etapaId].subEtapas[proxSub.id].dataInicio=hoje;
+    etapas[etapaId].subEtapas[proxSub.id].dataLimite=calcDataLimite(proxSub,etapas,obra.dataFechamento);
+    await db.collection('obras').doc(obraId).update({etapas});
+    showComercialToast(`"${proxSub.nome}" liberada! ✅`,'success');
   } else if (isIndSub || !proxSub) {
     // Independente ou última sub: verificar se todas as sub-etapas da etapa estão done
-    const todasSubDone = subEtapasArr.every(s => etapas[etapaId].subEtapas[s.id]?.status === 'done');
-    if (todasSubDone) etapas[etapaId].status = 'done';
-    else etapas[etapaId].status = 'active';
-    const todasDone = ETAPAS_ORDER.filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada').every(id => etapas[id]?.status === 'done');
+    const todasSubDone = subEtapasArr.every(s => etapas[etapaId].subEtapas[s.id]?.status==='done');
+    if (todasSubDone) etapas[etapaId].status='done';
+    else etapas[etapaId].status='active';
+    const todasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
     if (todasSubDone && todasDone) {
-      await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-      showComercialToast('Obra concluída! 🎉', 'success');
+      await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+      showComercialToast('Obra concluída! 🎉','success');
     } else {
-      _audit(obraId, 'conclusao', `${cfg.nome} · ${subCfg?.nome || subId} concluída${tipo ? ' (' + tipo + ')' : ''}${dataCustom && dataCustom !== new Date().toISOString().slice(0, 10) ? ' com data ' + dataCustom : ''}`);
-      await db.collection('obras').doc(obraId).update({ etapas });
-      showComercialToast(`"${subCfg?.nome || ''}" concluída! ✅`, 'success');
+      _audit(obraId,'conclusao',`${cfg.nome} · ${subCfg?.nome||subId} concluída${tipo?' ('+tipo+')':''}${dataCustom&&dataCustom!==new Date().toISOString().slice(0,10)?' com data '+dataCustom:''}`);
+      await db.collection('obras').doc(obraId).update({etapas});
+      showComercialToast(`"${subCfg?.nome||''}" concluída! ✅`,'success');
     }
   } else {
-    etapas[etapaId].status = 'done';
-    const todasDone = ETAPAS_ORDER.filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada').every(id => etapas[id]?.status === 'done');
+    etapas[etapaId].status='done';
+    const todasDone=ETAPAS_ORDER.filter(id=>etapas[id]?.ativa&&etapas[id]?.status!=='pulada').every(id=>etapas[id]?.status==='done');
     if (todasDone) {
-      await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-      showComercialToast('Obra concluída! 🎉', 'success');
+      await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+      showComercialToast('Obra concluída! 🎉','success');
     } else {
-      await db.collection('obras').doc(obraId).update({ etapas });
-      showComercialToast(`Etapa "${cfg.nome}" concluída! ✅`, 'success');
+      await db.collection('obras').doc(obraId).update({etapas});
+      showComercialToast(`Etapa "${cfg.nome}" concluída! ✅`,'success');
     }
   }
 }
 
 // ── Iniciar etapa manualmente ─────────────────────────────────────────────────
 async function iniciarEtapa(obraId, etapaId) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const cfg = ETAPAS_CONFIG[etapaId];
-  etapas[etapaId].ativa = true;
-  etapas[etapaId].status = 'active';
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const cfg=ETAPAS_CONFIG[etapaId];
+  etapas[etapaId].ativa=true;
+  etapas[etapaId].status='active';
   // Etapas com lista — adicionar primeiro item
   if (cfg.isLista) {
-    etapas[etapaId].ativa = true;
-    etapas[etapaId].status = 'active';
-    etapas[etapaId].puladaEm = null;
-    etapas[etapaId].puladaPor = null;
-    if (!etapas[etapaId].lista) etapas[etapaId].lista = [];
-    await db.collection('obras').doc(obraId).update({ etapas });
+    etapas[etapaId].ativa=true;
+    etapas[etapaId].status='active';
+    etapas[etapaId].puladaEm=null;
+    etapas[etapaId].puladaPor=null;
+    if(!etapas[etapaId].lista) etapas[etapaId].lista=[];
+    await db.collection('obras').doc(obraId).update({etapas});
     // Abrir modal para nomear e definir data do primeiro item
     openAddItemModal(obraId, etapaId);
     return;
@@ -2152,128 +2150,128 @@ async function iniciarEtapa(obraId, etapaId) {
   const subEtapasArr = cfg.subEtapas || cfg.subEtapasTemplate || [];
   subEtapasArr.forEach((sub, idx) => {
     if (!etapas[etapaId].subEtapas[sub.id]) {
-      etapas[etapaId].subEtapas[sub.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
+      etapas[etapaId].subEtapas[sub.id] = { status:'pending', dataLimite:null, dataConclusao:null, motivoAtraso:null, revisoes:[], observacoes:[] };
     }
   });
   // Sub-etapas independentes: nenhuma é ativada automaticamente — cada uma tem seu Iniciar
   if (cfg.isIndependente) {
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast(`"${cfg.nome}" iniciada! ✅`, 'success');
+    await db.collection('obras').doc(obraId).update({etapas});
+    showComercialToast(`"${cfg.nome}" iniciada! ✅`,'success');
     return;
   }
-  const primSub = (cfg.subEtapas || cfg.subEtapasTemplate || [])[0];
-  etapas[etapaId].subEtapas[primSub.id].status = 'active';
-  etapas[etapaId].subEtapas[primSub.id].dataInicio = new Date().toISOString().slice(0, 10);
-  etapas[etapaId].subEtapas[primSub.id].dataLimite = calcDataLimite(primSub, etapas, obra.dataFechamento);
-  await db.collection('obras').doc(obraId).update({ etapas });
-  showComercialToast(`"${cfg.nome}" iniciada! ✅`, 'success');
+  const primSub=(cfg.subEtapas||cfg.subEtapasTemplate||[])[0];
+  etapas[etapaId].subEtapas[primSub.id].status='active';
+  etapas[etapaId].subEtapas[primSub.id].dataInicio=new Date().toISOString().slice(0,10);
+  etapas[etapaId].subEtapas[primSub.id].dataLimite=calcDataLimite(primSub,etapas,obra.dataFechamento);
+  await db.collection('obras').doc(obraId).update({etapas});
+  showComercialToast(`"${cfg.nome}" iniciada! ✅`,'success');
 }
 
 // ── Pular etapa ───────────────────────────────────────────────────────────────
 async function pularEtapa(obraId, etapaId) {
   if (!confirm(`Pular a etapa "${ETAPAS_CONFIG[etapaId].nome}"? Ela ficará desabilitada e poderá ser reiniciada depois.`)) return;
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  etapas[etapaId].status = 'pulada';
-  etapas[etapaId].ativa = false;
-  etapas[etapaId].puladaEm = hoje;
-  etapas[etapaId].puladaPor = currentUser.username;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const hoje=new Date().toISOString().slice(0,10);
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[etapaId].status='pulada';
+  etapas[etapaId].ativa=false;
+  etapas[etapaId].puladaEm=hoje;
+  etapas[etapaId].puladaPor=currentUser.username;
   // Verificar se todas as etapas ativas (não puladas) estão done
-  const todasDone = ETAPAS_ORDER
-    .filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada')
-    .every(id => etapas[id]?.status === 'done');
+  const todasDone=ETAPAS_ORDER
+    .filter(id=>etapas[id]?.ativa && etapas[id]?.status!=='pulada')
+    .every(id=>etapas[id]?.status==='done');
   if (todasDone) {
-    await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-    showComercialToast('Etapa pulada — obra concluída! 🎉', 'success');
+    await db.collection('obras').doc(obraId).update({etapas,concluida:true,dataConclusao:hoje});
+    showComercialToast('Etapa pulada — obra concluída! 🎉','success');
   } else {
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast(`Etapa "${ETAPAS_CONFIG[etapaId].nome}" pulada ✅`, 'success');
+    await db.collection('obras').doc(obraId).update({etapas});
+    showComercialToast(`Etapa "${ETAPAS_CONFIG[etapaId].nome}" pulada ✅`,'success');
   }
 }
 
 // ── Modal Aprovado/Assinado (Aditivo) ────────────────────────────────────────
-let _tipoConclObraId = null, _tipoConclEtapaId = null, _tipoConclSubId = null;
+let _tipoConclObraId=null, _tipoConclEtapaId=null, _tipoConclSubId=null;
 
 function openTipoConclusaoModal(obraId, etapaId, subId) {
-  _tipoConclObraId = obraId; _tipoConclEtapaId = etapaId; _tipoConclSubId = subId;
-  document.getElementById('tipo-conclusao-modal').style.display = 'flex';
+  _tipoConclObraId=obraId; _tipoConclEtapaId=etapaId; _tipoConclSubId=subId;
+  document.getElementById('tipo-conclusao-modal').style.display='flex';
 }
 
 async function salvarTipoConclusao(tipo) {
-  document.getElementById('tipo-conclusao-modal').style.display = 'none';
+  document.getElementById('tipo-conclusao-modal').style.display='none';
   if (_tipoConclItemId) {
     await _concluirSubDeLista(_tipoConclObraId, _tipoConclEtapaId, _tipoConclItemId, _tipoConclSubId, tipo);
-    _tipoConclItemId = null;
+    _tipoConclItemId=null;
   } else {
     await _concluirComTipo(_tipoConclObraId, _tipoConclEtapaId, _tipoConclSubId, tipo);
   }
-  _tipoConclObraId = _tipoConclEtapaId = _tipoConclSubId = null;
+  _tipoConclObraId=_tipoConclEtapaId=_tipoConclSubId=null;
 }
 
 // ── Prorrogar sub-etapa ───────────────────────────────────────────────────────
-let _prorrogarObraId = null, _prorrogarEtapaId = null, _prorrogarSubId = null;
+let _prorrogarObraId=null,_prorrogarEtapaId=null,_prorrogarSubId=null;
 
-let _prorrogarItemId = null;
-function openProrrogarModal(obraId, etapaId, subId, itemId) {
-  _prorrogarItemId = itemId || null;
-  _prorrogarObraId = obraId; _prorrogarEtapaId = etapaId; _prorrogarSubId = subId;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
-  const obra = _obras.find(o => o.id === obraId);
+let _prorrogarItemId=null;
+function openProrrogarModal(obraId,etapaId,subId,itemId) {
+  _prorrogarItemId=itemId||null;
+  _prorrogarObraId=obraId;_prorrogarEtapaId=etapaId;_prorrogarSubId=subId;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(cfg.subEtapas||cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  const obra=_obras.find(o=>o.id===obraId);
   // Sub pode estar diretamente em subEtapas ou dentro de um item da lista
   let sub = obra?.etapas?.[etapaId]?.subEtapas?.[subId];
   if (!sub && cfg.isLista) {
     const lista = obra?.etapas?.[etapaId]?.lista || [];
     for (const item of lista) { if (item.subEtapas?.[subId]) { sub = item.subEtapas[subId]; break; } }
   }
-  const limFmt = sub?.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-  const title = document.getElementById('prorrogar-modal-title');
-  if (title) title.textContent = `Prorrogar — ${cfg.nome} · ${subCfg?.nome || ''}`;
-  const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
+  const limFmt=sub?.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  const title=document.getElementById('prorrogar-modal-title');
+  if(title) title.textContent=`Prorrogar — ${cfg.nome} · ${subCfg?.nome||''}`;
+  const amanha = new Date(); amanha.setDate(amanha.getDate()+1);
   const input = document.getElementById('prorrogar-data-input');
-  if (input) { input.min = amanha.toISOString().slice(0, 10); input.value = sub?.dataLimite || ''; }
-  const info2 = document.getElementById('prorrogar-modal-info');
-  if (info2) {
-    const limFmt2 = sub?.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-    const prorrCount = sub?.diasProrrogados || 0;
-    info2.textContent = `Limite atual: ${limFmt2}${prorrCount ? ' (prorrogado ' + prorrCount + 'x)' : ''}`.trim();
+  if(input){ input.min=amanha.toISOString().slice(0,10); input.value=sub?.dataLimite||''; }
+  const info2=document.getElementById('prorrogar-modal-info');
+  if(info2){
+    const limFmt2=sub?.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+    const prorrCount=sub?.diasProrrogados||0;
+    info2.textContent=`Limite atual: ${limFmt2}${prorrCount?' (prorrogado '+prorrCount+'x)':''}`.trim();
   }
-  document.getElementById('prorrogar-modal').style.display = 'flex';
+  document.getElementById('prorrogar-modal').style.display='flex';
 }
 
 function closeProrrogarModal() {
-  document.getElementById('prorrogar-modal').style.display = 'none';
-  _prorrogarObraId = _prorrogarEtapaId = _prorrogarSubId = null;
+  document.getElementById('prorrogar-modal').style.display='none';
+  _prorrogarObraId=_prorrogarEtapaId=_prorrogarSubId=null;
 }
 
 async function saveProrrogacao() {
-  const novaData = document.getElementById('prorrogar-data-input')?.value;
-  if (!novaData) { showComercialToast('Selecione uma data válida.', 'error'); return; }
+  const novaData=document.getElementById('prorrogar-data-input')?.value;
+  if(!novaData){showComercialToast('Selecione uma data válida.','error');return;}
   // Modo COC: salvar diretamente na cocLista
-  if (document.getElementById('prorrogar-modal')?.dataset?.cocMode === '1') {
-    document.getElementById('prorrogar-modal').dataset.cocMode = '';
-    const obra2 = _obras.find(o => o.id === _cocActionObraId); if (!obra2) return;
-    const etapas2 = JSON.parse(JSON.stringify(obra2.etapas));
-    etapas2[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista = novaData;
-    await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas2 });
-    closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
+  if(document.getElementById('prorrogar-modal')?.dataset?.cocMode==='1') {
+    document.getElementById('prorrogar-modal').dataset.cocMode='';
+    const obra2=_obras.find(o=>o.id===_cocActionObraId); if(!obra2) return;
+    const etapas2=JSON.parse(JSON.stringify(obra2.etapas));
+    etapas2[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista=novaData;
+    await db.collection('obras').doc(_cocActionObraId).update({etapas:etapas2});
+    closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅','success'); return;
   }
-  const justProrroga = document.getElementById('prorrogar-justificativa')?.value.trim();
-  if (!justProrroga) { showComercialToast('Informe a justificativa da prorrogação.', 'error'); return; }
-  const hoje = new Date().toISOString().slice(0, 10);
-  if (novaData <= hoje) { showComercialToast('A data deve ser futura.', 'error'); return; }
-  const obra = _obras.find(o => o.id === _prorrogarObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const ref = _findSubRef(etapas, _prorrogarEtapaId, _prorrogarSubId, _prorrogarItemId);
-  if (!ref) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
-  ref.sub.dataLimite = novaData;
-  ref.sub.prorrogadoPor = currentUser.username;
-  ref.sub.prorrogadoEm = hoje;
-  ref.sub.diasProrrogados = (ref.sub.diasProrrogados || 0) + 1;
-  ref.sub.prorrogacaoJustificativa = justProrroga;
-  await db.collection('obras').doc(_prorrogarObraId).update({ etapas });
-  showComercialToast(`Prazo atualizado para ${new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR')}! ✅`, 'success');
+  const justProrroga=document.getElementById('prorrogar-justificativa')?.value.trim();
+  if(!justProrroga){showComercialToast('Informe a justificativa da prorrogação.','error');return;}
+  const hoje=new Date().toISOString().slice(0,10);
+  if(novaData<=hoje){showComercialToast('A data deve ser futura.','error');return;}
+  const obra=_obras.find(o=>o.id===_prorrogarObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const ref=_findSubRef(etapas,_prorrogarEtapaId,_prorrogarSubId,_prorrogarItemId);
+  if(!ref){showComercialToast('Sub-etapa não encontrada.','error');return;}
+  ref.sub.dataLimite=novaData;
+  ref.sub.prorrogadoPor=currentUser.username;
+  ref.sub.prorrogadoEm=hoje;
+  ref.sub.diasProrrogados=(ref.sub.diasProrrogados||0)+1;
+  ref.sub.prorrogacaoJustificativa=justProrroga;
+  await db.collection('obras').doc(_prorrogarObraId).update({etapas});
+  showComercialToast(`Prazo atualizado para ${new Date(novaData+'T12:00:00').toLocaleDateString('pt-BR')}! ✅`,'success');
   closeProrrogarModal();
 }
 
@@ -2297,89 +2295,89 @@ function _findSubRef(etapas, etapaId, subId, itemId) {
 }
 
 // ── Modal motivo de atraso ────────────────────────────────────────────────────
-let _motivoObraId = null, _motivoEtapaId = null, _motivoSubId = null;
-function openMotivoAtrasoModal(obraId, etapaId, subId) {
-  _motivoObraId = obraId; _motivoEtapaId = etapaId; _motivoSubId = subId;
-  const _cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = (_cfg.subEtapas || _cfg.subEtapasTemplate || []).find(s => s.id === subId);
-  const title = document.getElementById('motivo-modal-title');
-  if (title) title.textContent = `Motivo de Atraso — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome || ''}`;
-  const mInput = document.getElementById('motivo-input'); if (mInput) mInput.value = '';
-  const mModal = document.getElementById('motivo-atraso-modal');
-  if (!mModal) { showComercialToast('Modal de motivo não encontrado.', 'error'); return; }
-  mModal.style.display = 'flex';
+let _motivoObraId=null,_motivoEtapaId=null,_motivoSubId=null;
+function openMotivoAtrasoModal(obraId,etapaId,subId) {
+  _motivoObraId=obraId;_motivoEtapaId=etapaId;_motivoSubId=subId;
+  const _cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(_cfg.subEtapas||_cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  const title=document.getElementById('motivo-modal-title');
+  if(title) title.textContent=`Motivo de Atraso — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome||''}`;
+  const mInput=document.getElementById('motivo-input'); if(mInput) mInput.value='';
+  const mModal=document.getElementById('motivo-atraso-modal');
+  if(!mModal){ showComercialToast('Modal de motivo não encontrado.','error'); return; }
+  mModal.style.display='flex';
 }
 function closeMotivoAtrasoModal() {
-  document.getElementById('motivo-atraso-modal').style.display = 'none';
-  _motivoObraId = _motivoEtapaId = _motivoSubId = null;
+  document.getElementById('motivo-atraso-modal').style.display='none';
+  _motivoObraId=_motivoEtapaId=_motivoSubId=null;
 }
 async function saveMotivoAtraso() {
-  const motivo = document.getElementById('motivo-input')?.value.trim();
-  if (!motivo) { showComercialToast('Informe o motivo.', 'error'); return; }
-  const obra = _obras.find(o => o.id === _motivoObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  etapas[_motivoEtapaId].subEtapas[_motivoSubId].motivoAtraso = motivo;
-  await db.collection('obras').doc(_motivoObraId).update({ etapas });
-  showComercialToast('Motivo registrado! ✅', 'success');
+  const motivo=document.getElementById('motivo-input')?.value.trim();
+  if(!motivo){showComercialToast('Informe o motivo.','error');return;}
+  const obra=_obras.find(o=>o.id===_motivoObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  etapas[_motivoEtapaId].subEtapas[_motivoSubId].motivoAtraso=motivo;
+  await db.collection('obras').doc(_motivoObraId).update({etapas});
+  showComercialToast('Motivo registrado! ✅','success');
   closeMotivoAtrasoModal();
 }
 
 // ── Revisão de etapa ou sub-etapa ────────────────────────────────────────────
-let _revisaoObraId = null, _revisaoEtapaId = null, _revisaoSubId = null;
+let _revisaoObraId=null, _revisaoEtapaId=null, _revisaoSubId=null;
 
 function openRevisaoModal(obraId, etapaId, subId) {
-  _revisaoObraId = obraId; _revisaoEtapaId = etapaId; _revisaoSubId = subId || null;
-  const obra = _obras.find(o => o.id === obraId);
-  let revs = 0, titulo = '';
+  _revisaoObraId=obraId; _revisaoEtapaId=etapaId; _revisaoSubId=subId||null;
+  const obra=_obras.find(o=>o.id===obraId);
+  let revs=0, titulo='';
   if (subId) {
-    revs = obra?.etapas?.[etapaId]?.subEtapas?.[subId]?.revisoes?.length || 0;
-    const _cfgA = ETAPAS_CONFIG[etapaId];
-    const subCfg = (_cfgA.subEtapas || _cfgA.subEtapasTemplate || []).find(s => s.id === subId);
-    titulo = `REV.${revs + 1} — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome || ''}`;
+    revs=obra?.etapas?.[etapaId]?.subEtapas?.[subId]?.revisoes?.length||0;
+    const _cfgA=ETAPAS_CONFIG[etapaId];
+  const subCfg=(_cfgA.subEtapas||_cfgA.subEtapasTemplate||[]).find(s=>s.id===subId);
+    titulo=`REV.${revs+1} — ${ETAPAS_CONFIG[etapaId].nome} · ${subCfg?.nome||''}`;
   } else {
-    revs = obra?.etapas?.[etapaId]?.revisoes?.length || 0;
-    titulo = `REV.${revs + 1} — ${ETAPAS_CONFIG[etapaId].nome}`;
+    revs=obra?.etapas?.[etapaId]?.revisoes?.length||0;
+    titulo=`REV.${revs+1} — ${ETAPAS_CONFIG[etapaId].nome}`;
   }
-  const title = document.getElementById('revisao-modal-title');
-  if (title) title.textContent = titulo;
-  document.getElementById('revisao-motivo-input').value = '';
-  document.getElementById('revisao-mini-modal').style.display = 'flex';
+  const title=document.getElementById('revisao-modal-title');
+  if(title) title.textContent=titulo;
+  document.getElementById('revisao-motivo-input').value='';
+  document.getElementById('revisao-mini-modal').style.display='flex';
 }
 
 function closeRevisaoModal() {
-  document.getElementById('revisao-mini-modal').style.display = 'none';
-  _revisaoObraId = _revisaoEtapaId = _revisaoSubId = null;
+  document.getElementById('revisao-mini-modal').style.display='none';
+  _revisaoObraId=_revisaoEtapaId=_revisaoSubId=null;
 }
 
 async function saveRevisao() {
-  const motivo = document.getElementById('revisao-motivo-input')?.value.trim();
-  if (!motivo) { showComercialToast('Informe o motivo da revisão.', 'error'); return; }
-  const obra = _obras.find(o => o.id === _revisaoObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const novaRevisao = { numero: 0, motivo, data: new Date().toISOString().slice(0, 10), por: currentUser.username };
+  const motivo=document.getElementById('revisao-motivo-input')?.value.trim();
+  if(!motivo){showComercialToast('Informe o motivo da revisão.','error');return;}
+  const obra=_obras.find(o=>o.id===_revisaoObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const novaRevisao={numero:0, motivo, data:new Date().toISOString().slice(0,10), por:currentUser.username};
 
   if (_revisaoSubId) {
-    const sub = etapas[_revisaoEtapaId].subEtapas[_revisaoSubId];
-    if (!sub.revisoes) sub.revisoes = [];
-    novaRevisao.numero = sub.revisoes.length + 1;
+    const sub=etapas[_revisaoEtapaId].subEtapas[_revisaoSubId];
+    if(!sub.revisoes) sub.revisoes=[];
+    novaRevisao.numero=sub.revisoes.length+1;
     sub.revisoes.push(novaRevisao);
     if (sub.status !== 'done') sub.dataLimite = novaRevisao.data;
   } else {
     // Revisão na etapa — reinicia TODAS as sub-etapas
-    if (!etapas[_revisaoEtapaId].revisoes) etapas[_revisaoEtapaId].revisoes = [];
-    novaRevisao.numero = etapas[_revisaoEtapaId].revisoes.length + 1;
+    if(!etapas[_revisaoEtapaId].revisoes) etapas[_revisaoEtapaId].revisoes=[];
+    novaRevisao.numero=etapas[_revisaoEtapaId].revisoes.length+1;
     etapas[_revisaoEtapaId].revisoes.push(novaRevisao);
     // Reiniciar sub-etapas: primeira ativa, restantes pendentes
-    const cfg = ETAPAS_CONFIG[_revisaoEtapaId];
-    const hoje = novaRevisao.data;
+    const cfg=ETAPAS_CONFIG[_revisaoEtapaId];
+    const hoje=novaRevisao.data;
     if (!cfg.isLista) {
-      const subs = cfg.subEtapas || [];
-      subs.forEach((s, idx) => {
-        if (!etapas[_revisaoEtapaId].subEtapas[s.id]) return;
-        etapas[_revisaoEtapaId].subEtapas[s.id].status = idx === 0 ? 'active' : 'pending';
+      const subs=cfg.subEtapas||[];
+      subs.forEach((s,idx)=>{
+        if(!etapas[_revisaoEtapaId].subEtapas[s.id]) return;
+        etapas[_revisaoEtapaId].subEtapas[s.id].status = idx===0 ? 'active' : 'pending';
         etapas[_revisaoEtapaId].subEtapas[s.id].dataConclusao = null;
-        etapas[_revisaoEtapaId].subEtapas[s.id].motivoAtraso = null;
-        if (idx === 0) {
+        etapas[_revisaoEtapaId].subEtapas[s.id].motivoAtraso  = null;
+        if(idx===0){
           etapas[_revisaoEtapaId].subEtapas[s.id].dataInicio = hoje;
           etapas[_revisaoEtapaId].subEtapas[s.id].dataLimite = s.dias ? addDiasUteis(hoje, s.dias) : null;
         } else {
@@ -2391,141 +2389,141 @@ async function saveRevisao() {
     }
   }
 
-  await db.collection('obras').doc(_revisaoObraId).update({ etapas });
-  showComercialToast('Revisão registrada! ✅', 'success');
+  await db.collection('obras').doc(_revisaoObraId).update({etapas});
+  showComercialToast('Revisão registrada! ✅','success');
   closeRevisaoModal();
 }
 
 // ── Editar obra ───────────────────────────────────────────────────────────────
-let _editandoObraId = null;
+let _editandoObraId=null;
 function openEditarObraModal(obraId) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  _editandoObraId = obraId;
-  document.getElementById('editar-obra-numero').value = obra.numero || '';
-  document.getElementById('editar-obra-nome').value = obra.nome || '';
-  document.getElementById('editar-obra-rep').value = obra.representante || '';
-  document.getElementById('editar-obra-fechamento').value = obra.dataFechamento || '';
-  document.getElementById('editar-obra-prazo').value = obra.prazoEstimado || '';
-  document.getElementById('editar-obra-obs').value = obra.obs || '';
-  document.getElementById('editar-obra-modal').style.display = 'flex';
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  _editandoObraId=obraId;
+  document.getElementById('editar-obra-numero').value    =obra.numero||'';
+  document.getElementById('editar-obra-nome').value      =obra.nome||'';
+  document.getElementById('editar-obra-rep').value       =obra.representante||'';
+  document.getElementById('editar-obra-fechamento').value=obra.dataFechamento||'';
+  document.getElementById('editar-obra-prazo').value     =obra.prazoEstimado||'';
+  document.getElementById('editar-obra-obs').value       =obra.obs||'';
+  document.getElementById('editar-obra-modal').style.display='flex';
 }
 function closeEditarObraModal() {
-  document.getElementById('editar-obra-modal').style.display = 'none';
-  _editandoObraId = null;
+  document.getElementById('editar-obra-modal').style.display='none';
+  _editandoObraId=null;
 }
 async function saveEditarObra() {
-  if (!_editandoObraId) return;
-  const nome = document.getElementById('editar-obra-nome')?.value.trim();
-  if (!nome) { showComercialToast('Informe o nome da obra.', 'error'); return; }
+  if(!_editandoObraId) return;
+  const nome=document.getElementById('editar-obra-nome')?.value.trim();
+  if(!nome){showComercialToast('Informe o nome da obra.','error');return;}
   const updates = {
-    numero: document.getElementById('editar-obra-numero')?.value.trim() || '',
+    numero:        document.getElementById('editar-obra-numero')?.value.trim()||'',
     nome,
-    representante: document.getElementById('editar-obra-rep')?.value || '',
-    dataFechamento: document.getElementById('editar-obra-fechamento')?.value || null,
-    prazoEstimado: document.getElementById('editar-obra-prazo')?.value || null,
-    obs: document.getElementById('editar-obra-obs')?.value.trim() || '',
+    representante: document.getElementById('editar-obra-rep')?.value||'',
+    dataFechamento:document.getElementById('editar-obra-fechamento')?.value||null,
+    prazoEstimado: document.getElementById('editar-obra-prazo')?.value||null,
+    obs:           document.getElementById('editar-obra-obs')?.value.trim()||'',
   };
   await db.collection('obras').doc(_editandoObraId).update(updates);
-  _audit(_editandoObraId, 'edicao', 'Dados da obra editados por ' + currentUser.username);
+  _audit(_editandoObraId,'edicao','Dados da obra editados por '+currentUser.username);
   closeEditarObraModal();
-  showComercialToast('Obra atualizada! ✅', 'success');
+  showComercialToast('Obra atualizada! ✅','success');
 }
 
 // ── Excluir / Reabrir ─────────────────────────────────────────────────────────
 async function excluirObra(obraId) {
-  const obra = _obras.find(o => o.id === obraId);
-  if (!confirm(`Excluir "${obra?.nome}"? Não pode ser desfeita.`)) return;
+  const obra=_obras.find(o=>o.id===obraId);
+  if(!confirm(`Excluir "${obra?.nome}"? Não pode ser desfeita.`)) return;
   await db.collection('obras').doc(obraId).delete();
-  showComercialToast('Obra excluída.', 'success');
+  showComercialToast('Obra excluída.','success');
   closeObraModal();
 }
 
 async function reabrirObra(obraId) {
-  if (!confirm('Reabrir esta obra? Etapas subsequentes voltam para pendente.')) return;
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  let reativarId = 'proposta';
-  ETAPAS_ORDER.forEach(id => { if (etapas[id]?.ativa && etapas[id]?.status === 'done') reativarId = id; });
-  let found = false;
-  ETAPAS_ORDER.forEach(id => {
-    const cfg = ETAPAS_CONFIG[id];
-    if (id === reativarId) {
-      found = true; etapas[id].status = 'active';
-      if (cfg.isLista) {
+  if(!confirm('Reabrir esta obra? Etapas subsequentes voltam para pendente.')) return;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  let reativarId='proposta';
+  ETAPAS_ORDER.forEach(id=>{if(etapas[id]?.ativa&&etapas[id]?.status==='done') reativarId=id;});
+  let found=false;
+  ETAPAS_ORDER.forEach(id=>{
+    const cfg=ETAPAS_CONFIG[id];
+    if(id===reativarId){
+      found=true; etapas[id].status='active';
+      if(cfg.isLista){
         // Reabrir último item da lista
-        const lista = etapas[id].lista || [];
-        if (lista.length > 0) lista[lista.length - 1].status = 'active';
+        const lista=etapas[id].lista||[];
+        if(lista.length>0) lista[lista.length-1].status='active';
       } else {
-        const subs = cfg.subEtapas || [];
-        let lastDone = null;
-        subs.forEach(s => { if (etapas[id].subEtapas?.[s.id]?.status === 'done') lastDone = s.id; });
-        if (lastDone && etapas[id].subEtapas[lastDone]) {
-          etapas[id].subEtapas[lastDone].status = 'active';
-          etapas[id].subEtapas[lastDone].dataConclusao = null;
+        const subs=cfg.subEtapas||[];
+        let lastDone=null;
+        subs.forEach(s=>{if(etapas[id].subEtapas?.[s.id]?.status==='done') lastDone=s.id;});
+        if(lastDone&&etapas[id].subEtapas[lastDone]){
+          etapas[id].subEtapas[lastDone].status='active';
+          etapas[id].subEtapas[lastDone].dataConclusao=null;
         }
       }
-    } else if (found) {
-      etapas[id].status = 'pending';
-      if (cfg.isLista) {
-        (etapas[id].lista || []).forEach(item => { item.status = 'pending'; });
+    } else if(found) {
+      etapas[id].status='pending';
+      if(cfg.isLista){
+        (etapas[id].lista||[]).forEach(item=>{ item.status='pending'; });
       } else {
-        (cfg.subEtapas || []).forEach(s => {
-          if (etapas[id].subEtapas?.[s.id])
-            etapas[id].subEtapas[s.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null };
+        (cfg.subEtapas||[]).forEach(s=>{
+          if(etapas[id].subEtapas?.[s.id])
+            etapas[id].subEtapas[s.id]={status:'pending',dataLimite:null,dataConclusao:null,motivoAtraso:null};
         });
       }
     }
   });
-  await db.collection('obras').doc(obraId).update({ etapas, concluida: false, dataConclusao: null });
-  showComercialToast('Obra reaberta! ✅', 'success');
+  await db.collection('obras').doc(obraId).update({etapas,concluida:false,dataConclusao:null});
+  showComercialToast('Obra reaberta! ✅','success');
 }
 
 // ── PDF individual da obra ────────────────────────────────────────────────────
 function exportarObraPDF(obraId) {
   const obra = _obras.find(o => o.id === obraId);
   if (!obra) return;
-  const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const NOMES = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const NOMES = {proposta:'Proposta Consolidada',contrato:'Contrato',documentacoes:'Documentações',aditivos:'Aditivos/Termo',medicao:'Medição'};
   const hoje2 = new Date().toISOString().slice(0, 10);
   const etapasHtml = ETAPAS_ORDER.map(etapaId => {
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const e = obra.etapas?.[etapaId];
+    const cfg  = ETAPAS_CONFIG[etapaId];
+    const e    = obra.etapas?.[etapaId];
     if (!e?.ativa && e?.status !== 'pulada') return '';
     // Status da etapa: verificar atraso nas sub-etapas
-    const temAtrasoEtapa = Object.values(e.subEtapas || {}).some(
-      s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2);
-    const statusEtapa = e.status === 'done' ? '✓ Concluída'
-      : e.status === 'pulada' ? '⏭ Pulada'
-        : temAtrasoEtapa ? '⚠ Em atraso'
-          : e.status === 'active' ? '► Em andamento'
-            : '○ Não iniciada';
-    const corStatus = e.status === 'done' ? '#22c55e'
-      : e.status === 'pulada' ? '#6b7280'
-        : temAtrasoEtapa ? '#ef4444'
-          : e.status === 'active' ? cfg.cor
-            : '#9ca3af';
+    const temAtrasoEtapa = Object.values(e.subEtapas||{}).some(
+      s => s.status!=='done' && s.dataLimite && s.dataLimite < hoje2);
+    const statusEtapa = e.status==='done'   ? '✓ Concluída'
+                      : e.status==='pulada' ? '⏭ Pulada'
+                      : temAtrasoEtapa      ? '⚠ Em atraso'
+                      : e.status==='active' ? '► Em andamento'
+                      : '○ Não iniciada';
+    const corStatus   = e.status==='done'   ? '#22c55e'
+                      : e.status==='pulada' ? '#6b7280'
+                      : temAtrasoEtapa      ? '#ef4444'
+                      : e.status==='active' ? cfg.cor
+                      : '#9ca3af';
     // Lista (aditivos/medicao)
     if (cfg.isLista) {
       const lista = e.lista || [];
       const listaHtml = lista.map(item => {
-        const itemDone = item.status === 'done';
-        const dtPrev = item.dataPrevista ? `Previsto: ${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}` : '';
-        const dtConc = item.dataConclusao ? `✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}` : '';
-        const subsItem = (cfg.subEtapasTemplate || []).map(sub => {
-          const s = item.subEtapas?.[sub.id]; if (!s) return '';
-          const atrasada2 = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
-          let st2, corSt2;
-          if (s.status === 'done') { st2 = '✓ Concluída'; corSt2 = '#22c55e'; }
-          else if (s.status === 'pulada') { st2 = '⏭ Pulada'; corSt2 = '#6b7280'; }
-          else if (atrasada2) { st2 = '⚠ Atrasada'; corSt2 = '#ef4444'; }
-          else if (s.status === 'active') { st2 = '► Em andamento'; corSt2 = cfg.cor; }
-          else { st2 = '○ Pendente'; corSt2 = '#9ca3af'; }
-          const tipo2 = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
-          const dt2 = s.dataConclusao ? new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : s.dataLimite ? new Date(s.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-          const dias2 = atrasada2 ? `${Math.ceil((new Date() - new Date(s.dataLimite + 'T12:00:00')) / (1000 * 60 * 60 * 24))} dias` : '—';
-          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dt2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2 ? '#ef4444' : '#6b7280'}">${dias2}</td></tr>`;
+        const itemDone = item.status==='done';
+        const dtPrev = item.dataPrevista?`Previsto: ${new Date(item.dataPrevista+'T12:00:00').toLocaleDateString('pt-BR')}`:'';
+        const dtConc = item.dataConclusao?`✓ ${new Date(item.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}`:'';
+        const subsItem = (cfg.subEtapasTemplate||[]).map(sub => {
+          const s = item.subEtapas?.[sub.id]; if(!s) return '';
+          const atrasada2 = s.status!=='done'&&s.dataLimite&&s.dataLimite<hoje2;
+          let st2,corSt2;
+          if(s.status==='done'){st2='✓ Concluída';corSt2='#22c55e';}
+          else if(s.status==='pulada'){st2='⏭ Pulada';corSt2='#6b7280';}
+          else if(atrasada2){st2='⚠ Atrasada';corSt2='#ef4444';}
+          else if(s.status==='active'){st2='► Em andamento';corSt2=cfg.cor;}
+          else{st2='○ Pendente';corSt2='#9ca3af';}
+          const tipo2=s.tipoConclusao?` (${s.tipoConclusao})`:'';
+          const dt2=s.dataConclusao?new Date(s.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR'):s.dataLimite?new Date(s.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+          const dias2=atrasada2?`${Math.ceil((new Date()-new Date(s.dataLimite+'T12:00:00'))/(1000*60*60*24))} dias`:'—';
+          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel||'—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dt2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2?'#ef4444':'#6b7280'}">${dias2}</td></tr>`;
         }).join('');
-        return `<tr style="background:#f0f9ff;"><td colspan="5" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev ? ` — ${dtPrev}` : ''}${dtConc ? ` — ${dtConc}` : ''}</td></tr>${subsItem}`;
+      return `<tr style="background:#f0f9ff;"><td colspan="5" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev?` — ${dtPrev}`:''}${dtConc?` — ${dtConc}`:''}</td></tr>${subsItem}`;
       }).join('');
       return `<tr style="background:#f9fafb;"><td colspan="5" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
     }
@@ -2537,38 +2535,38 @@ function exportarObraPDF(obraId) {
           return `<tr><td style="padding:4px 8px 4px 20px;color:#9ca3af;font-weight:600;">○ Pendente</td><td style="padding:4px 8px;">COC</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
         }
         return cocLst.map((cItem, ci) => {
-          const isDone = cItem.status === 'done';
-          const stCoc = isDone ? '✓ Concluída' : '► Em andamento';
-          const corCoc = isDone ? '#22c55e' : '#f97316';
-          const dtCoc = cItem.dataConclusao ? new Date(cItem.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-          const bg = ci % 2 === 0 ? '#fff9f0' : '#fff';
-          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome || 'COC ' + (ci + 1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
+          const isDone = cItem.status==='done';
+          const stCoc = isDone?'✓ Concluída':'► Em andamento';
+          const corCoc = isDone?'#22c55e':'#f97316';
+          const dtCoc = cItem.dataConclusao?new Date(cItem.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+          const bg = ci%2===0?'#fff9f0':'#fff';
+          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome||'COC '+(ci+1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel||'—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
         }).join('');
       }
-      const s = e.subEtapas?.[sub.id]; if (!s) return '';
+      const s = e.subEtapas?.[sub.id]; if(!s) return '';
       const atrasada = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
       let st, corSt;
-      if (s.status === 'done') { st = '✓ Concluída'; corSt = '#22c55e'; }
-      else if (atrasada) { st = '⚠ Atrasada'; corSt = '#ef4444'; }
-      else if (s.status === 'active') { st = '► Em andamento'; corSt = cfg.cor; }
-      else { st = '○ Pendente'; corSt = '#9ca3af'; }
+      if      (s.status === 'done')  { st = '✓ Concluída';   corSt = '#22c55e'; }
+      else if (atrasada)             { st = '⚠ Atrasada';    corSt = '#ef4444'; }
+      else if (s.status === 'active'){ st = '► Em andamento'; corSt = cfg.cor; }
+      else                           { st = '○ Pendente';    corSt = '#9ca3af'; }
       const tipo = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
-      const por = s.concluidoPor ? ` — por ${s.concluidoPor}` : '';
+      const por  = s.concluidoPor  ? ` — por ${s.concluidoPor}` : '';
       const dtConc = s.dataConclusao
-        ? `${new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}${por}`
+        ? `${new Date(s.dataConclusao+'T12:00:00').toLocaleDateString('pt-BR')}${por}`
         : s.dataLimite
-          ? new Date(s.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR')
+          ? new Date(s.dataLimite+'T12:00:00').toLocaleDateString('pt-BR')
           : '—';
       const diasAt = atrasada ? (() => {
-        const d = new Date(s.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
-        return Math.ceil((ag - d) / (1000 * 60 * 60 * 24)) + ' dias';
+        const d=new Date(s.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+        return Math.ceil((ag-d)/(1000*60*60*24))+' dias';
       })() : '—';
       return `<tr>
         <td style="padding:4px 8px 4px 20px;color:${corSt};font-weight:600;white-space:nowrap;">${st}</td>
         <td style="padding:4px 8px;">${sub.nome}${tipo}</td>
-        <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td>
+        <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel||'—'}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtConc}</td>
-        <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada ? '#ef4444' : '#6b7280'};font-weight:${atrasada ? '700' : '400'};">${diasAt}</td>
+        <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada?'#ef4444':'#6b7280'};font-weight:${atrasada?'700':'400'};">${diasAt}</td>
       </tr>`;
     }).join('');
     return `<tr style="background:#f9fafb;"><td colspan="5" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
@@ -2584,11 +2582,11 @@ function exportarObraPDF(obraId) {
     .footer{margin-top:16px;font-size:9px;color:#9ca3af;text-align:center;}</style></head>
     <body>
     <div class="header"><h1>Obra #${obra.numero} — ${obra.nome}</h1>
-    <div class="meta"><span>👤 ${obra.representante || '—'}</span><span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>${obra.prazoEstimado ? `<span>⏱ Prazo estimado: ${new Date(obra.prazoEstimado + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : ''}</div></div>
+    <div class="meta"><span>👤 ${obra.representante||'—'}</span><span>📅 Fechamento: ${obra.dataFechamento?new Date(obra.dataFechamento+'T12:00:00').toLocaleDateString('pt-BR'):'—'}</span>${obra.prazoEstimado?`<span>⏱ Prazo estimado: ${new Date(obra.prazoEstimado+'T12:00:00').toLocaleDateString('pt-BR')}</span>`:''}</div></div>
     <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Responsável</th><th>Data Conclusão / Limite</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
     <div class="footer">Premovale T.I — Gerado em ${hoje}</div>
     <script>window.onload=()=>{window.print();}<\/script></body></html>`;
-  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
 // ── Relatório ─────────────────────────────────────────────────────────────────
@@ -2597,75 +2595,75 @@ function openRelatorioModal() {
   const resps = new Set();
   _obras.forEach(obra => {
     ETAPAS_ORDER.forEach(etapaId => {
-      const e = obra.etapas?.[etapaId]; if (!e?.ativa) return;
-      const cfg = ETAPAS_CONFIG[etapaId];
-      if (cfg.isLista) (e.lista || []).forEach(item => Object.values(item.subEtapas || {}).forEach(s => { if (s.responsavel) resps.add(s.responsavel); }));
-      else Object.values(e.subEtapas || {}).forEach(s => { if (s.responsavel) resps.add(s.responsavel); });
+      const e=obra.etapas?.[etapaId]; if(!e?.ativa) return;
+      const cfg=ETAPAS_CONFIG[etapaId];
+      if(cfg.isLista) (e.lista||[]).forEach(item=>Object.values(item.subEtapas||{}).forEach(s=>{if(s.responsavel)resps.add(s.responsavel);}));
+      else Object.values(e.subEtapas||{}).forEach(s=>{if(s.responsavel)resps.add(s.responsavel);});
     });
   });
-  const opts = '<option value="">Todos</option>' + [...resps].sort().map(r => `<option value="${r}">${r}</option>`).join('');
-  const sel = document.getElementById('rel-responsavel'); if (sel) sel.innerHTML = opts;
-  const sel2 = document.getElementById('rel-responsavel-pend'); if (sel2) sel2.innerHTML = opts.replace('Todos', 'Todos os responsáveis');
-  document.getElementById('relatorio-modal').style.display = 'flex';
+  const opts='<option value="">Todos</option>'+[...resps].sort().map(r=>`<option value="${r}">${r}</option>`).join('');
+  const sel=document.getElementById('rel-responsavel'); if(sel) sel.innerHTML=opts;
+  const sel2=document.getElementById('rel-responsavel-pend'); if(sel2) sel2.innerHTML=opts.replace('Todos','Todos os responsáveis');
+  document.getElementById('relatorio-modal').style.display='flex';
   _switchRelTab('geral');
 }
 
 function _switchRelTab(tab) {
-  const t1 = document.getElementById('rel-tab-geral');
-  const t2 = document.getElementById('rel-tab-pend');
-  const b1 = document.getElementById('rel-body-geral');
-  const b2 = document.getElementById('rel-body-pend');
-  if (!t1 || !b1) return;
-  if (tab === 'geral') {
-    t1.style.borderBottom = '2px solid var(--accent)'; t1.style.color = 'var(--accent)';
-    t2.style.borderBottom = '2px solid transparent'; t2.style.color = 'var(--muted)';
-    b1.style.display = 'flex'; b2.style.display = 'none';
+  const t1=document.getElementById('rel-tab-geral');
+  const t2=document.getElementById('rel-tab-pend');
+  const b1=document.getElementById('rel-body-geral');
+  const b2=document.getElementById('rel-body-pend');
+  if(!t1||!b1) return;
+  if(tab==='geral') {
+    t1.style.borderBottom='2px solid var(--accent)'; t1.style.color='var(--accent)';
+    t2.style.borderBottom='2px solid transparent'; t2.style.color='var(--muted)';
+    b1.style.display='flex'; b2.style.display='none';
   } else {
-    t2.style.borderBottom = '2px solid var(--accent)'; t2.style.color = 'var(--accent)';
-    t1.style.borderBottom = '2px solid transparent'; t1.style.color = 'var(--muted)';
-    b1.style.display = 'none'; b2.style.display = 'flex';
+    t2.style.borderBottom='2px solid var(--accent)'; t2.style.color='var(--accent)';
+    t1.style.borderBottom='2px solid transparent'; t1.style.color='var(--muted)';
+    b1.style.display='none'; b2.style.display='flex';
   }
 }
-function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display = 'none'; }
+function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display='none'; }
 
 function _gerarDadosRelatorio() {
-  const incluirTodas = document.getElementById('rel-todas')?.checked;
-  const filtroRep = document.getElementById('rel-representante')?.value || '';
-  const hoje = new Date().toISOString().slice(0, 10);
+  const incluirTodas  = document.getElementById('rel-todas')?.checked;
+  const filtroRep     = document.getElementById('rel-representante')?.value||'';
+  const hoje = new Date().toISOString().slice(0,10);
   const linhas = [];
-  const NOMES_ETAPA = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
+  const NOMES_ETAPA = {proposta:'Proposta Consolidada',contrato:'Contrato',documentacoes:'Documentações',aditivos:'Aditivos/Termo',medicao:'Medição'};
 
-  _obras.filter(o => !o.concluida && (!filtroRep || o.representante === filtroRep)).forEach(obra => {
+  _obras.filter(o => !o.concluida && (!filtroRep || o.representante===filtroRep)).forEach(obra => {
     ETAPAS_ORDER.forEach(etapaId => {
-      const e = obra.etapas?.[etapaId];
+      const e   = obra.etapas?.[etapaId];
       const cfg = ETAPAS_CONFIG[etapaId];
       if (!e?.ativa) return;
       // Lista (aditivos/medicao)
       if (cfg.isLista) {
-        (e.lista || []).forEach(item => {
-          (cfg.subEtapasTemplate || []).forEach(subCfg => {
+        (e.lista||[]).forEach(item => {
+          (cfg.subEtapasTemplate||[]).forEach(subCfg => {
             const sub = item.subEtapas?.[subCfg.id];
-            if (!sub || sub.status === 'done') return;
+            if (!sub || sub.status==='done') return;
             const atrasada = sub.dataLimite && sub.dataLimite < hoje;
             const vencendo = sub.dataLimite && !atrasada && (() => {
-              const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
-              return Math.ceil((d - ag) / (1000 * 60 * 60 * 24)) <= 3;
+              const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+              return Math.ceil((d-ag)/(1000*60*60*24))<=3;
             })();
             if (!incluirTodas && !atrasada && !vencendo) return;
             const diasAtraso = atrasada ? (() => {
-              const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
-              return Math.ceil((ag - d) / (1000 * 60 * 60 * 24));
+              const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+              return Math.ceil((ag-d)/(1000*60*60*24));
             })() : 0;
             linhas.push({
-              numero: obra.numero || obra.id.slice(-6), nome: obra.nome,
-              representante: obra.representante || '—',
-              responsavel: sub.responsavel || '—',
-              prazoObra: obra.prazoEstimado ? new Date(obra.prazoEstimado + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
-              etapa: `${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
-              subEtapa: subCfg.nome,
-              status: atrasada ? 'Atrasada' : vencendo ? 'Vencendo' : 'Em andamento',
-              dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
-              diasAtraso: atrasada ? `${diasAtraso} dias` : '—',
+              numero:obra.numero||obra.id.slice(-6), nome:obra.nome,
+              representante:obra.representante||'—',
+              responsavel:sub.responsavel||'—',
+              prazoObra:obra.prazoEstimado?new Date(obra.prazoEstimado+'T12:00:00').toLocaleDateString('pt-BR'):'—',
+              etapa:`${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
+              subEtapa:subCfg.nome,
+              status:atrasada?'Atrasada':vencendo?'Vencendo':'Em andamento',
+              dataLimite:sub.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—',
+              diasAtraso:atrasada?`${diasAtraso} dias`:'—',
             });
           });
         });
@@ -2678,24 +2676,24 @@ function _gerarDadosRelatorio() {
         if (!sub || sub.status === 'done') return;
         const atrasada = sub.dataLimite && sub.dataLimite < hoje;
         const vencendo = sub.dataLimite && !atrasada && (() => {
-          const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
-          return Math.ceil((d - ag) / (1000 * 60 * 60 * 24)) <= 3;
+          const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+          return Math.ceil((d-ag)/(1000*60*60*24))<=3;
         })();
         if (!incluirTodas && !atrasada && !vencendo) return;
         const diasAtraso = atrasada ? (() => {
-          const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
-          return Math.ceil((ag - d) / (1000 * 60 * 60 * 24));
+          const d=new Date(sub.dataLimite+'T12:00:00'),ag=new Date();ag.setHours(0,0,0,0);
+          return Math.ceil((ag-d)/(1000*60*60*24));
         })() : 0;
         linhas.push({
-          numero: obra.numero || obra.id.slice(-6),
-          nome: obra.nome,
-          representante: obra.representante || '—',
-          responsavel: sub.responsavel || '—',
-          etapa: NOMES_ETAPA[etapaId],
-          subEtapa: subCfg.nome,
-          status: atrasada ? 'Atrasada' : vencendo ? 'Vencendo' : 'Em andamento',
-          dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
-          diasAtraso: atrasada ? `${diasAtraso}d` : '—',
+          numero:       obra.numero || obra.id.slice(-6),
+          nome:         obra.nome,
+          representante:obra.representante || '—',
+          responsavel:  sub.responsavel || '—',
+          etapa:        NOMES_ETAPA[etapaId],
+          subEtapa:     subCfg.nome,
+          status:       atrasada ? 'Atrasada' : vencendo ? 'Vencendo' : 'Em andamento',
+          dataLimite:   sub.dataLimite ? new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR') : '—',
+          diasAtraso:   atrasada ? `${diasAtraso}d` : '—',
         });
       });
     });
@@ -2705,59 +2703,59 @@ function _gerarDadosRelatorio() {
 
 function exportarRelatorioXLS() {
   const linhas = _gerarDadosRelatorio();
-  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
+  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
   try {
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const headers = ['Nº', 'Obra', 'Representante', 'Responsável', 'Etapa', 'Sub-etapa', 'Status', 'Data Conclusão', 'Previsão', 'Dias em atraso'];
-    const escXml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const headerRow = headers.map(h => `<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
+    const headers = ['Nº','Obra','Representante','Responsável','Etapa','Sub-etapa','Status','Data Conclusão','Previsão','Dias em atraso'];
+    const escXml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const headerRow = headers.map(h=>`<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
     const dataRows = linhas.map((l, rowIdx) => {
-      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataConclusao || '—', l.dataLimite, l.diasAtraso];
+      const cols=[l.numero,l.nome,l.representante,l.responsavel||'—',l.etapa,l.subEtapa,l.status,l.dataConclusao||'—',l.dataLimite,l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
-        const cellBg = l.status === 'Atrasada' ? '#fee2e2' : l.status === 'Vencendo' ? '#fef3c7' : rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
-        const cellColor = isAtraso && l.diasAtraso && l.diasAtraso !== '—' ? '#dc2626' : '#1f2937';
-        const cellWeight = isAtraso && l.diasAtraso && l.diasAtraso !== '—' ? 'bold' : 'normal';
+        const cellBg   = l.status==='Atrasada' ? '#fee2e2' : l.status==='Vencendo' ? '#fef3c7' : rowIdx%2===0 ? '#ffffff' : '#f9fafb';
+        const cellColor= isAtraso && l.diasAtraso && l.diasAtraso!=='—' ? '#dc2626' : '#1f2937';
+        const cellWeight=isAtraso && l.diasAtraso && l.diasAtraso!=='—' ? 'bold' : 'normal';
         return `<td style="padding:5px 8px;border:1px solid #e5e7eb;background:${cellBg};color:${cellColor};font-weight:${cellWeight};">${escXml(v)}</td>`;
       }).join('')}</tr>`;
     }).join('');
     const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
       <head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Relatorio</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
       <body><table><thead><tr>${headerRow}</tr></thead><tbody>${dataRows}</tbody></table></body></html>`;
-    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `relatorio_obras_${new Date().toISOString().slice(0, 10)}.xls`;
+    const blob = new Blob(['﻿'+html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `relatorio_obras_${new Date().toISOString().slice(0,10)}.xls`;
     document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
     closeRelatorioModal();
-    showComercialToast('XLS exportado! ✅', 'success');
-  } catch (e) {
+    showComercialToast('XLS exportado! ✅','success');
+  } catch(e) {
     console.error('XLS error:', e);
-    showComercialToast(`Erro: ${e.message}`, 'error');
+    showComercialToast(`Erro: ${e.message}`,'error');
   }
 }
 
 function exportarRelatorioPDF() {
   const linhas = _gerarDadosRelatorio();
-  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
-  const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.','error'); return; }
+  const hoje = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
   const rows = linhas.map((l, ri) => {
-    const bg = l.status === 'Atrasada' ? '#fee2e2' : l.status === 'Vencendo' ? '#fef3c7' : ri % 2 === 0 ? '#ffffff' : '#f9fafb';
+    const bg = l.status==='Atrasada'?'#fee2e2':l.status==='Vencendo'?'#fef3c7':ri%2===0?'#ffffff':'#f9fafb';
     const td = `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
-    const tdRed = l.diasAtraso && l.diasAtraso !== '—'
+    const tdRed = l.diasAtraso&&l.diasAtraso!=='—'
       ? `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};color:#dc2626;font-weight:700;"`
       : `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};color:#6b7280;"`;
     return `<tr>
       <td ${td}>#${l.numero}</td>
       <td ${td}><strong>${l.nome}</strong></td>
       <td ${td}>${l.representante}</td>
-      <td ${td}>${l.responsavel || '—'}</td>
+      <td ${td}>${l.responsavel||'—'}</td>
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
-      <td ${td}><span class="badge ${l.status === 'Atrasada' ? 'red' : l.status === 'Vencendo' ? 'amber' : 'blue'}">${l.status}</span></td>
-      <td ${td}>${l.dataConclusao || '—'}</td>
+      <td ${td}><span class="badge ${l.status==='Atrasada'?'red':l.status==='Vencendo'?'amber':'blue'}">${l.status}</span></td>
+      <td ${td}>${l.dataConclusao||'—'}</td>
       <td ${td}>${l.dataLimite}</td>
       <td ${tdRed}>${l.diasAtraso}</td>
     </tr>`;
@@ -2790,7 +2788,7 @@ function exportarRelatorioPDF() {
     <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
     <script>window.onload=()=>{window.print();}<\/script>
   </body></html>`;
-  const w = window.open('', '_blank');
+  const w = window.open('','_blank');
   w.document.write(html);
   w.document.close();
   closeRelatorioModal();
@@ -2798,105 +2796,103 @@ function exportarRelatorioPDF() {
 
 
 // ── Observações por etapa/sub-etapa ──────────────────────────────────────────
-let _obsObraId = null, _obsEtapaId = null, _obsSubId = null;
+let _obsObraId=null, _obsEtapaId=null, _obsSubId=null;
 
-let _obsItemId = null;
-let _obsCocIdx = null;
+let _obsItemId=null;
+let _obsCocIdx=null;
 
 function _openObsModalCoc(obraId, etapaId, cocIdx) {
-  _obsObraId = obraId; _obsEtapaId = etapaId; _obsSubId = null; _obsItemId = null; _obsCocIdx = cocIdx;
-  const obra = _obras.find(o => o.id === obraId);
-  const nome = obra?.etapas?.[etapaId]?.cocLista?.[cocIdx]?.nome || 'COC';
-  document.getElementById('obs-modal-title').textContent = `Observação — COC · ${nome}`;
-  document.getElementById('obs-input').value = '';
-  document.getElementById('obs-modal').style.display = 'flex';
+  _obsObraId=obraId; _obsEtapaId=etapaId; _obsSubId=null; _obsItemId=null; _obsCocIdx=cocIdx;
+  const obra=_obras.find(o=>o.id===obraId);
+  const nome=obra?.etapas?.[etapaId]?.cocLista?.[cocIdx]?.nome||'COC';
+  document.getElementById('obs-modal-title').textContent=`Observação — COC · ${nome}`;
+  document.getElementById('obs-input').value='';
+  document.getElementById('obs-modal').style.display='flex';
 }
 
 function openObsModal(obraId, etapaId, subId, itemId) {
-  _obsObraId = obraId; _obsEtapaId = etapaId; _obsSubId = subId || null; _obsItemId = itemId || null;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = subId ? (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId) : null;
-  const titulo = subCfg ? `Observação — ${cfg.nome} · ${subCfg.nome}` : `Observação — ${cfg.nome}`;
-  document.getElementById('obs-modal-title').textContent = titulo;
-  document.getElementById('obs-input').value = '';
-  document.getElementById('obs-modal').style.display = 'flex';
+  _obsObraId=obraId; _obsEtapaId=etapaId; _obsSubId=subId||null; _obsItemId=itemId||null;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=subId?(cfg.subEtapas||cfg.subEtapasTemplate||[]).find(s=>s.id===subId):null;
+  const titulo=subCfg?`Observação — ${cfg.nome} · ${subCfg.nome}`:`Observação — ${cfg.nome}`;
+  document.getElementById('obs-modal-title').textContent=titulo;
+  document.getElementById('obs-input').value='';
+  document.getElementById('obs-modal').style.display='flex';
 }
 function closeObsModal() {
-  document.getElementById('obs-modal').style.display = 'none';
-  _obsObraId = _obsEtapaId = _obsSubId = _obsItemId = _obsCocIdx = null;
+  document.getElementById('obs-modal').style.display='none';
+  _obsObraId=_obsEtapaId=_obsSubId=_obsItemId=_obsCocIdx=null;
 }
 async function saveObs() {
-  const texto = document.getElementById('obs-input')?.value.trim();
-  if (!texto) { showComercialToast('Informe a observação.', 'error'); return; }
-  const obra = _obras.find(o => o.id === _obsObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const novaObs = {
-    texto, data: new Date().toISOString().slice(0, 10),
-    hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    por: currentUser.username
-  };
-  if (_obsCocIdx !== null && _obsCocIdx !== undefined) {
-    const _item = etapas[_obsEtapaId].cocLista?.[_obsCocIdx];
-    if (_item) { if (!_item.observacoes) _item.observacoes = []; _item.observacoes.push(novaObs); }
-  } else if (_obsSubId) {
-    const refObs = _findSubRef(etapas, _obsEtapaId, _obsSubId, _obsItemId);
-    if (refObs) { if (!refObs.sub.observacoes) refObs.sub.observacoes = []; refObs.sub.observacoes.push(novaObs); }
+  const texto=document.getElementById('obs-input')?.value.trim();
+  if(!texto){showComercialToast('Informe a observação.','error');return;}
+  const obra=_obras.find(o=>o.id===_obsObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const novaObs={texto,data:new Date().toISOString().slice(0,10),
+    hora:new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    por:currentUser.username};
+  if(_obsCocIdx!==null && _obsCocIdx!==undefined) {
+    const _item=etapas[_obsEtapaId].cocLista?.[_obsCocIdx];
+    if(_item){ if(!_item.observacoes) _item.observacoes=[]; _item.observacoes.push(novaObs); }
+  } else if(_obsSubId){
+    const refObs=_findSubRef(etapas,_obsEtapaId,_obsSubId,_obsItemId);
+    if(refObs){ if(!refObs.sub.observacoes) refObs.sub.observacoes=[]; refObs.sub.observacoes.push(novaObs); }
   } else {
-    if (!etapas[_obsEtapaId].observacoes) etapas[_obsEtapaId].observacoes = [];
+    if(!etapas[_obsEtapaId].observacoes) etapas[_obsEtapaId].observacoes=[];
     etapas[_obsEtapaId].observacoes.push(novaObs);
   }
-  await db.collection('obras').doc(_obsObraId).update({ etapas });
-  showComercialToast('Observação registrada! ✅', 'success');
+  await db.collection('obras').doc(_obsObraId).update({etapas});
+  showComercialToast('Observação registrada! ✅','success');
   closeObsModal();
 }
 function openHistoricoModal(obraId) {
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const el = document.getElementById('historico-modal-body');
-  if (!el) return;
+  const obra=_obras.find(o=>o.id===obraId); if(!obra) return;
+  const el=document.getElementById('historico-modal-body');
+  if(!el) return;
   // Renderizar aba Histórico
   _renderHistoricoAba(obra, el);
   // Marcar como visto
   _marcarHistoricoVisto(obra);
-  const o = _obras.find(x => x.id === obraId); if (o) { _saveAccordionState(); renderObraModal(o); _restoreAccordionState(); }
-  document.getElementById('historico-modal').style.display = 'flex';
+  const o=_obras.find(x=>x.id===obraId); if(o){_saveAccordionState();renderObraModal(o);_restoreAccordionState();}
+  document.getElementById('historico-modal').style.display='flex';
   // Carregar auditoria em background
   _loadAuditoria(obraId).then(() => {
-    const auditEl = document.getElementById('historico-auditoria-body');
-    if (auditEl) _renderAuditoriaAba(obraId, auditEl);
+    const auditEl=document.getElementById('historico-auditoria-body');
+    if(auditEl) _renderAuditoriaAba(obraId, auditEl);
   });
 }
 
 function _switchHistoricoTab(tab, obraId) {
-  const t1 = document.getElementById('tab-historico-btn');
-  const t2 = document.getElementById('tab-auditoria-btn');
-  const b1 = document.getElementById('historico-modal-body');
-  const b2 = document.getElementById('historico-auditoria-body');
-  if (!t1 || !t2 || !b1 || !b2) return;
-  if (tab === 'historico') {
-    t1.style.borderBottom = '2px solid var(--accent)'; t1.style.color = 'var(--accent)';
-    t2.style.borderBottom = '2px solid transparent'; t2.style.color = 'var(--muted)';
-    b1.style.display = 'block'; b2.style.display = 'none';
+  const t1=document.getElementById('tab-historico-btn');
+  const t2=document.getElementById('tab-auditoria-btn');
+  const b1=document.getElementById('historico-modal-body');
+  const b2=document.getElementById('historico-auditoria-body');
+  if(!t1||!t2||!b1||!b2) return;
+  if(tab==='historico') {
+    t1.style.borderBottom='2px solid var(--accent)'; t1.style.color='var(--accent)';
+    t2.style.borderBottom='2px solid transparent'; t2.style.color='var(--muted)';
+    b1.style.display='block'; b2.style.display='none';
   } else {
-    t2.style.borderBottom = '2px solid var(--accent)'; t2.style.color = 'var(--accent)';
-    t1.style.borderBottom = '2px solid transparent'; t1.style.color = 'var(--muted)';
-    b1.style.display = 'none'; b2.style.display = 'block';
-    _loadAuditoria(obraId).then(() => {
-      const el = document.getElementById('historico-auditoria-body');
-      if (el) _renderAuditoriaAba(obraId, el);
+    t2.style.borderBottom='2px solid var(--accent)'; t2.style.color='var(--accent)';
+    t1.style.borderBottom='2px solid transparent'; t1.style.color='var(--muted)';
+    b1.style.display='none'; b2.style.display='block';
+    _loadAuditoria(obraId).then(()=>{
+      const el=document.getElementById('historico-auditoria-body');
+      if(el) _renderAuditoriaAba(obraId, el);
     });
   }
 }
 
 function _renderAuditoriaAba(obraId, el) {
   const entries = _auditoriaCache[obraId] || [];
-  if (!entries.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum registro de auditoria.</div>';
+  if(!entries.length) {
+    el.innerHTML='<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum registro de auditoria.</div>';
     return;
   }
   el.innerHTML = entries.map(e => {
     const cor = _AUDIT_CORES[e.tipo] || '#6b7280';
     const icon = _AUDIT_ICONS[e.tipo] || '';
-    const dt = e.em ? new Date(e.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const dt = e.em ? new Date(e.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
     return `<div style="display:flex;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border2);align-items:flex-start;">
       <span style="width:28px;height:28px;border-radius:50%;background:${cor}18;border:1.5px solid ${cor}40;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:${cor};">${icon}</span>
       <div style="flex:1;min-width:0;">
@@ -2908,33 +2904,33 @@ function _renderAuditoriaAba(obraId, el) {
 }
 
 function _renderHistoricoAba(obra, el) {
-  const NOMES = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
-  let html = '';
-  ETAPAS_ORDER.forEach(etapaId => {
-    const e = obra.etapas?.[etapaId]; if (!e) return;
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const itens = [];
-    (e.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: '📝 Etapa', texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
-    (e.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
+  const NOMES={proposta:'Proposta Consolidada',contrato:'Contrato',documentacoes:'Documentações',aditivos:'Aditivos/Termo',medicao:'Medição'};
+  let html='';
+  ETAPAS_ORDER.forEach(etapaId=>{
+    const e=obra.etapas?.[etapaId]; if(!e) return;
+    const cfg=ETAPAS_CONFIG[etapaId];
+    const itens=[];
+    (e.observacoes||[]).forEach(o=>itens.push({tipo:'obs',badge:'📝 Etapa',texto:o.texto,meta:`${o.data} ${o.hora||''} — ${o.por}`}));
+    (e.revisoes||[]).forEach(r=>itens.push({tipo:'rev',badge:`REV.${r.numero}`,texto:r.motivo,meta:`${r.data||'—'} — ${r.por||'—'}`}));
     // Sub-etapas normais
     if (!cfg.isLista) {
-      (cfg.subEtapas || []).forEach(sub => {
-        const sd = e.subEtapas?.[sub.id];
-        (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
-        (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${sub.nome}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
+      (cfg.subEtapas||[]).forEach(sub=>{
+        const sd=e.subEtapas?.[sub.id];
+        (sd?.observacoes||[]).forEach(o=>itens.push({tipo:'obs',badge:`📝 ${sub.nome}`,texto:o.texto,meta:`${o.data} ${o.hora||''} — ${o.por}`}));
+        (sd?.revisoes||[]).forEach(r=>itens.push({tipo:'rev',badge:`REV.${r.numero} ${sub.nome}`,texto:r.motivo,meta:`${r.data||'—'} — ${r.por||'—'}`}));
       });
     } else {
       // Lista (aditivos/medicao)
-      (e.lista || []).forEach(item => {
-        (cfg.subEtapasTemplate || []).forEach(sub => {
-          const sd = item.subEtapas?.[sub.id];
-          (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${item.titulo} · ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
-          (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${item.titulo}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
+      (e.lista||[]).forEach(item=>{
+        (cfg.subEtapasTemplate||[]).forEach(sub=>{
+          const sd=item.subEtapas?.[sub.id];
+          (sd?.observacoes||[]).forEach(o=>itens.push({tipo:'obs',badge:`📝 ${item.titulo} · ${sub.nome}`,texto:o.texto,meta:`${o.data} ${o.hora||''} — ${o.por}`}));
+          (sd?.revisoes||[]).forEach(r=>itens.push({tipo:'rev',badge:`REV.${r.numero} ${item.titulo}`,texto:r.motivo,meta:`${r.data||'—'} — ${r.por||'—'}`}));
         });
       });
     }
-    if (!itens.length) return;
-    html += `<div style="margin-bottom:1.25rem;"><div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border2);">${NOMES[etapaId] || etapaId}</div>`;
+    if(!itens.length) return;
+    html+=`<div style="margin-bottom:1.25rem;"><div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border2);">${NOMES[etapaId]||etapaId}</div>`;
     itens.forEach(s => {
       const badgeMax = 48;
       const badgeLabel = s.badge.length > badgeMax ? s.badge.slice(0, badgeMax) + '…' : s.badge;
@@ -2943,68 +2939,68 @@ function _renderHistoricoAba(obra, el) {
           <span class="hist-entry-badge ${s.tipo}" title="${s.badge}">${badgeLabel}</span>
           <span class="hist-entry-meta">${s.meta}</span>
         </div>
-        <div class="hist-entry-text">${s.texto.replace(/^(Recusado:)/, '<span style="color:#ef4444;font-weight:700;">$1</span>')}</div>
+        <div class="hist-entry-text">${s.texto.replace(/^(Recusado:)/,'<span style="color:#ef4444;font-weight:700;">$1</span>')}</div>
       </div>`;
     });
-    html += '</div>';
+    html+='</div>';
   });
-  if (!html) html = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum histórico registrado.</div>';
-  el.innerHTML = html;
+  if(!html) html='<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum histórico registrado.</div>';
+  el.innerHTML=html;
   _marcarHistoricoVisto(obra);
-  document.getElementById('historico-modal').style.display = 'flex';
+  document.getElementById('historico-modal').style.display='flex';
   // Atualizar footer para remover badge
-  const o = _obras.find(x => x.id === obraId); if (o) { _saveAccordionState(); renderObraModal(o); _restoreAccordionState(); }
+  const o=_obras.find(x=>x.id===obraId); if(o){_saveAccordionState();renderObraModal(o);_restoreAccordionState();}
 }
-function closeHistoricoModal() { document.getElementById('historico-modal').style.display = 'none'; }
+function closeHistoricoModal(){ document.getElementById('historico-modal').style.display='none'; }
 
-let _atribObraId = null, _atribEtapaId = null, _atribSubId = null, _atribModo = null;
-let _atribItemId = null;
-function openAtribuirModal(obraId, etapaId, subId, modo, itemId) {
-  _atribItemId = itemId || null;
-  _atribObraId = obraId; _atribEtapaId = etapaId; _atribSubId = subId; _atribModo = modo || 'atribuir';
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
-  document.getElementById('atrib-modal-title').textContent = (_atribModo === 'reatribuir' ? 'Reatribuir' : 'Atribuir') + ` — ${cfg.nome} · ${subCfg?.nome || subId}`;
-  const jw = document.getElementById('atrib-justificativa-wrap'); if (jw) jw.style.display = _atribModo === 'reatribuir' ? 'block' : 'none';
-  const je = document.getElementById('atrib-justificativa'); if (je) je.value = '';
-  const sel = document.getElementById('atrib-usuario-sel');
-  const allUsers = typeof users !== 'undefined' ? users : [];
-  const usrs = allUsers.filter(u => u.isSuperAdmin || (u.acessos || []).includes('adminComercial') || (u.acessos || []).includes('comercial') || u.role === 'admin' || u.role === 'superAdmin');
-  const lista = usrs.length > 0 ? usrs : allUsers;
-  sel.innerHTML = `<option value="">Selecione o responsável...</option>` + lista.map(u => `<option value="${u.username}">${u.username}${u.username === currentUser?.username ? ' (você)' : ''}</option>`).join('');
-  const obra = _obras.find(o => o.id === obraId);
-  const ref = obra ? _findSubRef(obra.etapas || {}, etapaId, subId, _atribItemId) : null;
-  if (ref?.sub?.responsavel) sel.value = ref.sub.responsavel;
-  document.getElementById('atrib-modal').style.display = 'flex';
+let _atribObraId=null,_atribEtapaId=null,_atribSubId=null,_atribModo=null;
+let _atribItemId=null;
+function openAtribuirModal(obraId,etapaId,subId,modo,itemId){
+  _atribItemId=itemId||null;
+  _atribObraId=obraId;_atribEtapaId=etapaId;_atribSubId=subId;_atribModo=modo||'atribuir';
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(cfg.subEtapas||cfg.subEtapasTemplate||[]).find(s=>s.id===subId);
+  document.getElementById('atrib-modal-title').textContent=(_atribModo==='reatribuir'?'Reatribuir':'Atribuir')+` — ${cfg.nome} · ${subCfg?.nome||subId}`;
+  const jw=document.getElementById('atrib-justificativa-wrap'); if(jw) jw.style.display=_atribModo==='reatribuir'?'block':'none';
+  const je=document.getElementById('atrib-justificativa'); if(je) je.value='';
+  const sel=document.getElementById('atrib-usuario-sel');
+  const allUsers=typeof users!=='undefined'?users:[];
+  const usrs=allUsers.filter(u=>u.isSuperAdmin||(u.acessos||[]).includes('adminComercial')||(u.acessos||[]).includes('comercial')||u.role==='admin'||u.role==='superAdmin');
+  const lista=usrs.length>0?usrs:allUsers;
+  sel.innerHTML=`<option value="">Selecione o responsável...</option>`+lista.map(u=>`<option value="${u.username}">${u.username}${u.username===currentUser?.username?' (você)':''}</option>`).join('');
+  const obra=_obras.find(o=>o.id===obraId);
+  const ref=obra?_findSubRef(obra.etapas||{},etapaId,subId,_atribItemId):null;
+  if(ref?.sub?.responsavel) sel.value=ref.sub.responsavel;
+  document.getElementById('atrib-modal').style.display='flex';
 }
-function closeAtribuirModal() { document.getElementById('atrib-modal').style.display = 'none'; _atribObraId = _atribEtapaId = _atribSubId = _atribModo = null; }
-async function saveAtribuicao() {
-  const usuario = document.getElementById('atrib-usuario-sel')?.value;
-  if (!usuario) { showComercialToast('Selecione um responsável.', 'error'); return; }
+function closeAtribuirModal(){ document.getElementById('atrib-modal').style.display='none'; _atribObraId=_atribEtapaId=_atribSubId=_atribModo=null; }
+async function saveAtribuicao(){
+  const usuario=document.getElementById('atrib-usuario-sel')?.value;
+  if(!usuario){showComercialToast('Selecione um responsável.','error');return;}
   // Modo COC: salvar diretamente na cocLista
-  if (document.getElementById('atrib-modal')?.dataset?.cocMode === '1') {
-    document.getElementById('atrib-modal').dataset.cocMode = '';
-    const obra3 = _obras.find(o => o.id === _cocActionObraId); if (!obra3) return;
-    const etapas3 = JSON.parse(JSON.stringify(obra3.etapas));
-    etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].responsavel = usuario;
-    await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas3 });
-    _audit(_cocActionObraId, 'atribuicao', `COC "${etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].nome}": atribuído a "${usuario}"`);
-    closeAtribuirModal(); showComercialToast(`Atribuído para ${usuario}! ✅`, 'success'); return;
+  if(document.getElementById('atrib-modal')?.dataset?.cocMode==='1') {
+    document.getElementById('atrib-modal').dataset.cocMode='';
+    const obra3=_obras.find(o=>o.id===_cocActionObraId); if(!obra3) return;
+    const etapas3=JSON.parse(JSON.stringify(obra3.etapas));
+    etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].responsavel=usuario;
+    await db.collection('obras').doc(_cocActionObraId).update({etapas:etapas3});
+    _audit(_cocActionObraId,'atribuicao',`COC "${etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].nome}": atribuído a "${usuario}"`);
+    closeAtribuirModal(); showComercialToast(`Atribuído para ${usuario}! ✅`,'success'); return;
   }
-  if (_atribModo === 'reatribuir') { const j = document.getElementById('atrib-justificativa')?.value.trim(); if (!j) { showComercialToast('Informe a justificativa.', 'error'); return; } }
-  const obra = _obras.find(o => o.id === _atribObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const ref = _findSubRef(etapas, _atribEtapaId, _atribSubId, _atribItemId);
-  if (!ref) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
-  const anterior = ref.sub.responsavel || null;
-  ref.sub.responsavel = usuario;
-  if (!ref.sub.historicoAtribuicao) ref.sub.historicoAtribuicao = [];
-  ref.sub.historicoAtribuicao.push({ de: anterior || currentUser.username, para: usuario, data: new Date().toISOString().slice(0, 10), justificativa: _atribModo === 'reatribuir' ? (document.getElementById('atrib-justificativa')?.value.trim() || null) : null, por: currentUser.username });
-  const _cfgAt = ETAPAS_CONFIG[_atribEtapaId];
-  const _snAt = (_cfgAt.subEtapas || _cfgAt.subEtapasTemplate || []).find(s => s.id === _atribSubId)?.nome || _atribSubId;
-  _audit(_atribObraId, 'atribuicao', `${_cfgAt.nome} · ${_snAt}: atribuído a "${usuario}"${anterior ? ' (antes: "' + anterior + '")' : ''}`);
-  await db.collection('obras').doc(_atribObraId).update({ etapas });
-  showComercialToast(`Atribuído para ${usuario}! ✅`, 'success');
+  if(_atribModo==='reatribuir'){const j=document.getElementById('atrib-justificativa')?.value.trim();if(!j){showComercialToast('Informe a justificativa.','error');return;}}
+  const obra=_obras.find(o=>o.id===_atribObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  const ref=_findSubRef(etapas,_atribEtapaId,_atribSubId,_atribItemId);
+  if(!ref){showComercialToast('Sub-etapa não encontrada.','error');return;}
+  const anterior=ref.sub.responsavel||null;
+  ref.sub.responsavel=usuario;
+  if(!ref.sub.historicoAtribuicao) ref.sub.historicoAtribuicao=[];
+  ref.sub.historicoAtribuicao.push({de:anterior||currentUser.username,para:usuario,data:new Date().toISOString().slice(0,10),justificativa:_atribModo==='reatribuir'?(document.getElementById('atrib-justificativa')?.value.trim()||null):null,por:currentUser.username});
+  const _cfgAt=ETAPAS_CONFIG[_atribEtapaId];
+  const _snAt=(_cfgAt.subEtapas||_cfgAt.subEtapasTemplate||[]).find(s=>s.id===_atribSubId)?.nome||_atribSubId;
+  _audit(_atribObraId,'atribuicao',`${_cfgAt.nome} · ${_snAt}: atribuído a "${usuario}"${anterior?' (antes: "'+anterior+'")':''}`);
+  await db.collection('obras').doc(_atribObraId).update({etapas});
+  showComercialToast(`Atribuído para ${usuario}! ✅`,'success');
   closeAtribuirModal();
 }
 
@@ -3012,45 +3008,45 @@ async function saveAtribuicao() {
 
 // ── Relatório de pendências ───────────────────────────────────────────────────
 function exportarRelatorioPendencias() {
-  const hoje = new Date().toISOString().slice(0, 10);
-  const hojeFormatado = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const respFiltro = document.getElementById('rel-responsavel-pend')?.value || document.getElementById('rel-responsavel')?.value || '';
+  const hoje = new Date().toISOString().slice(0,10);
+  const hojeFormatado = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  const respFiltro = document.getElementById('rel-responsavel-pend')?.value||document.getElementById('rel-responsavel')?.value||'';
   const rows = [];
-  _obras.filter(o => !o.concluida).forEach(obra => {
+  _obras.filter(o=>!o.concluida).forEach(obra => {
     ETAPAS_ORDER.forEach(etapaId => {
       const e = obra.etapas?.[etapaId];
       const cfg = ETAPAS_CONFIG[etapaId];
       if (!e?.ativa) return;
       const processSub = (sub, subNome, titulo) => {
-        if (sub.status === 'done' || !sub.responsavel) return;
+        if (sub.status==='done' || !sub.responsavel) return;
         rows.push({
-          numero: obra.numero || obra.id.slice(-6),
+          numero: obra.numero||obra.id.slice(-6),
           nome: obra.nome,
-          representante: obra.representante || '—',
+          representante: obra.representante||'—',
           etapa: titulo ? `${cfg.nome} — ${titulo}` : cfg.nome,
           subEtapa: subNome,
           responsavel: sub.responsavel,
-          status: sub.dataLimite && sub.dataLimite < hoje ? 'Atrasada' : sub.status === 'active' ? 'Em andamento' : 'Pendente',
-          dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+          status: sub.dataLimite&&sub.dataLimite<hoje?'Atrasada':sub.status==='active'?'Em andamento':'Pendente',
+          dataLimite: sub.dataLimite?new Date(sub.dataLimite+'T12:00:00').toLocaleDateString('pt-BR'):'—',
         });
       };
       if (cfg.isLista) {
-        (e.lista || []).forEach(item => {
-          (cfg.subEtapasTemplate || []).forEach(s => processSub(item.subEtapas?.[s.id] || {}, s.nome, item.titulo));
+        (e.lista||[]).forEach(item => {
+          (cfg.subEtapasTemplate||[]).forEach(s => processSub(item.subEtapas?.[s.id]||{}, s.nome, item.titulo));
         });
       } else {
-        (cfg.subEtapas || []).forEach(s => processSub(e.subEtapas?.[s.id] || {}, s.nome, null));
+        (cfg.subEtapas||[]).forEach(s => processSub(e.subEtapas?.[s.id]||{}, s.nome, null));
       }
     });
   });
-  let rowsFiltrados = respFiltro ? rows.filter(r => r.responsavel === respFiltro) : rows;
-  if (!rowsFiltrados.length) { showComercialToast('Nenhuma pendência encontrada.', 'success'); return; }
+  let rowsFiltrados = respFiltro ? rows.filter(r=>r.responsavel===respFiltro) : rows;
+  if (!rowsFiltrados.length) { showComercialToast('Nenhuma pendência encontrada.','success'); return; }
   const rowsFinal = rowsFiltrados;
-  if (!rows.length) { showComercialToast('Nenhuma pendência encontrada.', 'success'); return; }
-  const rowsHtml = rowsFinal.map((r, i) => {
-    const bg = r.status === 'Atrasada' ? '#fee2e2' : r.status === 'Em andamento' ? '#dbeafe' : i % 2 === 0 ? '#ffffff' : '#f9fafb';
-    const badgeCls = r.status === 'Atrasada' ? 'red' : r.status === 'Em andamento' ? 'blue' : 'gray';
-    const td = `style="padding:6px 10px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
+  if (!rows.length) { showComercialToast('Nenhuma pendência encontrada.','success'); return; }
+  const rowsHtml = rowsFinal.map((r,i) => {
+    const bg=r.status==='Atrasada'?'#fee2e2':r.status==='Em andamento'?'#dbeafe':i%2===0?'#ffffff':'#f9fafb';
+    const badgeCls=r.status==='Atrasada'?'red':r.status==='Em andamento'?'blue':'gray';
+    const td=`style="padding:6px 10px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
     return `<tr>
       <td ${td}>#${r.numero}</td>
       <td ${td}><strong>${r.nome}</strong></td>
@@ -3062,7 +3058,7 @@ function exportarRelatorioPendencias() {
       <td ${td}>${r.dataLimite}</td>
     </tr>`;
   }).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pendências — Premovale</title>
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pendências — Premovale</title>
     <style>
       body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
       .header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #ef4444;padding-bottom:12px;margin-bottom:20px;}
@@ -3079,7 +3075,7 @@ function exportarRelatorioPendencias() {
     </style></head>
     <body>
     <div class="header">
-      <div><h1>Relatório de Pendências</h1><div style="font-size:10px;color:#6b7280;margin-top:3px;">${respFiltro ? `Responsável: ${respFiltro}` : 'Todos os responsáveis'}</div></div>
+      <div><h1>Relatório de Pendências</h1><div style="font-size:10px;color:#6b7280;margin-top:3px;">${respFiltro?`Responsável: ${respFiltro}`:'Todos os responsáveis'}</div></div>
       <span>Gerado em ${hojeFormatado}</span>
     </div>
     <table>
@@ -3089,7 +3085,7 @@ function exportarRelatorioPendencias() {
     <div class="footer">Premovale T.I — ${rowsFinal.length} pendência(s)</div>
     <script>window.onload=()=>{window.print();}<\/script>
     </body></html>`;
-  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
 }
 
 // ── Filtro Minhas Pendências + Período ────────────────────────────────────────
@@ -3097,7 +3093,7 @@ let _dropdownAberto = false;
 
 function togglePeriodoDropdown() {
   const btn = document.getElementById('btn-periodo');
-  const dd = document.getElementById('periodo-dropdown');
+  const dd  = document.getElementById('periodo-dropdown');
   if (!dd) return;
   const open = dd.style.display === 'flex';
   // Fechar pendências se aberto
@@ -3106,14 +3102,14 @@ function togglePeriodoDropdown() {
   dd.style.display = open ? 'none' : 'flex';
   if (btn) {
     btn.style.background = !open ? 'var(--accent)' : '';
-    btn.style.color = !open ? '#fff' : '';
-    btn.style.borderColor = !open ? 'var(--accent)' : '';
+    btn.style.color      = !open ? '#fff' : '';
+    btn.style.borderColor= !open ? 'var(--accent)' : '';
   }
 }
 
 function toggleMinhasPendencias() {
-  const btn = document.getElementById('btn-minhas-pendencias');
-  const pdrop = document.getElementById('pendencias-dropdown');
+  const btn  = document.getElementById('btn-minhas-pendencias');
+  const pdrop= document.getElementById('pendencias-dropdown');
   if (!pdrop) return;
   // Fechar período se aberto
   const perDrop = document.getElementById('periodo-dropdown');
@@ -3121,40 +3117,40 @@ function toggleMinhasPendencias() {
   const open = pdrop.style.display === 'flex';
   if (open) {
     pdrop.style.display = 'none';
-    if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+    if(btn){ btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
     return;
   }
   // Verificar se é gestor
-  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
+  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos||[]).includes('adminComercial');
   if (isGestor) {
     // Gestor: mostrar seletor
     _atualizarSeletorPendencia();
     document.getElementById('pendencia-user-wrap').style.display = 'flex';
     pdrop.style.display = 'flex';
-    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
+    if(btn){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.style.borderColor='var(--accent)'; }
   } else {
     // Usuário comum: aplicar direto
     _filtroMinhasPendencias = true;
     _filtroUsuarioPendencia = '';
     _paginaAtual = 0;
     renderObras();
-    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
+    if(btn){ btn.style.background='var(--accent)'; btn.style.color='#fff'; btn.style.borderColor='var(--accent)'; }
   }
 }
 
 
 function _atualizarSeletorPendencia() {
-  const wrap = document.getElementById('pendencia-user-wrap');
-  if (!wrap) return;
-  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
-  if (!isGestor) { wrap.style.display = 'none'; return; }
-  const lista = (typeof users !== 'undefined' ? users : []).filter(u =>
-    u.isSuperAdmin || (u.acessos || []).includes('adminComercial') || (u.acessos || []).includes('comercial')
+  const wrap=document.getElementById('pendencia-user-wrap');
+  if(!wrap) return;
+  const isGestor=currentUser?.isSuperAdmin||(currentUser?.acessos||[]).includes('adminComercial');
+  if(!isGestor){wrap.style.display='none';return;}
+  const lista=(typeof users!=='undefined'?users:[]).filter(u=>
+    u.isSuperAdmin||(u.acessos||[]).includes('adminComercial')||(u.acessos||[]).includes('comercial')
   );
-  const sel = document.getElementById('pendencia-user-sel');
-  if (sel) {
-    sel.innerHTML = lista.map(u => `<option value="${u.username}"${u.username === currentUser.username ? ' selected' : ''}>${u.username}${u.username === currentUser.username ? ' (você)' : ''}</option>`).join('');
-    wrap.style.display = 'flex';
+  const sel=document.getElementById('pendencia-user-sel');
+  if(sel){
+    sel.innerHTML=lista.map(u=>`<option value="${u.username}"${u.username===currentUser.username?' selected':''}>${u.username}${u.username===currentUser.username?' (você)':''}</option>`).join('');
+    wrap.style.display='flex';
   }
 }
 
@@ -3170,47 +3166,47 @@ function aplicarPendencias() {
   renderObras();
 }
 
-function setPendenciaUsuario(val) {
-  _filtroUsuarioPendencia = val === currentUser?.username ? '' : val;
-  _paginaAtual = 0; renderObras();
+function setPendenciaUsuario(val){
+  _filtroUsuarioPendencia=val===currentUser?.username?'':val;
+  _paginaAtual=0; renderObras();
 }
 
 function limparPeriodo() {
-  _filtroPeriodoDe = ''; _filtroPeriodoAte = ''; _filtroUsuarioPendencia = '';
-  const de = document.getElementById('periodo-de'), ate = document.getElementById('periodo-ate');
-  if (de) de.value = ''; if (ate) ate.value = '';
-  _filtroMinhasPendencias = false; _dropdownAberto = false;
-  const btn = document.getElementById('btn-minhas-pendencias');
-  const perDrop = document.getElementById('periodo-dropdown');
-  const pDrop = document.getElementById('pendencias-dropdown');
-  if (perDrop) perDrop.style.display = 'none';
-  if (pDrop) pDrop.style.display = 'none';
-  if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
-  const btnPer = document.getElementById('btn-periodo');
-  if (btnPer) { btnPer.style.background = ''; btnPer.style.color = ''; btnPer.style.borderColor = ''; }
+  _filtroPeriodoDe=''; _filtroPeriodoAte=''; _filtroUsuarioPendencia='';
+  const de=document.getElementById('periodo-de'), ate=document.getElementById('periodo-ate');
+  if(de) de.value=''; if(ate) ate.value='';
+  _filtroMinhasPendencias=false; _dropdownAberto=false;
+  const btn=document.getElementById('btn-minhas-pendencias');
+  const perDrop=document.getElementById('periodo-dropdown');
+  const pDrop=document.getElementById('pendencias-dropdown');
+  if(perDrop) perDrop.style.display='none';
+  if(pDrop) pDrop.style.display='none';
+  if(btn){ btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  const btnPer=document.getElementById('btn-periodo');
+  if(btnPer){ btnPer.style.background=''; btnPer.style.color=''; btnPer.style.borderColor=''; }
   renderObras();
 }
 
 // Fechar dropdown ao clicar fora
 document.addEventListener('click', e => {
-  if (!_dropdownAberto) return;
-  const btn = document.getElementById('btn-minhas-pendencias');
+  if(!_dropdownAberto) return;
+  const btn  = document.getElementById('btn-minhas-pendencias');
   const wrap = document.getElementById('periodo-wrap');
-  if (btn && !btn.contains(e.target) && wrap && !wrap.contains(e.target)) {
+  if(btn && !btn.contains(e.target) && wrap && !wrap.contains(e.target)){
     _dropdownAberto = false;
     wrap.style.display = 'none';
   }
 });
 
 
-let _cToast = null;
-function showComercialToast(msg, type = 'success') {
-  let t = document.getElementById('comercial-toast');
-  if (!t) { t = document.createElement('div'); t.id = 'comercial-toast'; t.className = 'comercial-toast'; document.body.appendChild(t); }
-  t.textContent = msg; t.className = `comercial-toast ${type}`;
-  requestAnimationFrame(() => t.classList.add('show'));
-  if (_cToast) clearTimeout(_cToast);
-  _cToast = setTimeout(() => t.classList.remove('show'), 3200);
+let _cToast=null;
+function showComercialToast(msg,type='success') {
+  let t=document.getElementById('comercial-toast');
+  if(!t){t=document.createElement('div');t.id='comercial-toast';t.className='comercial-toast';document.body.appendChild(t);}
+  t.textContent=msg; t.className=`comercial-toast ${type}`;
+  requestAnimationFrame(()=>t.classList.add('show'));
+  if(_cToast) clearTimeout(_cToast);
+  _cToast=setTimeout(()=>t.classList.remove('show'),3200);
 }
 
 // ── Destaque de card via URL ─────────────────────────────────────────────────
@@ -3235,42 +3231,42 @@ function highlightObraFromUrl() {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function _initComercialPage() {
   await loadUsers();
-  const savedId = localStorage.getItem('chamados-current-user-id');
-  if (!savedId) { window.location.href = 'login.html'; return; }
-  const user = users.find(u => u.id === savedId);
-  if (!user) { window.location.href = 'login.html'; return; }
-  const acessos = user.acessos || [];
+  const savedId=localStorage.getItem('chamados-current-user-id');
+  if(!savedId){window.location.href='login.html';return;}
+  const user=users.find(u=>u.id===savedId);
+  if(!user){window.location.href='login.html';return;}
+  const acessos=user.acessos||[];
   // Tolerância temporária: canVerTodasPendencias pode ter entrado no array por bug
-  const temAcessoComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
-    acessos.includes('comercial') || acessos.includes('adminComercial') ||
-    acessos.includes('canVerTodasPendencias') || !!user.canVerTodasPendencias;
-  if (!temAcessoComercial) { window.location.href = 'menu.html'; return; }
+  const temAcessoComercial=user.isSuperAdmin||user.isAdminComercial||user.isComercial||
+    acessos.includes('comercial')||acessos.includes('adminComercial')||
+    acessos.includes('canVerTodasPendencias')||!!user.canVerTodasPendencias;
+  if(!temAcessoComercial){window.location.href='menu.html';return;}
   // Auto-corrigir dados corrompidos silenciosamente
-  if (acessos.includes('canVerTodasPendencias')) {
-    const nov = acessos.filter(a => a !== 'canVerTodasPendencias');
-    if (!nov.includes('comercial') && !nov.includes('adminComercial') && !user.isSuperAdmin) nov.push('comercial');
-    db.collection('users').doc(user.id).update({ acessos: nov, canVerTodasPendencias: true }).catch(() => { });
-    user.acessos = nov; user.canVerTodasPendencias = true;
+  if(acessos.includes('canVerTodasPendencias')){
+    const nov=acessos.filter(a=>a!=='canVerTodasPendencias');
+    if(!nov.includes('comercial')&&!nov.includes('adminComercial')&&!user.isSuperAdmin) nov.push('comercial');
+    db.collection('users').doc(user.id).update({acessos:nov,canVerTodasPendencias:true}).catch(()=>{});
+    user.acessos=nov; user.canVerTodasPendencias=true;
   }
-  currentUser = user;
-  if (typeof initDarkMode === 'function') initDarkMode();
-  if (typeof initSessionTimer === 'function') initSessionTimer(user.role);
-  const collapsed = localStorage.getItem('chamados-sidebar-collapsed') === '1';
-  const sidebar = document.getElementById('chamados-sidebar'), icon = document.getElementById('sidebar-toggle-icon');
-  if (sidebar) { sidebar.classList.add('no-transition'); if (collapsed) { sidebar.classList.add('collapsed'); if (icon) icon.textContent = '›'; } requestAnimationFrame(() => requestAnimationFrame(() => sidebar.classList.remove('no-transition'))); }
-  const syncBtn = document.getElementById('sync-fab-nav'), configBtn = document.getElementById('sidebar-config-btn');
-  if (syncBtn) syncBtn.style.display = user.isSuperAdmin ? 'flex' : 'none';
-  if (configBtn) configBtn.style.display = (user.isAdmin || user.isSuperAdmin) ? 'flex' : 'none';
-  const acessosTI = user.isSuperAdmin ? ['chamados', 'materiais', 'inventario', 'rotinas'] : (user.acessos || []);
-  ['materiais', 'inventario', 'rotinas'].forEach(mod => { const el = document.getElementById('sub-' + mod); if (el) el.style.display = (user.isSuperAdmin || acessosTI.includes(mod)) ? 'flex' : 'none'; });
-  const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial || acessos.includes('comercial') || acessos.includes('adminComercial');
-  const modBtn = document.getElementById('mod-pai-comercial-btn');
-  if (modBtn) modBtn.style.display = canComercial ? 'flex' : 'none';
-  if (typeof initModPai === 'function') initModPai('comercial');
-  const avatar = document.getElementById('cs-sidebar-avatar'), nameEl = document.getElementById('cs-sidebar-name'), roleEl = document.getElementById('cs-sidebar-role');
-  if (avatar) avatar.textContent = user.username.charAt(0).toUpperCase();
-  if (nameEl) nameEl.textContent = capitalizeName(user.username);
-  if (roleEl) roleEl.innerHTML = getSectorBadge(user);
+    currentUser=user;
+  if(typeof initDarkMode==='function') initDarkMode();
+  if(typeof initSessionTimer==='function') initSessionTimer(user.role);
+  const collapsed=localStorage.getItem('chamados-sidebar-collapsed')==='1';
+  const sidebar=document.getElementById('chamados-sidebar'),icon=document.getElementById('sidebar-toggle-icon');
+  if(sidebar){sidebar.classList.add('no-transition');if(collapsed){sidebar.classList.add('collapsed');if(icon)icon.textContent='›';}requestAnimationFrame(()=>requestAnimationFrame(()=>sidebar.classList.remove('no-transition')));}
+  const syncBtn=document.getElementById('sync-fab-nav'),configBtn=document.getElementById('sidebar-config-btn');
+  if(syncBtn) syncBtn.style.display=user.isSuperAdmin?'flex':'none';
+  if(configBtn) configBtn.style.display=(user.isAdmin||user.isSuperAdmin)?'flex':'none';
+  const acessosTI=user.isSuperAdmin?['chamados','materiais','inventario','rotinas']:(user.acessos||[]);
+  ['materiais','inventario','rotinas'].forEach(mod=>{const el=document.getElementById('sub-'+mod);if(el)el.style.display=(user.isSuperAdmin||acessosTI.includes(mod))?'flex':'none';});
+  const canComercial=user.isSuperAdmin||user.isAdminComercial||user.isComercial||acessos.includes('comercial')||acessos.includes('adminComercial');
+  const modBtn=document.getElementById('mod-pai-comercial-btn');
+  if(modBtn) modBtn.style.display=canComercial?'flex':'none';
+  if(typeof initModPai==='function') initModPai('comercial');
+  const avatar=document.getElementById('cs-sidebar-avatar'),nameEl=document.getElementById('cs-sidebar-name'),roleEl=document.getElementById('cs-sidebar-role');
+  if(avatar) avatar.textContent=user.username.charAt(0).toUpperCase();
+  if(nameEl) nameEl.textContent=capitalizeName(user.username);
+  if(roleEl) roleEl.innerHTML=getSectorBadge(user);
   initComercial();
 
   // Restaurar preferência de cards por página
@@ -3283,50 +3279,50 @@ async function _initComercialPage() {
 }
 
 // ── Data Prevista sub-etapa (Documentações) ──────────────────────────────────
-let _dpObraId = null, _dpEtapaId = null, _dpSubId = null;
+let _dpObraId=null, _dpEtapaId=null, _dpSubId=null;
 
 function openDataPrevistaModal(obraId, etapaId, subId) {
-  _dpObraId = obraId; _dpEtapaId = etapaId; _dpSubId = subId;
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const subCfg = (cfg.subEtapas || []).find(s => s.id === subId);
-  const obra = _obras.find(o => o.id === obraId);
-  const sub = obra?.etapas?.[etapaId]?.subEtapas?.[subId];
-  const titleEl = document.getElementById('dp-modal-title');
-  if (titleEl) titleEl.textContent = `Data Prevista — ${subCfg?.nome || subId}`;
-  const input = document.getElementById('dp-data-input');
-  if (input) { input.value = sub?.dataPrevista || ''; }
-  const modal = document.getElementById('dp-modal');
-  if (modal) modal.style.display = 'flex';
+  _dpObraId=obraId; _dpEtapaId=etapaId; _dpSubId=subId;
+  const cfg=ETAPAS_CONFIG[etapaId];
+  const subCfg=(cfg.subEtapas||[]).find(s=>s.id===subId);
+  const obra=_obras.find(o=>o.id===obraId);
+  const sub=obra?.etapas?.[etapaId]?.subEtapas?.[subId];
+  const titleEl=document.getElementById('dp-modal-title');
+  if(titleEl) titleEl.textContent=`Data Prevista — ${subCfg?.nome||subId}`;
+  const input=document.getElementById('dp-data-input');
+  if(input){ input.value=sub?.dataPrevista||''; }
+  const modal=document.getElementById('dp-modal');
+  if(modal) modal.style.display='flex';
 }
 
 function closeDataPrevistaModal() {
-  const modal = document.getElementById('dp-modal');
-  if (modal) modal.style.display = 'none';
-  _dpObraId = _dpEtapaId = _dpSubId = null;
+  const modal=document.getElementById('dp-modal');
+  if(modal) modal.style.display='none';
+  _dpObraId=_dpEtapaId=_dpSubId=null;
 }
 
 async function saveDataPrevista() {
-  const data = document.getElementById('dp-data-input')?.value;
-  if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
+  const data=document.getElementById('dp-data-input')?.value;
+  if(!data){showComercialToast('Selecione uma data.','error');return;}
   // Modo COC
-  if (document.getElementById('dp-modal')?.dataset?.cocMode === '1') {
-    document.getElementById('dp-modal').dataset.cocMode = '';
-    const obra4 = _obras.find(o => o.id === _cocActionObraId); if (!obra4) return;
-    const etapas4 = JSON.parse(JSON.stringify(obra4.etapas));
-    etapas4[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista = data;
-    await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas4 });
-    closeDataPrevistaModal(); showComercialToast('Data prevista salva! ✅', 'success'); return;
+  if(document.getElementById('dp-modal')?.dataset?.cocMode==='1') {
+    document.getElementById('dp-modal').dataset.cocMode='';
+    const obra4=_obras.find(o=>o.id===_cocActionObraId); if(!obra4) return;
+    const etapas4=JSON.parse(JSON.stringify(obra4.etapas));
+    etapas4[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista=data;
+    await db.collection('obras').doc(_cocActionObraId).update({etapas:etapas4});
+    closeDataPrevistaModal(); showComercialToast('Data prevista salva! ✅','success'); return;
   }
-  if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
-  const obra = _obras.find(o => o.id === _dpObraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  if (etapas[_dpEtapaId]?.subEtapas?.[_dpSubId]) {
-    etapas[_dpEtapaId].subEtapas[_dpSubId].dataPrevista = data;
+  if(!data){ showComercialToast('Selecione uma data.','error'); return; }
+  const obra=_obras.find(o=>o.id===_dpObraId); if(!obra) return;
+  const etapas=JSON.parse(JSON.stringify(obra.etapas));
+  if(etapas[_dpEtapaId]?.subEtapas?.[_dpSubId]) {
+    etapas[_dpEtapaId].subEtapas[_dpSubId].dataPrevista=data;
   }
-  await db.collection('obras').doc(_dpObraId).update({ etapas });
-  showComercialToast('Data prevista salva! ✅', 'success');
+  await db.collection('obras').doc(_dpObraId).update({etapas});
+  showComercialToast('Data prevista salva! ✅','success');
   closeDataPrevistaModal();
 }
 
-document.addEventListener('DOMContentLoaded', _initComercialPage);
-document.addEventListener('DOMContentLoaded', _initAcaoDelegate);
+document.addEventListener('DOMContentLoaded',_initComercialPage);
+document.addEventListener('DOMContentLoaded',_initAcaoDelegate);
