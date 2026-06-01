@@ -74,7 +74,8 @@ const ETAPAS_CONFIG = {
       { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true },
       { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
       { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
-      { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true, podeEncerrar: true },
+      { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true },
+      { id: 'carta_assinatura', nome: 'Assinatura da Carta Aditiva', dias: 2, dateLivre: false, isAprovacaoRecusa: true, podeEncerrar: true },
       { id: 'termo_envio', nome: 'Envio do Termo Aditivo', dias: 3, dateLivre: false },
       { id: 'termo_assinatura', nome: 'Assinatura do Termo Aditivo', dias: 5, dateLivre: false, isAprovacaoRecusa: true },
     ]
@@ -149,6 +150,23 @@ function _migrateObraToV3(obra) {
   return { etapas };
 }
 
+
+function _migrateObraToV6(obra) {
+  // Adiciona carta_assinatura nos aditivos existentes
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  const blank = () => ({ status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] });
+  (etapas.aditivos?.lista || []).forEach(item => {
+    if (!item.subEtapas.carta_assinatura) {
+      item.subEtapas.carta_assinatura = { ...blank() };
+      // Se carta_aprovacao está done, carta_assinatura fica active
+      if (item.subEtapas.carta_aprovacao?.status === 'done' &&
+        (item.subEtapas.termo_envio?.status === 'pending' || !item.subEtapas.termo_envio)) {
+        item.subEtapas.carta_assinatura.status = 'active';
+      }
+    }
+  });
+  return { etapas };
+}
 
 function _migrateObraToV5(obra) {
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
@@ -258,7 +276,7 @@ function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 async function migrateObras() {
   try {
@@ -275,6 +293,7 @@ async function migrateObras() {
         if (ver < 3) migrated = { ...migrated, ..._migrateObraToV3(migrated) };
         if (ver < 4) migrated = { ...migrated, ..._migrateObraToV4(migrated) };
         if (ver < 5) migrated = { ...migrated, ..._migrateObraToV5(migrated) };
+        if (ver < 6) migrated = { ...migrated, ..._migrateObraToV6(migrated) };
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch (e) {
@@ -422,8 +441,8 @@ function getPrazoInfo(prazo) {
   const d = new Date(prazo + 'T12:00:00'), hoje = new Date(); hoje.setHours(0, 0, 0, 0);
   const diff = Math.ceil((d - hoje) / (1000 * 60 * 60 * 24));
   const fmt = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  if (diff < 0) return { texto: `Vencido em ${fmt}`, cls: 'vencido' };
-  if (diff <= 3) return { texto: `Vencendo em ${diff} dia${diff !== 1 ? 's' : ''}`, cls: 'urgente' };
+  if (diff <= 0) return { texto: diff === 0 ? 'Vencido hoje!' : `Vencido em ${fmt}`, cls: 'vencido' };
+  if (diff <= 7) return { texto: `Vencendo em ${diff} dia${diff !== 1 ? 's' : ''}`, cls: 'urgente' };
   return { texto: `Prazo: ${fmt}`, cls: '' };
 }
 
@@ -472,8 +491,22 @@ function renderObras() {
   let lista = [..._obras];
   if (_filtroRep) lista = lista.filter(o => o.representante === _filtroRep);
   if (_filtroEtapa) lista = lista.filter(o => getEtapaAtualId(o) === _filtroEtapa);
-  if (_filtroDataDe) lista = lista.filter(o => { const d = o.dataFechamento || o.prazoEstimado; return d && d >= _filtroDataDe; });
-  if (_filtroDataAte) lista = lista.filter(o => { const d = o.dataFechamento || o.prazoEstimado; return d && d <= _filtroDataAte; });
+  if (_filtroDataDe || _filtroDataAte) {
+    lista = lista.filter(obra => {
+      return ETAPAS_ORDER.some(etapaId => {
+        const e = obra.etapas?.[etapaId]; if (!e?.ativa) return false;
+        const cfg = ETAPAS_CONFIG[etapaId];
+        const checkSub = sub => {
+          if (!sub || sub.status === 'done' || !sub.dataLimite) return false;
+          if (_filtroDataDe && sub.dataLimite < _filtroDataDe) return false;
+          if (_filtroDataAte && sub.dataLimite > _filtroDataAte) return false;
+          return true;
+        };
+        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(checkSub));
+        return Object.values(e.subEtapas || {}).some(checkSub);
+      });
+    });
+  }
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
   if (_filtroVencendo) {
     const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
@@ -555,24 +588,30 @@ function renderObras() {
       : getPrazoInfo(obra.prazoEstimado);
     const hoje2 = new Date().toISOString().slice(0, 10);
 
-    // Stripe: semáforo de prazo (vermelho > amarelo > azul > verde)
+    // Stripe: semáforo — vermelho > amarelo > azul > verde
     let corBorda = '#3b82f6'; // azul padrão
     if (obra.concluida) {
-      corBorda = '#22c55e'; // verde — concluída
+      corBorda = '#22c55e'; // verde
     } else {
-      // Vermelho: sub-etapa atrasada OU prazo geral vencido
+      const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
+      const daqui7Str = daqui7.toISOString().slice(0, 10);
+      // Vermelho: alguma sub-etapa atrasada
       const temAtrasada = hasSubEtapaAtrasada(obra);
-      const prazoVencido = obra.prazoEstimado && obra.prazoEstimado < hoje2;
-      if (temAtrasada || prazoVencido) {
+      if (temAtrasada) {
         corBorda = '#ef4444';
       } else {
-        // Amarelo: prazo geral vencendo em ≤3 dias
-        if (obra.prazoEstimado) {
-          const d = new Date(obra.prazoEstimado + 'T12:00:00');
-          const agora = new Date(); agora.setHours(0, 0, 0, 0);
-          const diff = Math.ceil((d - agora) / (1000 * 60 * 60 * 24));
-          if (diff <= 3) corBorda = '#f59e0b';
-        }
+        // Amarelo: sub-etapa vencendo em ≤7 dias OU prazo geral vencendo em ≤7 dias
+        const temVencendo = ETAPAS_ORDER.some(etapaId => {
+          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId];
+          if (!e?.ativa || e.status === 'done') return false;
+          if (cfg.isLista) return (e.lista || []).some(item =>
+            item.status !== 'done' && Object.values(item.subEtapas || {}).some(s =>
+              s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str));
+          return Object.values(e.subEtapas || {}).some(s =>
+            s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str);
+        });
+        const prazoVencendo = obra.prazoEstimado && obra.prazoEstimado >= hoje2 && obra.prazoEstimado <= daqui7Str;
+        if (temVencendo || prazoVencendo) corBorda = '#f59e0b';
       }
     }
 
@@ -603,8 +642,34 @@ function renderObras() {
           dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
           info = '<span style="font-size:0.65rem;color:var(--muted);">Não iniciado</span>';
         } else {
-          dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
-          info = `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${done}/${total} concluídos</span>`;
+          // Verificar vencidas e próximas do vencimento
+          let vencidas = 0, vencendo = 0;
+          const _hj7 = new Date(); _hj7.setDate(_hj7.getDate() + 7);
+          const _hj7s = _hj7.toISOString().slice(0, 10);
+          lista.forEach(item => {
+            if (item.status === 'done') return;
+            // Sub-etapa ativa
+            const cfg3 = ETAPAS_CONFIG[id];
+            (cfg3.subEtapasTemplate || []).forEach(st => {
+              const s = item.subEtapas?.[st.id];
+              if (!s || s.status === 'done' || s.status === 'pulada') return;
+              // Usar dataLimite da sub-etapa ou dataPrevista do item como fallback
+              const ref = s.dataLimite || (s.status === 'active' ? item.dataPrevista : null);
+              if (!ref) return;
+              if (ref < hoje2) vencidas++;
+              else if (ref <= _hj7s) vencendo++;
+            });
+          });
+          if (vencidas > 0) {
+            dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
+            info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${vencidas} item${vencidas > 1 ? 'ns' : ''} vencido${vencidas > 1 ? 's' : ''}</span>`;
+          } else if (vencendo > 0) {
+            dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
+            info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${vencendo} item${vencendo > 1 ? 'ns' : ''} próximo${vencendo > 1 ? 's' : ''} do vencimento</span>`;
+          } else {
+            dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
+            info = `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${done}/${total} concluídos</span>`;
+          }
         }
         return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
@@ -614,18 +679,28 @@ function renderObras() {
       }
       // Documentações independentes
       if (cfg2.isIndependente) {
-        const subs = Object.values(eData.subEtapas || {});
-        const done = subs.filter(s => s.status === 'done').length;
-        const atras = subs.some(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2);
+        const subVals = Object.values(eData.subEtapas || {}).filter(s => !s.isCocLista);
+        const cocItems = (eData.cocLista || []);
+        const done = subVals.filter(s => s.status === 'done').length + cocItems.filter(ci => ci.status === 'done').length;
+        const total = subVals.length + (cocItems.length || 0);
+        const daqui7doc = new Date(); daqui7doc.setDate(daqui7doc.getDate() + 7);
+        const daqui7docs = daqui7doc.toISOString().slice(0, 10);
+        const nAtras = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2).length
+          + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista < hoje2).length;
+        const nVenc = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7docs).length
+          + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista >= hoje2 && ci.dataPrevista <= daqui7docs).length;
         if (obra.concluida || eStatus === 'done') {
           dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
-          info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${subs.length} concluídas</span>`;
-        } else if (atras) {
+          info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídas</span>`;
+        } else if (nAtras > 0) {
           dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
-          info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;">⚠ Atrasada</span>`;
+          info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" fill="#ef4444" stroke="#ef4444"/></svg> ${nAtras} item${nAtras > 1 ? 'ns' : ''} vencido${nAtras > 1 ? 's' : ''}</span>`;
+        } else if (nVenc > 0) {
+          dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
+          info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${nVenc} item${nVenc > 1 ? 'ns' : ''} próximo${nVenc > 1 ? 's' : ''} do vencimento</span>`;
         } else {
           dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
-          info = `<span style="font-size:0.65rem;color:var(--muted);">${done}/${subs.length} concluídas</span>`;
+          info = `<span style="font-size:0.65rem;color:var(--muted);">${done}/${total} concluídas</span>`;
         }
         return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
@@ -644,11 +719,34 @@ function renderObras() {
         info = concl ? `<span style="color:#22c55e;font-family:var(--font-mono);font-size:0.65rem;">✓ ${new Date(concl + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>` : '<span style="color:#22c55e;font-size:0.68rem;">Concluída</span>';
       } else if (atras) {
         dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
-        const lFmt = limite ? new Date(limite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '?';
-        info = `<span style="color:#ef4444;font-family:var(--font-mono);font-size:0.65rem;font-weight:700;">⚠ ${lFmt}</span>`;
+        // Mostrar nome da sub-etapa vencida + prazo
+        const subAtras = cfg2.subEtapas?.find(sc => {
+          const sd = eData.subEtapas?.[sc.id];
+          return sd?.status !== 'done' && sd?.dataLimite && sd.dataLimite < hoje2;
+        });
+        const sdAtras = subAtras ? eData.subEtapas?.[subAtras.id] : null;
+        const nomeAtras = subAtras?.nome || '';
+        const dtAtras = sdAtras?.dataLimite ? new Date(sdAtras.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '?';
+        info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;" title="${nomeAtras}">⚠ ${nomeAtras.length > 22 ? nomeAtras.slice(0, 22) + '…' : nomeAtras} · ${dtAtras}</span>`;
       } else if (eStatus === 'active') {
         dot = '›'; dotStyle = `background:${cfg2.cor};border-color:${cfg2.cor};color:#fff;`;
-        info = limite ? `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${new Date(limite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>` : '<span style="font-size:0.65rem;color:var(--muted);">Em andamento</span>';
+        // Mostrar se há sub-etapa próxima do vencimento
+        const daqui7s2 = new Date(); daqui7s2.setDate(daqui7s2.getDate() + 7);
+        const daqui7str2 = daqui7s2.toISOString().slice(0, 10);
+        const subVenc = cfg2.subEtapas?.find(sc => {
+          const sd = eData.subEtapas?.[sc.id];
+          return sd?.status !== 'done' && sd?.dataLimite && sd.dataLimite >= hoje2 && sd.dataLimite <= daqui7str2;
+        });
+        if (subVenc) {
+          const sdVenc = eData.subEtapas?.[subVenc.id];
+          const dias2 = sdVenc?.dataLimite ? Math.ceil((new Date(sdVenc.dataLimite + 'T12:00:00') - new Date().setHours(0, 0, 0, 0)) / (1000 * 60 * 60 * 24)) : null;
+          const prazoLabel = dias2 === 0 ? 'hoje' : dias2 === 1 ? 'amanhã' : `${dias2}d`;
+          const nomeVenc = subVenc.nome.length > 20 ? subVenc.nome.slice(0, 20) + '…' : subVenc.nome;
+          dot = '!'; dotStyle = 'background:#f59e0b;border-color:#f59e0b;color:#fff;';
+          info = `<span style="color:#f59e0b;font-size:0.65rem;font-weight:700;" title="${subVenc.nome}">⚠ ${nomeVenc} · ${prazoLabel}</span>`;
+        } else {
+          info = limite ? `<span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted);">${new Date(limite + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>` : '<span style="font-size:0.65rem;color:var(--muted);">Em andamento</span>';
+        }
       } else {
         dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
         info = '<span style="font-size:0.65rem;color:var(--muted);">Pendente</span>';
@@ -661,7 +759,26 @@ function renderObras() {
     }).join('');
 
     return `
-    <div class="obra-card" data-obra-id="${obra.id}" style="border-left:4px solid ${corBorda};" onclick="openObraModal('${obra.id}')">
+    <div class="obra-card" data-obra-id="${obra.id}" style="border-left:4px solid ${corBorda};position:relative;" onclick="openObraModal('${obra.id}')">
+      ${(() => {
+        const azul = _contarTarefasAtribuidas(obra);
+        return azul > 0
+          ? `<span style="position:absolute;top:-7px;left:8px;background:#3b82f6;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${azul} tarefa${azul > 1 ? 's' : ''} atribuída${azul > 1 ? 's' : ''} a você">${azul}</span>`
+          : '';
+      })()}
+      ${(() => {
+        // Badge vermelho — sub-etapas em atraso
+        let atraso = 0;
+        const hj = new Date().toISOString().slice(0, 10);
+        ETAPAS_ORDER.forEach(etapaId => {
+          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa || e.status === 'done') return;
+          if (cfg.isLista) (e.lista || []).forEach(item => { if (item.status === 'done') return; Object.values(item.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; }); });
+          else Object.values(e.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; });
+        });
+        return atraso > 0
+          ? `<span style="position:absolute;top:-7px;right:8px;background:#ef4444;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${atraso} sub-etapa${atraso > 1 ? 's' : ''} em atraso">${atraso}</span>`
+          : '';
+      })()}
       <div class="obra-card-header">
         <div>
           <div class="obra-card-numero">#${obra.numero || obra.id.slice(-6).toUpperCase()}</div>
@@ -670,15 +787,10 @@ function renderObras() {
         ${obra.concluida ? '<span class="obra-etapa-badge etapa-concluida">Concluída</span>' : ''}
       </div>
       ${(() => {
-        const n = contarMinhasPendencias(obra);
-        return n > 0 ? `
-          <div style="position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:0.62rem;font-family:var(--font-mono);font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000030;z-index:2;">
-            ${n}
-          </div>` : '';
-      })()}
-      ${(() => {
-        const n = contarMinhasPendencias(obra);
-        return n > 0 ? `<div style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.3rem;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${n} pendência${n > 1 ? 's' : ''} atribuída${n > 1 ? 's' : ''} a você</div>` : '';
+        const n = _contarTarefasAtribuidas(obra);
+        return n > 0
+          ? `<div style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.3rem;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${n} pendência${n > 1 ? 's' : ''} atribuída${n > 1 ? 's' : ''} a você</div>`
+          : '';
       })()}
       <div class="obra-card-rep" style="justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:0.35rem;">
@@ -740,6 +852,10 @@ async function saveNovaObra() {
   const prazo = document.getElementById('nova-obra-prazo')?.value;
   const obs = document.getElementById('nova-obra-obs')?.value.trim();
   if (!numero) { showComercialToast('Informe o número da obra.', 'error'); return; }
+  if (_obras.some(o => String(o.numero).trim() === String(numero).trim())) {
+    showComercialToast(`Já existe uma obra com o número #${numero}.`, 'error');
+    return;
+  }
   if (!nome) { showComercialToast('Informe o nome da obra.', 'error'); return; }
   if (!rep) { showComercialToast('Selecione o representante.', 'error'); return; }
   if (!fechamento) { showComercialToast('Informe a data de fechamento.', 'error'); return; }
@@ -1270,6 +1386,10 @@ function _renderCocLista(obra, etapaId, subId) {
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
         <span style="font-size:0.8rem;font-weight:700;color:${isDone ? '#22c55e' : '#f97316'};flex:1;">${isDone ? '✓ ' : ''} ${item.nome}</span>
         ${dtConc}${!isDone ? dtPrev : ''}
+        ${item.responsavel && !isDone ? item.responsavel === currentUser?.username
+        ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">📍 Você</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">👤 ${item.responsavel}</span>`
+        : ''}
         ${btnAcoes}${delBtn}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -1756,6 +1876,41 @@ const _AUDIT_CORES = {
   medicao_add: '#ec4899', medicao_del: '#6b7280', conclusao: '#22c55e',
   revisao: '#f59e0b', recusa: '#ef4444', prorrogacao: '#f97316',
 };
+
+
+// ── Contar tarefas abertas atribuídas ao usuário no card ─────────────────────
+function _contarTarefasAtribuidas(obra) {
+  if (obra.concluida || !currentUser) return 0;
+  let count = 0;
+  const me = currentUser.username;
+  ETAPAS_ORDER.forEach(etapaId => {
+    const e = obra.etapas?.[etapaId];
+    const cfg = ETAPAS_CONFIG[etapaId];
+    if (!e?.ativa || e.status === 'done') return;
+    if (cfg.isLista) {
+      (e.lista || []).forEach(item => {
+        if (item.status === 'done') return;
+        Object.values(item.subEtapas || {}).forEach(s => {
+          if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
+        });
+      });
+    } else if (cfg.isIndependente) {
+      // COC
+      (e.cocLista || []).forEach(coc => {
+        if (coc.status !== 'done' && coc.responsavel === me) count++;
+      });
+      // Outras sub-etapas de documentações
+      Object.values(e.subEtapas || {}).forEach(s => {
+        if (!s.isCocLista && s.status !== 'done' && s.responsavel === me) count++;
+      });
+    } else {
+      Object.values(e.subEtapas || {}).forEach(s => {
+        if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
+      });
+    }
+  });
+  return count;
+}
 
 // ── Dropdown Ações — event delegation ────────────────────────────────────────
 let _acaoListenerActive = false;
@@ -2553,11 +2708,11 @@ function exportarRelatorioXLS() {
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
   try {
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const headers = ['Nº', 'Obra', 'Representante', 'Responsável', 'Etapa', 'Sub-etapa', 'Status', 'Data Limite', 'Dias em atraso'];
+    const headers = ['Nº', 'Obra', 'Representante', 'Responsável', 'Etapa', 'Sub-etapa', 'Status', 'Data Conclusão', 'Previsão', 'Dias em atraso'];
     const escXml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const headerRow = headers.map(h => `<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
     const dataRows = linhas.map((l, rowIdx) => {
-      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataLimite, l.diasAtraso];
+      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataConclusao || '—', l.dataLimite, l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
         const cellBg = l.status === 'Atrasada' ? '#fee2e2' : l.status === 'Vencendo' ? '#fef3c7' : rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
@@ -2599,10 +2754,10 @@ function exportarRelatorioPDF() {
       <td ${td}><strong>${l.nome}</strong></td>
       <td ${td}>${l.representante}</td>
       <td ${td}>${l.responsavel || '—'}</td>
-      <td ${td}>${l.prazoObra}</td>
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
       <td ${td}><span class="badge ${l.status === 'Atrasada' ? 'red' : l.status === 'Vencendo' ? 'amber' : 'blue'}">${l.status}</span></td>
+      <td ${td}>${l.dataConclusao || '—'}</td>
       <td ${td}>${l.dataLimite}</td>
       <td ${tdRed}>${l.diasAtraso}</td>
     </tr>`;
@@ -2629,7 +2784,7 @@ function exportarRelatorioPDF() {
       <span>Gerado em ${hoje}</span>
     </div>
     <table>
-      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Responsável</th><th>Prazo da Obra</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Limite</th><th>Atraso</th></tr></thead>
+      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Responsável</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Conclusão</th><th>Previsão</th><th>Atraso</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
@@ -2780,7 +2935,17 @@ function _renderHistoricoAba(obra, el) {
     }
     if (!itens.length) return;
     html += `<div style="margin-bottom:1.25rem;"><div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border2);">${NOMES[etapaId] || etapaId}</div>`;
-    itens.forEach(s => html += `<div class="hist-item ${s.tipo}"><span class="hist-badge ${s.tipo}">${s.badge}</span><div class="hist-content"><div>${s.texto}</div><div class="hist-meta">${s.meta}</div></div></div>`);
+    itens.forEach(s => {
+      const badgeMax = 48;
+      const badgeLabel = s.badge.length > badgeMax ? s.badge.slice(0, badgeMax) + '…' : s.badge;
+      html += `<div class="hist-entry">
+        <div class="hist-entry-header">
+          <span class="hist-entry-badge ${s.tipo}" title="${s.badge}">${badgeLabel}</span>
+          <span class="hist-entry-meta">${s.meta}</span>
+        </div>
+        <div class="hist-entry-text">${s.texto.replace(/^(Recusado:)/, '<span style="color:#ef4444;font-weight:700;">$1</span>')}</div>
+      </div>`;
+    });
     html += '</div>';
   });
   if (!html) html = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum histórico registrado.</div>';
@@ -2930,33 +3095,50 @@ function exportarRelatorioPendencias() {
 // ── Filtro Minhas Pendências + Período ────────────────────────────────────────
 let _dropdownAberto = false;
 
+function togglePeriodoDropdown() {
+  const btn = document.getElementById('btn-periodo');
+  const dd = document.getElementById('periodo-dropdown');
+  if (!dd) return;
+  const open = dd.style.display === 'flex';
+  // Fechar pendências se aberto
+  const pdrop = document.getElementById('pendencias-dropdown');
+  if (pdrop) pdrop.style.display = 'none';
+  dd.style.display = open ? 'none' : 'flex';
+  if (btn) {
+    btn.style.background = !open ? 'var(--accent)' : '';
+    btn.style.color = !open ? '#fff' : '';
+    btn.style.borderColor = !open ? 'var(--accent)' : '';
+  }
+}
+
 function toggleMinhasPendencias() {
   const btn = document.getElementById('btn-minhas-pendencias');
-  const wrap = document.getElementById('periodo-wrap');
-
-  if (_dropdownAberto) {
-    _dropdownAberto = false;
-    if (wrap) wrap.style.display = 'none';
+  const pdrop = document.getElementById('pendencias-dropdown');
+  if (!pdrop) return;
+  // Fechar período se aberto
+  const perDrop = document.getElementById('periodo-dropdown');
+  if (perDrop) perDrop.style.display = 'none';
+  const open = pdrop.style.display === 'flex';
+  if (open) {
+    pdrop.style.display = 'none';
+    if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+    return;
+  }
+  // Verificar se é gestor
+  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
+  if (isGestor) {
+    // Gestor: mostrar seletor
+    _atualizarSeletorPendencia();
+    document.getElementById('pendencia-user-wrap').style.display = 'flex';
+    pdrop.style.display = 'flex';
+    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
   } else {
-    _dropdownAberto = true;
+    // Usuário comum: aplicar direto
     _filtroMinhasPendencias = true;
     _filtroUsuarioPendencia = '';
     _paginaAtual = 0;
-    _atualizarSeletorPendencia();
-    if (wrap) wrap.style.display = 'flex';
     renderObras();
-  }
-
-  if (btn) {
-    if (_filtroMinhasPendencias) {
-      btn.style.background = 'var(--accent)';
-      btn.style.color = '#fff';
-      btn.style.borderColor = 'var(--accent)';
-    } else {
-      btn.style.background = '';
-      btn.style.color = '';
-      btn.style.borderColor = '';
-    }
+    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
   }
 }
 
@@ -2976,6 +3158,18 @@ function _atualizarSeletorPendencia() {
   }
 }
 
+function aplicarPendencias() {
+  const sel = document.getElementById('pendencia-user-sel');
+  const val = sel?.value || '';
+  _filtroUsuarioPendencia = val === currentUser?.username ? '' : val;
+  _filtroMinhasPendencias = true;
+  _paginaAtual = 0;
+  // Fechar dropdown
+  const pdrop = document.getElementById('pendencias-dropdown');
+  if (pdrop) pdrop.style.display = 'none';
+  renderObras();
+}
+
 function setPendenciaUsuario(val) {
   _filtroUsuarioPendencia = val === currentUser?.username ? '' : val;
   _paginaAtual = 0; renderObras();
@@ -2987,9 +3181,13 @@ function limparPeriodo() {
   if (de) de.value = ''; if (ate) ate.value = '';
   _filtroMinhasPendencias = false; _dropdownAberto = false;
   const btn = document.getElementById('btn-minhas-pendencias');
-  const wrap = document.getElementById('periodo-wrap');
-  if (wrap) wrap.style.display = 'none';
+  const perDrop = document.getElementById('periodo-dropdown');
+  const pDrop = document.getElementById('pendencias-dropdown');
+  if (perDrop) perDrop.style.display = 'none';
+  if (pDrop) pDrop.style.display = 'none';
   if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+  const btnPer = document.getElementById('btn-periodo');
+  if (btnPer) { btnPer.style.background = ''; btnPer.style.color = ''; btnPer.style.borderColor = ''; }
   renderObras();
 }
 
