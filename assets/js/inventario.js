@@ -761,12 +761,22 @@ function renderAtivosList(list, canManage) {
 }
 
 function changeAtivosPage(page) {
-  const total = _ativos.length;
-  const totalPages = Math.ceil(total / ATIVOS_PER_PAGE);
+  const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
+  const query = (document.getElementById('ativo-search')?.value || '').toLowerCase();
+  const setor = document.getElementById('ativo-filter-setor')?.value || '';
+  const filtered = _ativos.filter(a => {
+    const matchSetor = !setor || a.setor === setor;
+    const matchQ = !query ||
+      (a.nome || '').toLowerCase().includes(query) ||
+      (a.nomeAmigavel || '').toLowerCase().includes(query) ||
+      (a.patrimonio || '').toLowerCase().includes(query) ||
+      (a.usuario || '').toLowerCase().includes(query);
+    return matchSetor && matchQ;
+  });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ATIVOS_PER_PAGE));
   if (page < 1 || page > totalPages) return;
   _ativosPage = page;
-  const canManage = currentUser?.isAdmin || currentUser?.isSuperAdmin || currentUser?.role === 'attendant';
-  filterAtivos();
+  renderAtivosList(filtered, canManage);
 }
 
 function renderAtivoCard(a, canManage) {

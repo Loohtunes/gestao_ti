@@ -482,6 +482,43 @@ function hasSubEtapaAtrasada(obra) {
   return false;
 }
 
+// Stripe do card — fonte única: semáforo vermelho > amarelo > azul > verde.
+// Percorre TODAS as etapas ativas (listas, normais e Docs independentes),
+// descartando sub-etapas/itens pulados e concluídos.
+function getCorStripe(obra) {
+  if (obra.concluida) return '#22c55e'; // verde
+  const hoje = new Date().toISOString().slice(0, 10);
+  const d7 = new Date(); d7.setDate(d7.getDate() + 7);
+  const d7s = d7.toISOString().slice(0, 10);
+  let temAtraso = false, temVencendo = false;
+  // Avalia uma sub-etapa/item genérico a partir de status + data de referência
+  const avaliar = (status, ref) => {
+    if (status === 'done' || status === 'pulada') return;
+    if (!ref) return;
+    if (ref < hoje) temAtraso = true;
+    else if (ref >= hoje && ref <= d7s) temVencendo = true;
+  };
+  for (const id of ETAPAS_ORDER) {
+    const e = obra.etapas?.[id];
+    const cfg = ETAPAS_CONFIG[id];
+    if (!e?.ativa || e.status === 'pulada') continue;
+    if (cfg?.isLista) {
+      (e.lista || []).forEach(item => {
+        if (item.status === 'done' || item.status === 'pulada') return;
+        Object.values(item.subEtapas || {}).forEach(s => avaliar(s.status, s.dataLimite || (s.status === 'active' ? item.dataPrevista : null)));
+      });
+    } else {
+      Object.values(e.subEtapas || {}).forEach(s => { if (!s.isCocLista) avaliar(s.status, s.dataLimite); });
+      (e.cocLista || []).forEach(ci => avaliar(ci.status, ci.dataPrevista));
+    }
+  }
+  if (temAtraso) return '#ef4444';   // vermelho
+  // Amarelo: sub-etapa vencendo em ≤7d OU prazo estimado em ≤7d
+  const prazoVencendo = obra.prazoEstimado && obra.prazoEstimado >= hoje && obra.prazoEstimado <= d7s;
+  if (temVencendo || prazoVencendo) return '#f59e0b';
+  return '#3b82f6';                  // azul padrão
+}
+
 // ── Renderizar cards ──────────────────────────────────────────────────────────
 function renderObras() {
   const el = document.getElementById('obras-grid');
@@ -588,43 +625,24 @@ function renderObras() {
       : getPrazoInfo(obra.prazoEstimado);
     const hoje2 = new Date().toISOString().slice(0, 10);
 
-    // Stripe: semáforo — vermelho > amarelo > azul > verde
-    let corBorda = '#3b82f6'; // azul padrão
-    if (obra.concluida) {
-      corBorda = '#22c55e'; // verde
-    } else {
-      const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
-      const daqui7Str = daqui7.toISOString().slice(0, 10);
-      // Vermelho: alguma sub-etapa atrasada
-      const temAtrasada = hasSubEtapaAtrasada(obra);
-      if (temAtrasada) {
-        corBorda = '#ef4444';
-      } else {
-        // Amarelo: sub-etapa vencendo em ≤7 dias OU prazo geral vencendo em ≤7 dias
-        const temVencendo = ETAPAS_ORDER.some(etapaId => {
-          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId];
-          if (!e?.ativa || e.status === 'done') return false;
-          if (cfg.isLista) return (e.lista || []).some(item =>
-            item.status !== 'done' && Object.values(item.subEtapas || {}).some(s =>
-              s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str));
-          return Object.values(e.subEtapas || {}).some(s =>
-            s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7Str);
-        });
-        const prazoVencendo = obra.prazoEstimado && obra.prazoEstimado >= hoje2 && obra.prazoEstimado <= daqui7Str;
-        if (temVencendo || prazoVencendo) corBorda = '#f59e0b';
-      }
-    }
+    // Stripe: semáforo — fonte única (getCorStripe)
+    const corBorda = getCorStripe(obra);
 
     // Linhas de status por etapa
     const etapaLinhas = ETAPAS_ORDER.map(id => {
       const cfg2 = ETAPAS_CONFIG[id];
       const eData = obra.etapas?.[id];
-      if (!eData?.ativa) return `
+      if (!eData?.ativa || eData?.status === 'pulada') {
+        const _pulada = eData?.status === 'pulada';
+        return `
         <div class="card-etapa-row inativa">
-          <span class="card-etapa-dot" style="background:var(--surface3);border-color:var(--border2);">·</span>
-          <span class="card-etapa-nome">${cfg2.short}</span>
-          <span class="card-etapa-info">—</span>
+          <span class="card-etapa-dot" style="background:var(--surface3);border-color:var(--border2);color:var(--muted);">${_pulada ? '⊘' : '·'}</span>
+          <span class="card-etapa-nome" style="${_pulada ? 'opacity:0.6;text-decoration:line-through;' : ''}">${cfg2.short}</span>
+          ${_pulada
+            ? `<span style="font-size:0.65rem;color:var(--muted);opacity:0.7;display:inline-flex;align-items:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px;opacity:0.7;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Pulada</span>`
+            : '<span class="card-etapa-info">—</span>'}
         </div>`;
+      }
       const eStatus = eData.status || 'pending';
       let dot = '', dotStyle = '', info = '';
       // Lista (aditivos/medicao)
@@ -633,8 +651,8 @@ function renderObras() {
         const total = lista.length;
         const done = lista.filter(i => i.status === 'done').length;
         if (!eData.ativa || eStatus === 'pulada') {
-          dot = '⏭'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
-          info = '<span style="font-size:0.65rem;color:var(--muted);">Pulada</span>';
+          dot = '⊘'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+          info = '<span style="font-size:0.65rem;color:var(--muted);opacity:0.7;display:inline-flex;align-items:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:2px;opacity:0.7;"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>Pulada</span>';
         } else if (obra.concluida || (total > 0 && done === total)) {
           dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
           info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídos</span>`;
@@ -1526,8 +1544,8 @@ async function _atribuirCocItem(obraId, etapaId, idx) {
   _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
   const allUsers = typeof users !== 'undefined' ? users : [];
-  const lista = allUsers.filter(u => (u.acessos || []).includes('comercial') || (u.acessos || []).includes('adminComercial') || u.isSuperAdmin);
-  const usrList = lista.length ? lista : allUsers;
+  const lista = allUsers.filter(u => u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('atribuivelComercial'));
+  const usrList = lista;
   const sel = document.getElementById('atrib-usuario-sel');
   if (sel) { sel.innerHTML = usrList.map(u => `<option value="${u.username}"${u.username === item?.responsavel ? ' selected' : ''}>${u.username}</option>`).join(''); }
   const titleEl = document.getElementById('atrib-modal-title');
@@ -2526,6 +2544,7 @@ function exportarObraPDF(obraId) {
           else if (s.status === 'active') { st2 = '► Em andamento'; corSt2 = cfg.cor; }
           else { st2 = '○ Pendente'; corSt2 = '#9ca3af'; }
           const tipo2 = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
+          const dtInicio2 = s.dataInicio ? new Date(s.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtConcl2 = s.dataConclusao ? new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtPrev2 = s.dataLimite ? new Date(s.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dias2 = (() => {
@@ -2538,28 +2557,29 @@ function exportarObraPDF(obraId) {
             }
             return '—';
           })();
-          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtConcl2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtPrev2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2 ? '#ef4444' : '#6b7280'}">${dias2}</td></tr>`;
+          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtInicio2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtConcl2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtPrev2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2 ? '#ef4444' : '#6b7280'}">${dias2}</td></tr>`;
         }).join('');
-        return `<tr style="background:#f0f9ff;"><td colspan="6" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev ? ` — ${dtPrev}` : ''}${dtConc ? ` — ${dtConc}` : ''}</td></tr>${subsItem}`;
+        return `<tr style="background:#f0f9ff;"><td colspan="7" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev ? ` — ${dtPrev}` : ''}${dtConc ? ` — ${dtConc}` : ''}</td></tr>${subsItem}`;
       }).join('');
-      return `<tr style="background:#f9fafb;"><td colspan="6" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
+      return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
     }
     const subsHtml = cfg.subEtapas.map(sub => {
       // COC: renderizar cada item da cocLista
       if (sub.isCocLista) {
         const cocLst = e.cocLista || [];
         if (!cocLst.length) {
-          return `<tr><td style="padding:4px 8px 4px 20px;color:#9ca3af;font-weight:600;">○ Pendente</td><td style="padding:4px 8px;">COC</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
+          return `<tr><td style="padding:4px 8px 4px 20px;color:#9ca3af;font-weight:600;">○ Pendente</td><td style="padding:4px 8px;">COC</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">—</td></tr>`;
         }
         return cocLst.map((cItem, ci) => {
           const isDone = cItem.status === 'done';
           const stCoc = isDone ? '✓ Concluída' : '► Em andamento';
           const corCoc = isDone ? '#22c55e' : '#f97316';
+          const dtCocInicio = cItem.dataInicio ? new Date(cItem.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtCoc = cItem.dataConclusao ? new Date(cItem.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtCocPrev = cItem.dataPrevista ? new Date(cItem.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtCocAtraso = (cItem.status === 'done' && cItem.dataConclusao && cItem.dataPrevista && cItem.dataConclusao > cItem.dataPrevista) ? `${Math.ceil((new Date(cItem.dataConclusao + 'T12:00:00') - new Date(cItem.dataPrevista + 'T12:00:00')) / (1000 * 60 * 60 * 24))} dias` : '—';
           const bg = ci % 2 === 0 ? '#fff9f0' : '#fff';
-          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome || 'COC ' + (ci + 1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocPrev}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocAtraso}</td></tr>`;
+          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome || 'COC ' + (ci + 1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocInicio}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocPrev}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocAtraso}</td></tr>`;
         }).join('');
       }
       const s = e.subEtapas?.[sub.id]; if (!s) return '';
@@ -2571,6 +2591,7 @@ function exportarObraPDF(obraId) {
       else { st = '○ Pendente'; corSt = '#9ca3af'; }
       const tipo = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
       const por = s.concluidoPor ? ` — por ${s.concluidoPor}` : '';
+      const dtInicio = s.dataInicio ? new Date(s.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
       const dtConcl = s.dataConclusao
         ? `${new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}${por}`
         : '—';
@@ -2590,12 +2611,13 @@ function exportarObraPDF(obraId) {
         <td style="padding:4px 8px 4px 20px;color:${corSt};font-weight:600;white-space:nowrap;">${st}</td>
         <td style="padding:4px 8px;">${sub.nome}${tipo}</td>
         <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td>
+        <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtInicio}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtConcl}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtPrev}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada ? '#ef4444' : '#6b7280'};font-weight:${atrasada ? '700' : '400'};">${diasAt}</td>
       </tr>`;
     }).join('');
-    return `<tr style="background:#f9fafb;"><td colspan="6" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
+    return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
   }).join('');
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obra #${obra.numero} — ${obra.nome}</title>
     <style>body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
@@ -2609,7 +2631,7 @@ function exportarObraPDF(obraId) {
     <body>
     <div class="header"><h1>Obra #${obra.numero} — ${obra.nome}</h1>
     <div class="meta"><span>👤 ${obra.representante || '—'}</span><span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>${obra.prazoEstimado ? `<span>⏱ Prazo estimado: ${new Date(obra.prazoEstimado + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : ''}</div></div>
-    <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Responsável</th><th>Data Conclusão</th><th>Data Prevista</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
+    <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Responsável</th><th>Data de Início</th><th>Data Conclusão</th><th>Data Prevista</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
     <div class="footer">Premovale T.I — Gerado em ${hoje}</div>
     <script>window.onload=()=>{window.print();}<\/script></body></html>`;
   const w = window.open('', '_blank'); w.document.write(html); w.document.close();
@@ -2696,6 +2718,7 @@ function _gerarDadosRelatorio() {
               etapa: `${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
               subEtapa: subCfg.nome,
               status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
+              dataInicio: sub.dataInicio ? new Date(sub.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
               dataConclusao: sub.dataConclusao ? new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
               dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
               diasAtraso: diasAtrasoStr,
@@ -2736,6 +2759,7 @@ function _gerarDadosRelatorio() {
           etapa: NOMES_ETAPA[etapaId],
           subEtapa: subCfg.nome,
           status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
+          dataInicio: sub.dataInicio ? new Date(sub.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
           dataConclusao: sub.dataConclusao ? new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
           dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
           diasAtraso: diasAtrasoStr,
@@ -2751,11 +2775,11 @@ function exportarRelatorioXLS() {
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
   try {
     const hoje = new Date().toLocaleDateString('pt-BR');
-    const headers = ['Nº', 'Obra', 'Representante', 'Responsável', 'Etapa', 'Sub-etapa', 'Status', 'Data Conclusão', 'Data Prevista', 'Dias em atraso'];
+    const headers = ['Nº', 'Obra', 'Representante', 'Responsável', 'Etapa', 'Sub-etapa', 'Status', 'Data de Início', 'Data Conclusão', 'Data Prevista', 'Dias em atraso'];
     const escXml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const headerRow = headers.map(h => `<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
     const dataRows = linhas.map((l, rowIdx) => {
-      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataConclusao || '—', l.dataLimite, l.diasAtraso];
+      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataInicio || '—', l.dataConclusao || '—', l.dataLimite, l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
         const cellBg = l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
@@ -2800,6 +2824,7 @@ function exportarRelatorioPDF() {
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
       <td ${td}><span class="badge ${l.status === 'Em atraso' ? 'red' : l.status === 'Perto de vencer' ? 'amber' : l.status === 'Concluída' ? 'green' : 'blue'}">${l.status}</span></td>
+      <td ${td}>${l.dataInicio || '—'}</td>
       <td ${td}>${l.dataConclusao || '—'}</td>
       <td ${td}>${l.dataLimite}</td>
       <td ${tdRed}>${l.diasAtraso}</td>
@@ -2828,7 +2853,7 @@ function exportarRelatorioPDF() {
       <span>Gerado em ${hoje}</span>
     </div>
     <table>
-      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Responsável</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data Conclusão</th><th>Data Prevista</th><th>Atraso</th></tr></thead>
+      <thead><tr><th>Nº</th><th>Obra</th><th>Representante</th><th>Responsável</th><th>Etapa</th><th>Sub-etapa</th><th>Status</th><th>Data de Início</th><th>Data Conclusão</th><th>Data Prevista</th><th>Atraso</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div class="footer">Premovale T.I — ${linhas.length} item(s) • ${hoje}</div>
@@ -3013,8 +3038,8 @@ function openAtribuirModal(obraId, etapaId, subId, modo, itemId) {
   const je = document.getElementById('atrib-justificativa'); if (je) je.value = '';
   const sel = document.getElementById('atrib-usuario-sel');
   const allUsers = typeof users !== 'undefined' ? users : [];
-  const usrs = allUsers.filter(u => u.isSuperAdmin || (u.acessos || []).includes('adminComercial') || (u.acessos || []).includes('comercial') || u.role === 'admin' || u.role === 'superAdmin');
-  const lista = usrs.length > 0 ? usrs : allUsers;
+  const usrs = allUsers.filter(u => u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('atribuivelComercial'));
+  const lista = usrs;
   sel.innerHTML = `<option value="">Selecione o responsável...</option>` + lista.map(u => `<option value="${u.username}">${u.username}${u.username === currentUser?.username ? ' (você)' : ''}</option>`).join('');
   const obra = _obras.find(o => o.id === obraId);
   const ref = obra ? _findSubRef(obra.etapas || {}, etapaId, subId, _atribItemId) : null;
