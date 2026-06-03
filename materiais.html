@@ -204,17 +204,20 @@
           </span>
         </div>
 
-        <!-- ── MÓDULO PAI: Orçamento (Em breve) ── -->
-        <div class="mod-pai-wrap">
-          <span class="chamados-sidebar-item mod-pai-btn mod-pai-soon" title="Orçamento — Em breve">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" x2="12" y1="2" y2="22" />
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg></span>
-            <span class="chamados-sidebar-name">Orçamento</span>
-            <span class="chamados-sidebar-soon">Em breve</span>
-          </span>
+        <!-- ── MÓDULO PAI: Comercial ── -->
+        <div class="mod-pai-wrap" id="mod-pai-comercial">
+          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-comercial-btn"
+            onclick="toggleModPai('comercial')" title="Comercial" style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+            <span class="chamados-sidebar-name">Comercial</span>
+            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+          </button>
+          <div class="mod-pai-submenu" id="mod-pai-comercial-submenu">
+            <a class="mod-sub-item" href="comercial.html" id="sub-comercial">
+              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
+              <span>Controle de Obras</span>
+            </a>
+          </div>
         </div>
 
         <div class="chamados-sidebar-divider"></div>

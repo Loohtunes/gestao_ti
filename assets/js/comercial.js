@@ -859,10 +859,17 @@ function _renderPaginacao(total, totalPags, inicio) {
 }
 
 // ── Modal nova obra ───────────────────────────────────────────────────────────
+function podeEditarComercial() {
+  return !!(currentUser && (currentUser.isSuperAdmin || currentUser.role === 'superAdmin'
+    || (currentUser.acessos || []).includes('adminComercial')
+    || (currentUser.acessos || []).includes('atribuivelComercial')));
+}
+
 function openNovaObraModal() { document.getElementById('nova-obra-modal').style.display = 'flex'; document.body.style.overflow = 'hidden'; }
 function closeNovaObraModal() { document.getElementById('nova-obra-modal').style.display = 'none'; document.body.style.overflow = ''; document.getElementById('nova-obra-form').reset(); }
 
 async function saveNovaObra() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const numero = document.getElementById('nova-obra-numero')?.value.trim();
   const nome = document.getElementById('nova-obra-nome')?.value.trim();
   const rep = document.getElementById('nova-obra-rep')?.value;
@@ -933,12 +940,8 @@ function renderObraModal(obra) {
   document.getElementById('obra-modal-numero').textContent = `#${obra.numero || obra.id.slice(-6).toUpperCase()}`;
   document.getElementById('obra-modal-nome').textContent = obra.nome;
   const prazoInfo = getPrazoInfo(obra.prazoEstimado);
-  const canAdmin = currentUser?.isSuperAdmin ||
-    (currentUser?.acessos || []).includes('adminComercial') ||
-    (currentUser?.acessos || []).includes('comercial');
-  const canEditar = currentUser?.isSuperAdmin ||
-    (currentUser?.acessos || []).includes('adminComercial') ||
-    (currentUser?.acessos || []).includes('comercial');
+  const canAdmin = podeEditarComercial();
+  const canEditar = podeEditarComercial();
   document.getElementById('obra-modal-meta').innerHTML = `
     <span>👤 ${obra.representante || '—'}</span>
     <span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
@@ -1167,6 +1170,7 @@ function _renderObraFooter(obra, canAdmin) {
 let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null, _conclCocIdx = null;
 
 function concluirSubEtapaComData(obraId, etapaId, subId, itemId, cocIdx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   _conclObraId = obraId; _conclEtapaId = etapaId; _conclSubId = subId; _conclItemId = itemId || null; _conclCocIdx = (cocIdx !== undefined && cocIdx !== null) ? cocIdx : null;
   const cfg = ETAPAS_CONFIG[etapaId];
   const subCfg = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
@@ -1184,6 +1188,7 @@ function concluirSubEtapaComData(obraId, etapaId, subId, itemId, cocIdx) {
 }
 function closeConclModal() { document.getElementById('concl-modal').style.display = 'none'; _conclObraId = _conclEtapaId = _conclSubId = _conclItemId = _conclCocIdx = null; }
 async function saveConclData() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const data = document.getElementById('concl-data-input')?.value;
   if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
   const obraId = _conclObraId, etapaId = _conclEtapaId, subId = _conclSubId, itemId = _conclItemId, cocIdx = _conclCocIdx;
@@ -1201,6 +1206,7 @@ async function saveConclData() {
 let _arObraId = null, _arEtapaId = null, _arSubId = null;
 
 function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (tipo === 'aprovado') {
     concluirSubEtapaComData(obraId, etapaId, subId);
   } else {
@@ -1217,6 +1223,7 @@ function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
 function closeRecusaModal() { document.getElementById('recusa-modal').style.display = 'none'; _arObraId = _arEtapaId = _arSubId = null; }
 // ── Aprovado/Recusado em item de lista (aditivos/medicao) ─────────────────────
 async function processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, tipo) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (tipo === 'aprovado') {
     await _concluirSubDeLista(obraId, etapaId, itemId, subId, 'Aprovado');
   } else {
@@ -1237,6 +1244,7 @@ async function processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, tip
 }
 
 async function saveRecusaLista() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const just = document.getElementById('recusa-justificativa')?.value.trim();
   if (!just) { showComercialToast('Justificativa obrigatória.', 'error'); return; }
   const obraId = _arObraId, etapaId = _arEtapaId, itemId = window._arListaItemId;
@@ -1280,6 +1288,7 @@ function closeEncerrarAditivoModal() {
   _encerrarObraId = _encerrarEtapaId = _encerrarItemId = null;
 }
 async function confirmarEncerrarAditivo() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obraId = _encerrarObraId, etapaId = _encerrarEtapaId, itemId = _encerrarItemId;
   closeEncerrarAditivoModal();
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
@@ -1320,10 +1329,12 @@ async function confirmarEncerrarAditivo() {
 }
 
 async function encerrarItemLista(obraId, etapaId, itemId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   openEncerrarAditivoModal(obraId, etapaId, itemId);
 }
 
 async function saveRecusa() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (window._arListaItemId) { await saveRecusaLista(); return; }
   const just = document.getElementById('recusa-justificativa')?.value.trim();
   if (!just) { showComercialToast('Justificativa obrigatória.', 'error'); return; }
@@ -1451,6 +1462,7 @@ function _closeAddCocModal() {
   document.getElementById('add-coc-modal').style.display = 'none';
 }
 async function _saveAddCoc() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obraId = document.getElementById('add-coc-obra-id').value;
   const etapaId = document.getElementById('add-coc-etapa-id').value;
   const nome = document.getElementById('add-coc-nome').value.trim();
@@ -1468,6 +1480,7 @@ async function _saveAddCoc() {
   _closeAddCocModal();
 }
 async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
@@ -1503,6 +1516,7 @@ async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
   showComercialToast('COC concluída! ✅', 'success');
 }
 async function _deleteCocItem(obraId, etapaId, idx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (!confirm('Excluir esta COC? Esta ação não pode ser desfeita.')) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -1526,6 +1540,7 @@ async function _iniciarCocItem(obraId, etapaId, idx) {
 let _cocActionObraId = null, _cocActionEtapaId = null, _cocActionIdx = null;
 
 async function _prorrogarCocItem(obraId, etapaId, idx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
   const titleEl = document.getElementById('prorrogar-modal-title');
@@ -1541,6 +1556,7 @@ async function _prorrogarCocItem(obraId, etapaId, idx) {
 }
 
 async function _atribuirCocItem(obraId, etapaId, idx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
   const allUsers = typeof users !== 'undefined' ? users : [];
@@ -1560,6 +1576,7 @@ async function _obsCocItem(obraId, etapaId, idx) {
 }
 
 async function _dataPrevistaCocItem(obraId, etapaId, idx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
   const titleEl = document.getElementById('dp-modal-title');
@@ -1599,6 +1616,7 @@ function closeAddItemModal() {
   _addItemObraId = _addItemEtapaId = null;
 }
 async function saveAddItem() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const titulo = document.getElementById('add-item-nome')?.value.trim();
   if (!titulo) { showComercialToast('Informe o título.', 'error'); return; }
   const dataPrevista = document.getElementById('add-item-data')?.value || null;
@@ -1616,6 +1634,7 @@ async function saveAddItem() {
 }
 
 async function adicionarItemLista(obraId, etapaId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   openAddItemModal(obraId, etapaId);
 }
 
@@ -1632,6 +1651,7 @@ function closeExcluirItemModal() {
   _excluirObraId = _excluirEtapaId = _excluirItemId = null;
 }
 async function confirmarExcluir() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === _excluirObraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   etapas[_excluirEtapaId].lista = (etapas[_excluirEtapaId].lista || []).filter(i => i.id !== _excluirItemId);
@@ -1649,6 +1669,7 @@ async function confirmarExcluir() {
 }
 
 async function concluirItemLista(obraId, etapaId, itemId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = new Date().toISOString().slice(0, 10);
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -2039,6 +2060,7 @@ function _initAcaoDelegate() {
 
 // ── Concluir sub-etapa de dentro de uma lista (aditivo/medicao) ───────────
 async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const cfg = ETAPAS_CONFIG[etapaId];
   const precisaTipo = subId === 'termo_assinatura';
   if (precisaTipo) {
@@ -2051,6 +2073,7 @@ async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
 }
 let _tipoConclItemId = null;
 async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = dataCustom || new Date().toISOString().slice(0, 10);
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -2089,6 +2112,7 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
 
 // ── Concluir sub-etapa ────────────────────────────────────────────────────────
 async function concluirSubEtapa(obraId, etapaId, subId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   // Sub-etapas com escolha de tipo (Aditivos/Contrato assinatura)
   const precisaTipo = (etapaId === 'aditivos' && subId === 'termo_assinatura') ||
     (etapaId === 'contrato' && subId === 'assinatura');
@@ -2097,6 +2121,7 @@ async function concluirSubEtapa(obraId, etapaId, subId) {
 }
 
 async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = dataCustom || new Date().toISOString().slice(0, 10);
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -2150,6 +2175,7 @@ async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
 
 // ── Iniciar etapa manualmente ─────────────────────────────────────────────────
 async function iniciarEtapa(obraId, etapaId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const cfg = ETAPAS_CONFIG[etapaId];
@@ -2191,6 +2217,7 @@ async function iniciarEtapa(obraId, etapaId) {
 
 // ── Pular etapa ───────────────────────────────────────────────────────────────
 async function pularEtapa(obraId, etapaId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (!confirm(`Pular a etapa "${ETAPAS_CONFIG[etapaId].nome}"? Ela ficará desabilitada e poderá ser reiniciada depois.`)) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = new Date().toISOString().slice(0, 10);
@@ -2221,6 +2248,7 @@ function openTipoConclusaoModal(obraId, etapaId, subId) {
 }
 
 async function salvarTipoConclusao(tipo) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   document.getElementById('tipo-conclusao-modal').style.display = 'none';
   if (_tipoConclItemId) {
     await _concluirSubDeLista(_tipoConclObraId, _tipoConclEtapaId, _tipoConclItemId, _tipoConclSubId, tipo);
@@ -2268,6 +2296,7 @@ function closeProrrogarModal() {
 }
 
 async function saveProrrogacao() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const novaData = document.getElementById('prorrogar-data-input')?.value;
   if (!novaData) { showComercialToast('Selecione uma data válida.', 'error'); return; }
   // Modo COC: salvar diretamente na cocLista
@@ -2334,6 +2363,7 @@ function closeMotivoAtrasoModal() {
   _motivoObraId = _motivoEtapaId = _motivoSubId = null;
 }
 async function saveMotivoAtraso() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const motivo = document.getElementById('motivo-input')?.value.trim();
   if (!motivo) { showComercialToast('Informe o motivo.', 'error'); return; }
   const obra = _obras.find(o => o.id === _motivoObraId); if (!obra) return;
@@ -2372,6 +2402,7 @@ function closeRevisaoModal() {
 }
 
 async function saveRevisao() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const motivo = document.getElementById('revisao-motivo-input')?.value.trim();
   if (!motivo) { showComercialToast('Informe o motivo da revisão.', 'error'); return; }
   const obra = _obras.find(o => o.id === _revisaoObraId); if (!obra) return;
@@ -2434,6 +2465,7 @@ function closeEditarObraModal() {
   _editandoObraId = null;
 }
 async function saveEditarObra() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (!_editandoObraId) return;
   const nome = document.getElementById('editar-obra-nome')?.value.trim();
   if (!nome) { showComercialToast('Informe o nome da obra.', 'error'); return; }
@@ -2453,6 +2485,7 @@ async function saveEditarObra() {
 
 // ── Excluir / Reabrir ─────────────────────────────────────────────────────────
 async function excluirObra(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId);
   if (!confirm(`Excluir "${obra?.nome}"? Não pode ser desfeita.`)) return;
   await db.collection('obras').doc(obraId).delete();
@@ -2461,6 +2494,7 @@ async function excluirObra(obraId) {
 }
 
 async function reabrirObra(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (!confirm('Reabrir esta obra? Etapas subsequentes voltam para pendente.')) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -2895,6 +2929,7 @@ function closeObsModal() {
   _obsObraId = _obsEtapaId = _obsSubId = _obsItemId = _obsCocIdx = null;
 }
 async function saveObs() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const texto = document.getElementById('obs-input')?.value.trim();
   if (!texto) { showComercialToast('Informe a observação.', 'error'); return; }
   const obra = _obras.find(o => o.id === _obsObraId); if (!obra) return;
@@ -3048,6 +3083,7 @@ function openAtribuirModal(obraId, etapaId, subId, modo, itemId) {
 }
 function closeAtribuirModal() { document.getElementById('atrib-modal').style.display = 'none'; _atribObraId = _atribEtapaId = _atribSubId = _atribModo = null; }
 async function saveAtribuicao() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const usuario = document.getElementById('atrib-usuario-sel')?.value;
   if (!usuario) { showComercialToast('Selecione um responsável.', 'error'); return; }
   // Modo COC: salvar diretamente na cocLista
@@ -3323,6 +3359,16 @@ async function _initComercialPage() {
     user.acessos = nov; user.canVerTodasPendencias = true;
   }
   currentUser = user;
+  // Modo telespectador: sem permissão de edição -> esconde controles de ação
+  if (!podeEditarComercial()) {
+    document.body.classList.add('comercial-readonly');
+    if (!document.getElementById('comercial-readonly-style')) {
+      const _st = document.createElement('style');
+      _st.id = 'comercial-readonly-style';
+      _st.textContent = '.comercial-readonly .sub-action-btn,.comercial-readonly [onclick^="openNovaObraModal"]{display:none !important;}';
+      document.head.appendChild(_st);
+    }
+  }
   if (typeof initDarkMode === 'function') initDarkMode();
   if (typeof initSessionTimer === 'function') initSessionTimer(user.role);
   const collapsed = localStorage.getItem('chamados-sidebar-collapsed') === '1';
@@ -3376,6 +3422,7 @@ function closeDataPrevistaModal() {
 }
 
 async function saveDataPrevista() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const data = document.getElementById('dp-data-input')?.value;
   if (!data) { showComercialToast('Selecione uma data.', 'error'); return; }
   // Modo COC
