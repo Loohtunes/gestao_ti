@@ -30,27 +30,8 @@ function initInventario() {
   if (name) name.textContent = capitalizeName(currentUser?.username || '—');
   if (role) role.innerHTML = getSectorBadge(currentUser);
 
-  // Sidebar: módulos visíveis por acesso
-  const acessos = currentUser?.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario', 'rotinas']
-    : (currentUser?.acessos || []);
-
-  ['materiais', 'inventario', 'rotinas'].forEach(mod => {
-    const el = document.getElementById(`cs-mod-${mod}`);
-    const elSub = document.getElementById(`sub-${mod}`);
-    const show = (currentUser?.isSuperAdmin || acessos.includes(mod)) ? 'flex' : 'none';
-    if (el) el.style.display = show;
-    if (elSub) elSub.style.display = show;
-  });
-
-
-  // Módulo Comercial — visibilidade na sidebar
-  const canComercial = currentUser?.isSuperAdmin || currentUser?.isAdminComercial || currentUser?.isComercial ||
-    (currentUser?.acessos || []).includes('comercial') || (currentUser?.acessos || []).includes('adminComercial');
-  const modComercialBtn = document.getElementById('mod-pai-comercial-btn');
-  if (modComercialBtn) modComercialBtn.style.display = canComercial ? 'flex' : 'none';
-
-  if (typeof initModPai === 'function') initModPai('inventario');
+  // Navegação por módulo pai: tratada pelo bootstrap compartilhado initNavPai() (ui.js),
+  // via data-modulo/data-pagina no <body>.
 
   // Verificar parâmetros da URL (ex: ?tab=insumos&id=XXX)
   const urlParams = new URLSearchParams(window.location.search);

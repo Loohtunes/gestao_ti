@@ -251,3 +251,51 @@ body.dark-mode #theme-switch-thumb {
 body.dark-mode .ramais-dropdown {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
+
+/* ===== Abas de submódulo dentro da navbar (navegação por módulo pai) ===== */
+.nav-submod {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+  margin-left: 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.nav-submod::-webkit-scrollbar {
+  display: none;
+}
+
+.submod-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.submod-tab svg {
+  flex-shrink: 0;
+}
+
+.submod-tab:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.submod-tab.ativo {
+  color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+
+.submod-tab.ativo svg {
+  color: var(--accent);
+}

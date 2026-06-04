@@ -15,11 +15,7 @@ body {
   flex-direction: column;
 }
 
-.config-wrapper {
-  display: flex;
-  flex: 1;
-  min-height: calc(100vh - 48px);
-}
+/* .config-wrapper movido para layout.css (compartilhado) */
 
 /* ── Sidebar igual ao menu ── */
 .menu-sidebar {
@@ -208,13 +204,7 @@ body.dark-mode .sidebar-logout:hover {
 }
 
 /* ── Área principal ── */
-.config-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+/* .config-main movido para layout.css (compartilhado) */
 
 /* Header */
 .config-header {

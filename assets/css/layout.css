@@ -660,11 +660,13 @@ body.dark-mode .chamados-sidebar-logout:hover {
   background: #2a0808;
   color: var(--accent);
 }
+
 /* ══ MÓDULOS PAI — estilos globais (todas as páginas) ══ */
 .mod-pai-wrap {
   position: relative;
   width: 100%;
 }
+
 .mod-pai-btn {
   width: 100%;
   justify-content: flex-start;
@@ -672,11 +674,13 @@ body.dark-mode .chamados-sidebar-logout:hover {
   cursor: pointer;
   text-decoration: none;
 }
+
 .mod-pai-soon {
   opacity: 0.55;
   cursor: not-allowed;
   pointer-events: none;
 }
+
 .mod-pai-chevron {
   margin-left: auto;
   flex-shrink: 0;
@@ -685,7 +689,10 @@ body.dark-mode .chamados-sidebar-logout:hover {
   align-items: center;
   transition: transform 0.2s;
 }
-.mod-pai-btn.open .mod-pai-chevron { transform: rotate(90deg); }
+
+.mod-pai-btn.open .mod-pai-chevron {
+  transform: rotate(90deg);
+}
 
 .mod-pai-submenu {
   display: none;
@@ -701,14 +708,20 @@ body.dark-mode .chamados-sidebar-logout:hover {
   width: calc(100% - 12px);
   box-sizing: border-box;
 }
-.mod-pai-submenu.open { display: flex; }
+
+.mod-pai-submenu.open {
+  display: flex;
+}
 
 .chamados-sidebar-items .mod-pai-submenu,
 .chamados-sidebar-items .mod-pai-submenu.open {
   align-items: flex-start !important;
 }
 
-.chamados-sidebar.collapsed .mod-pai-submenu { display: none !important; }
+.chamados-sidebar.collapsed .mod-pai-submenu {
+  display: none !important;
+}
+
 .chamados-sidebar.collapsed .mod-pai-submenu.open-float {
   display: flex !important;
   position: fixed;
@@ -717,7 +730,7 @@ body.dark-mode .chamados-sidebar-logout:hover {
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 6px;
   gap: 2px;
   z-index: 300;
@@ -727,7 +740,10 @@ body.dark-mode .chamados-sidebar-logout:hover {
   border-left: none;
   align-items: flex-start;
 }
-.chamados-sidebar.collapsed .mod-pai-chevron { display: none; }
+
+.chamados-sidebar.collapsed .mod-pai-chevron {
+  display: none;
+}
 
 .mod-sub-item {
   display: flex;
@@ -756,7 +772,40 @@ body.dark-mode .chamados-sidebar-logout:hover {
   align-self: stretch !important;
   justify-content: flex-start !important;
 }
-.mod-sub-item:hover { background: var(--surface2); color: var(--text); }
-.mod-sub-item.active { background: #fef2f2; color: var(--accent); }
-body.dark-mode .mod-sub-item.active { background: #7f1d1d20; }
-.mod-sub-icon { display: flex; align-items: center; flex-shrink: 0; color: currentColor; }
+
+.mod-sub-item:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.mod-sub-item.active {
+  background: #fef2f2;
+  color: var(--accent);
+}
+
+body.dark-mode .mod-sub-item.active {
+  background: #7f1d1d20;
+}
+
+.mod-sub-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+/* ===== Contêiner de layout (movido de configuracoes.css — compartilhado) ===== */
+/* Usado por configuracoes, inventario e dashboard: sidebar + conteúdo lado a lado. */
+.config-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 48px);
+}
+
+.config-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

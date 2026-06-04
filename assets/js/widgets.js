@@ -211,10 +211,7 @@ const WIDGETS_DISPONIVEIS = {
 
 // ── Layouts padrão por escopo (usados enquanto o usuário não personalizou) ───────
 const WIDGETS_LAYOUT_PADRAO = {
-  geral: [
-    { tipo: 'metrica-chamados' },
-    { tipo: 'acesso-rapido' },
-  ],
+  geral: [],
   ti: [
     { tipo: 'metrica-chamados' },
     { tipo: 'alerta-estoque' },
@@ -274,7 +271,7 @@ async function renderWidgets(escopo, container, user) {
     .sort((a, b) => (a.ordem ?? a._i) - (b.ordem ?? b._i));
 
   if (!visiveis.length) {
-    container.innerHTML = '<div class="wgt-vazio-geral">Nenhum widget disponível neste módulo.</div>';
+    container.innerHTML = '';
     return;
   }
 

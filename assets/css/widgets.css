@@ -29,9 +29,15 @@
   font-weight: 700;
   color: var(--text);
 }
-.wgt-head svg { color: var(--accent); flex-shrink: 0; }
 
-.wgt-body { min-width: 0; }
+.wgt-head svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wgt-body {
+  min-width: 0;
+}
 
 .wgt-loading,
 .wgt-empty,
@@ -40,10 +46,19 @@
   color: var(--muted);
   padding: 0.3rem 0;
 }
-.wgt-vazio-geral { padding: 1rem 0; text-align: center; }
+
+.wgt-vazio-geral {
+  padding: 1rem 0;
+  text-align: center;
+}
 
 /* ── Métrica ── */
-.wgt-metric { display: flex; flex-direction: column; gap: 0.1rem; }
+.wgt-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
 .wgt-metric-value {
   font-size: 2.1rem;
   font-weight: 800;
@@ -51,7 +66,11 @@
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-.wgt-metric-sub { font-size: 0.75rem; color: var(--muted); }
+
+.wgt-metric-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
 
 /* ── Atalhos (Acesso Rápido) ── */
 .wgt-atalhos {
@@ -59,6 +78,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
 }
+
 .wgt-atalho {
   display: flex;
   align-items: center;
@@ -72,12 +92,29 @@
   transition: background 0.15s ease, border-color 0.15s ease;
   min-width: 0;
 }
-.wgt-atalho span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.wgt-atalho svg { color: var(--accent); flex-shrink: 0; }
-.wgt-atalho:hover { background: var(--surface2); border-color: var(--accent); }
+
+.wgt-atalho span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wgt-atalho svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wgt-atalho:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+}
 
 /* ── Lista de alertas (reutiliza .alerta-estoque-* de menu.css) ── */
-.wgt-lista { display: flex; flex-direction: column; gap: 0.35rem; }
+.wgt-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
 
 .wgt-vermais {
   display: inline-flex;
@@ -89,13 +126,18 @@
   color: var(--accent);
   text-decoration: none;
 }
-.wgt-vermais:hover { text-decoration: underline; }
+
+.wgt-vermais:hover {
+  text-decoration: underline;
+}
 
 /* ===== PAINEL DO MÓDULO (conteúdo do dashboard) ===== */
 /* O chrome (navbar + sidebar) é o do próprio sistema (nav.css/layout.css);
    aqui ficam só o cabeçalho do painel e a barra de submódulos. */
 
-.dash-body { padding: 1.6rem 2rem; }
+.dash-body {
+  padding: 1.6rem 2rem;
+}
 
 .dash-head-title {
   font-size: 1.15rem;
@@ -105,44 +147,58 @@
   align-items: center;
   gap: 0.5rem;
 }
-.dash-head-title svg { color: var(--accent); }
+
+.dash-head-title svg {
+  color: var(--accent);
+}
+
 .dash-head-sub {
   font-size: 0.74rem;
   color: var(--muted);
   font-family: 'Space Mono', monospace;
   letter-spacing: 0.02em;
   margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
 }
 
-.submod-tabs {
-  display: flex;
-  gap: 0.25rem;
-  flex-wrap: wrap;
-  margin: 1.1rem 0 1.5rem;
-  border-bottom: 1px solid var(--border2);
-  padding-bottom: 0.7rem;
-}
-.submod-tab {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-decoration: none;
-  padding: 0.45rem 0.85rem;
-  border-radius: 10px;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.submod-tab svg { flex-shrink: 0; }
-.submod-tab:hover { background: var(--surface2); color: var(--text); }
-.submod-tab.ativo {
-  color: var(--accent);
-  background: var(--surface2);
-  font-weight: 700;
-}
-.submod-tab.ativo svg { color: var(--accent); }
+/* A barra de submódulos (.submod-tabs) agora vive no nav.css (chrome compartilhado). */
 
 @media (max-width: 640px) {
-  .dash-body { padding: 1.1rem 1rem; }
-  .wgt-grid { grid-template-columns: 1fr; }
+  .dash-body {
+    padding: 1.1rem 1rem;
+  }
+
+  .wgt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Tela "Em construção" (painel do módulo) ===== */
+.dash-construcao {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1rem;
+  min-height: 60vh;
+}
+
+.dash-construcao svg {
+  margin-bottom: 1.25rem;
+}
+
+.dash-construcao-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.dash-construcao-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  margin-top: 0.5rem;
 }

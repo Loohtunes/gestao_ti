@@ -31,13 +31,17 @@
     .ativo-flip-wrap {
       perspective: 1200px;
     }
+
     .ativo-flip-inner {
       position: relative;
       width: 100%;
-      transition: transform 0.55s cubic-bezier(0.4,0.2,0.2,1);
+      transition: transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1);
       transform-style: preserve-3d;
     }
-    .ativo-flip-inner.flipped { transform: rotateY(180deg); }
+
+    .ativo-flip-inner.flipped {
+      transform: rotateY(180deg);
+    }
 
     .ativo-flip-front,
     .ativo-flip-back {
@@ -47,10 +51,12 @@
       background: var(--surface);
       border: 1px solid var(--border2);
     }
+
     /* Frente — visível por padrão */
     .ativo-flip-front {
       width: 100%;
     }
+
     /* Verso — sobreposto, invisível por padrão */
     .ativo-flip-back {
       position: absolute;
@@ -61,21 +67,33 @@
       scrollbar-width: thin;
       scrollbar-color: var(--border2) transparent;
     }
-    .ativo-flip-back::-webkit-scrollbar { width: 4px; }
-    .ativo-flip-back::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-    .ativo-flip-back::-webkit-scrollbar-track { background: transparent; }
+
+    .ativo-flip-back::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .ativo-flip-back::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px;
+    }
+
+    .ativo-flip-back::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
     /* Quando virado: frente some suavemente junto com a animação */
     .ativo-flip-inner.flipped .ativo-flip-front {
       opacity: 0;
       transition: opacity 0.1s ease 0.25s;
     }
+
     .ativo-flip-front {
       transition: opacity 0.1s ease;
     }
   </style>
 </head>
 
-<body>
+<body data-modulo="ti" data-pagina="inventario">
 
   <!-- ══ NAVBAR ══ -->
   <nav>
@@ -89,23 +107,24 @@
       </span>
     </div>
 
-    <!-- Timer de sessão -->
-    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
-      <div style="display:flex;align-items:center;gap:0.4rem;">
-        <span
-          style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
-        <span id="session-countdown"
-          style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
-      </div>
-      <div id="session-bar-track"
-        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
-        <div id="session-bar-fill"
-          style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
-        </div>
-      </div>
-    </div>
+    <div class="nav-submod" id="submod-tabs"></div>
 
     <div class="nav-right">
+      <!-- Timer de sessão -->
+      <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+        <div style="display:flex;align-items:center;gap:0.4rem;">
+          <span
+            style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+          <span id="session-countdown"
+            style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+        </div>
+        <div id="session-bar-track"
+          style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+          <div id="session-bar-fill"
+            style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+          </div>
+        </div>
+      </div>
       <!-- Ramais -->
       <div style="position:relative;display:inline-block;" id="ramais-wrapper">
         <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
@@ -162,73 +181,38 @@
       <div class="chamados-sidebar-items">
         <span class="chamados-sidebar-label">Módulos</span>
 
-        <!-- ── MÓDULO PAI: T.I ── -->
-        <div class="mod-pai-wrap" id="mod-pai-ti">
-          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-ti-btn"
-            onclick="toggleModPai('ti')" title="T.I">
-            <span class="chamados-sidebar-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="18" height="12" x="3" y="4" rx="2"/>
-                <path d="M8 20h8M12 16v4"/>
-              </svg>
-            </span>
-            <span class="chamados-sidebar-name">T.I</span>
-            <span class="mod-pai-chevron" id="mod-pai-ti-chevron">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
-            </span>
-          </button>
-          <div class="mod-pai-submenu" id="mod-pai-ti-submenu">
-            <a class="mod-sub-item" href="index.html" id="sub-chamados">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg></span>
-              <span>Chamados</span>
-            </a>
-            <a class="mod-sub-item" href="materiais.html" id="sub-materiais" style="display:none;">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/></svg></span>
-              <span>Materiais</span>
-            </a>
-            <a class="mod-sub-item" href="inventario.html" id="sub-inventario" style="display:none;">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg></span>
-              <span>Inventário</span>
-            </a>
-            <a class="mod-sub-item" href="rotinas.html" id="sub-rotinas" style="display:none;">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
-              <span>Rotinas</span>
-            </a>
-          </div>
-        </div>
+        <a class="chamados-sidebar-item" id="navpai-ti" href="dashboard.html?modulo=ti" title="T.I">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="12" x="3" y="4" rx="2" />
+              <path d="M8 20h8M12 16v4" />
+            </svg></span>
+          <span class="chamados-sidebar-name">T.I</span>
+        </a>
 
-        <!-- ── MÓDULO PAI: Engenharia (Em breve) ── -->
-        <div class="mod-pai-wrap">
-          <span class="chamados-sidebar-item mod-pai-btn mod-pai-soon" title="Engenharia — Em breve">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg></span>
-            <span class="chamados-sidebar-name">Engenharia</span>
-            <span class="chamados-sidebar-soon">Em breve</span>
-          </span>
-        </div>
+        <span class="chamados-sidebar-item mod-pai-soon" title="Engenharia — Em breve">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M17 18h1M12 18h1M7 18h1" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Engenharia</span>
+          <span class="chamados-sidebar-soon">Em breve</span>
+        </span>
 
-        <!-- ── MÓDULO PAI: Comercial ── -->
-        <div class="mod-pai-wrap" id="mod-pai-comercial">
-          <button class="chamados-sidebar-item mod-pai-btn" id="mod-pai-comercial-btn"
-            onclick="toggleModPai('comercial')" title="Comercial" style="display:none;">
-            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
-            <span class="chamados-sidebar-name">Comercial</span>
-            <span class="mod-pai-chevron" id="mod-pai-comercial-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
-          </button>
-          <div class="mod-pai-submenu" id="mod-pai-comercial-submenu">
-            <a class="mod-sub-item" href="comercial.html" id="sub-comercial">
-              <span class="mod-sub-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></span>
-              <span>Controle de Obras</span>
-            </a>
-          </div>
-        </div>
+        <a class="chamados-sidebar-item" id="navpai-comercial" href="dashboard.html?modulo=comercial" title="Comercial"
+          style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="7" rx="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg></span>
+          <span class="chamados-sidebar-name">Comercial</span>
+        </a>
 
         <div class="chamados-sidebar-divider"></div>
 
-        <a class="chamados-sidebar-item" href="menu.html">
+        <a class="chamados-sidebar-item" id="navpai-geral" href="menu.html" title="Menu Principal">
           <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -584,7 +568,12 @@
     <div class="modal-content" style="max-width:400px;">
       <div class="modal-header">
         <span class="modal-title" style="display:flex;align-items:center;gap:8px;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+          </svg>
           Excluir Ativo
         </span>
         <button class="modal-close" onclick="closeDeleteAtivoModal()">✕</button>
