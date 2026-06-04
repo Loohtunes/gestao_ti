@@ -55,6 +55,11 @@ async function initMenu() {
   // Alertas Comercial — sempre chamar, permissão verificada dentro
   loadAlertasComercial(user);
 
+  // Widgets pessoais (escopo geral) — motor de widgets
+  if (typeof renderWidgets === 'function') {
+    renderWidgets('geral', document.getElementById('widgets-geral'), user);
+  }
+
   // Alinhar coluna direita com o topo dos comunicados
   requestAnimationFrame(() => {
     const greeting = document.querySelector('.menu-greeting');

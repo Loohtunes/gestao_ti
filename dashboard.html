@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel — Gestão T.I</title>
+  <link rel="icon" href="img/premovale (1).png">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <script>
+    /* Anti-flash: aplica tema ANTES do primeiro pixel ser renderizado */
+    (function () {
+      try {
+        const saved = localStorage.getItem('premovale-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-mode');
+        }
+      } catch (e) { }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/layout.css">
+  <link rel="stylesheet" href="assets/css/nav.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+  <link rel="stylesheet" href="assets/css/modals.css">
+  <link rel="stylesheet" href="assets/css/menu.css">
+  <link rel="stylesheet" href="assets/css/widgets.css">
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR (idêntica às demais páginas) ══ -->
+  <nav>
+    <div class="nav-logo" onclick="window.location.href='menu.html'" style="cursor:pointer;" title="Voltar ao Menu Geral">
+      <img src="img/premovale (1).png" width="30px" height="30px">
+      <span class="nav-title">
+        <span class="nav-title-ti">T.I</span>
+        <span class="nav-title-sep">/</span>
+        <span class="nav-title-main">Gestão</span>
+      </span>
+    </div>
+
+    <!-- Timer de sessão -->
+    <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
+      <div style="display:flex;align-items:center;gap:0.4rem;">
+        <span style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+        <span id="session-countdown" style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+      </div>
+      <div id="session-bar-track" style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+        <div id="session-bar-fill" style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;"></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <!-- Ramais -->
+      <div style="position:relative;display:inline-block;" id="ramais-wrapper">
+        <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais" style="gap:0.4rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 15a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 4h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 11.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 18v-.08z" />
+          </svg> Ramais
+        </button>
+        <div id="ramais-dropdown" class="ramais-dropdown" style="display:none;"></div>
+      </div>
+      <!-- Switch Tema -->
+      <div id="theme-switch-track" data-dark="0" onclick="toggleDarkMode()" title="Alternar tema"
+        style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:0.25rem 0.55rem;transition:all 0.2s;flex-shrink:0;user-select:none;">
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.93-7.07-1.41 1.41M6.34 17.66l-1.41 1.41" />
+        </svg></span>
+        <div style="position:relative;width:28px;height:16px;background:var(--surface3);border-radius:8px;border:1px solid var(--border2);transition:background 0.2s;">
+          <div id="theme-switch-thumb" style="position:absolute;top:1px;left:1px;width:12px;height:12px;background:var(--muted);border-radius:50%;transition:transform 0.2s,background 0.2s;"></div>
+        </div>
+        <span style="font-size:0.8rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+        </svg></span>
+      </div>
+      <!-- Firebase — só superadmin -->
+      <button class="sync-fab-small" id="sync-fab-nav" title="Firebase: verificando conexão..." style="display:none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        </svg> Firebase
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ LAYOUT ══ -->
+  <div class="config-wrapper">
+
+    <!-- SIDEBAR (somente módulos pai) -->
+    <aside class="chamados-sidebar" id="chamados-sidebar">
+      <button class="chamados-sidebar-toggle" id="sidebar-toggle-btn" onclick="toggleMenuSidebar()" title="Recolher/Expandir menu">
+        <span id="sidebar-toggle-icon">‹</span>
+      </button>
+
+      <div class="chamados-sidebar-items">
+        <span class="chamados-sidebar-label">Módulos</span>
+
+        <a class="chamados-sidebar-item" id="dash-mod-geral" href="menu.html" title="Menu Geral">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          <span class="chamados-sidebar-name">Menu Geral</span>
+        </a>
+
+        <a class="chamados-sidebar-item" id="dash-mod-ti" href="dashboard.html?modulo=ti" title="T.I">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+          <span class="chamados-sidebar-name">T.I</span>
+        </a>
+
+        <span class="chamados-sidebar-item mod-pai-soon" title="Engenharia — Em breve">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1M12 18h1M7 18h1"/></svg></span>
+          <span class="chamados-sidebar-name">Engenharia</span>
+          <span class="chamados-sidebar-soon">Em breve</span>
+        </span>
+
+        <a class="chamados-sidebar-item" id="dash-mod-comercial" href="dashboard.html?modulo=comercial" title="Comercial" style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+          <span class="chamados-sidebar-name">Comercial</span>
+        </a>
+
+        <div class="chamados-sidebar-footer">
+          <div class="chamados-sidebar-divider"></div>
+          <a class="chamados-sidebar-item" href="configuracoes.html" title="Configurações" id="sidebar-config-btn" style="display:none;">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span class="chamados-sidebar-name">Configurações</span>
+          </a>
+          <div class="chamados-sidebar-user">
+            <div class="chamados-sidebar-avatar" id="dash-sidebar-avatar">?</div>
+            <div class="chamados-sidebar-user-info">
+              <span class="chamados-sidebar-user-name" id="dash-sidebar-name">—</span>
+              <span class="chamados-sidebar-user-role" id="dash-sidebar-role">—</span>
+            </div>
+          </div>
+          <button class="chamados-sidebar-logout" onclick="dashLogout()" title="Sair do sistema">
+            <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg></span>
+            <span class="chamados-sidebar-name">Sair do sistema</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="config-main">
+      <div class="dash-body">
+        <div class="dash-head-title" id="dash-head-title"></div>
+        <div class="dash-head-sub" id="dash-head-sub"></div>
+        <div class="submod-tabs" id="submod-tabs"></div>
+        <div id="dash-widgets" class="wgt-grid"></div>
+      </div>
+    </main>
+
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="assets/js/firebase.js"></script>
+  <script src="assets/js/state.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/sync.js"></script>
+  <script src="assets/js/widgets.js"></script>
+
+  <script>
+    // ── Ícones das abas de submódulo (Lucide inline) ──
+    const _TAB_IC = {
+      painel: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+      ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
+      package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/>',
+      inventario: '<path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/>',
+      rotinas: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/>',
+      briefcase: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+    };
+    const tabIco = (n) => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_TAB_IC[n] || ''}</svg>`;
+
+    const MODULOS = {
+      geral: {
+        nome: 'Menu Geral',
+        tabs: [{ label: 'Painel', href: 'dashboard.html?modulo=geral', ic: 'painel', painel: true }]
+      },
+      ti: {
+        nome: 'T.I',
+        tabs: [
+          { label: 'Painel', href: 'dashboard.html?modulo=ti', ic: 'painel', painel: true },
+          { label: 'Chamados', href: 'index.html', ic: 'ticket', mod: 'chamados' },
+          { label: 'Materiais', href: 'materiais.html', ic: 'package', mod: 'materiais' },
+          { label: 'Inventário', href: 'inventario.html', ic: 'inventario', mod: 'inventario' },
+          { label: 'Rotinas', href: 'rotinas.html', ic: 'rotinas', mod: 'rotinas' },
+        ]
+      },
+      comercial: {
+        nome: 'Comercial',
+        tabs: [
+          { label: 'Painel', href: 'dashboard.html?modulo=comercial', ic: 'painel', painel: true },
+          { label: 'Controle de Obras', href: 'comercial.html', ic: 'briefcase', mod: 'comercial' },
+        ]
+      },
+    };
+
+    function toggleMenuSidebar() {
+      const sidebar = document.getElementById('chamados-sidebar');
+      const icon = document.getElementById('sidebar-toggle-icon');
+      if (!sidebar) return;
+      const isCollapsed = sidebar.classList.toggle('collapsed');
+      if (icon) icon.textContent = isCollapsed ? '›' : '‹';
+      localStorage.setItem('chamados-sidebar-collapsed', isCollapsed ? '1' : '0');
+    }
+
+    function dashLogout() {
+      if (typeof logout === 'function') logout();
+      else { localStorage.removeItem('chamados-current-user-id'); window.location.href = 'login.html'; }
+    }
+
+    function acessosDe(user) {
+      return user.isSuperAdmin
+        ? ['chamados', 'materiais', 'inventario', 'rotinas', 'comercial']
+        : (user.acessos || ['chamados']);
+    }
+
+    function montarTabs(user, escopo) {
+      const acessos = acessosDe(user);
+      const modulo = MODULOS[escopo];
+      const tabs = modulo.tabs.filter(t =>
+        t.painel || !t.mod || t.mod === 'chamados' || user.isSuperAdmin || acessos.includes(t.mod));
+      document.getElementById('submod-tabs').innerHTML = tabs.map(t =>
+        `<a class="submod-tab${t.painel ? ' ativo' : ''}" href="${t.href}">${tabIco(t.ic)}<span>${t.label}</span></a>`
+      ).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof loadUsers === 'function') await loadUsers();
+      const savedId = localStorage.getItem('chamados-current-user-id');
+      const user = (savedId && typeof users !== 'undefined') ? users.find(u => u.id === savedId) : null;
+      if (!user) { window.location.href = 'login.html'; return; }
+      currentUser = user;
+
+      if (typeof initDarkMode === 'function') initDarkMode();
+      if (typeof initSessionTimer === 'function') initSessionTimer(user.role);
+
+      // Sidebar retrátil — restaura estado salvo (anti-flash)
+      const collapsed = localStorage.getItem('chamados-sidebar-collapsed') === '1';
+      const sidebar = document.getElementById('chamados-sidebar');
+      const tIcon = document.getElementById('sidebar-toggle-icon');
+      if (sidebar) {
+        sidebar.classList.add('no-transition');
+        if (collapsed) { sidebar.classList.add('collapsed'); if (tIcon) tIcon.textContent = '›'; }
+        requestAnimationFrame(() => requestAnimationFrame(() => sidebar.classList.remove('no-transition')));
+      }
+
+      // Firebase btn / Configurações btn
+      const syncBtn = document.getElementById('sync-fab-nav');
+      if (syncBtn) syncBtn.style.display = user.isSuperAdmin ? 'flex' : 'none';
+      const configBtn = document.getElementById('sidebar-config-btn');
+      if (configBtn) configBtn.style.display = (user.isAdmin || user.isSuperAdmin) ? 'flex' : 'none';
+
+      // Usuário na sidebar
+      const avatar = document.getElementById('dash-sidebar-avatar');
+      const name = document.getElementById('dash-sidebar-name');
+      const role = document.getElementById('dash-sidebar-role');
+      if (avatar) avatar.textContent = (user.username?.[0] || '?').toUpperCase();
+      if (name) name.textContent = (typeof capitalizeName === 'function') ? capitalizeName(user.username || '—') : (user.username || '—');
+      if (role && typeof getSectorBadge === 'function') role.innerHTML = getSectorBadge(user);
+
+      // Comercial na sidebar — só com acesso
+      const canComercial = (typeof _wgtPodeComercial === 'function')
+        ? _wgtPodeComercial(user)
+        : (user.isSuperAdmin || (user.acessos || []).includes('comercial'));
+      const comBtn = document.getElementById('dash-mod-comercial');
+      if (comBtn) comBtn.style.display = canComercial ? 'flex' : 'none';
+
+      // Escopo do painel
+      const params = new URLSearchParams(window.location.search);
+      let escopo = params.get('modulo') || 'geral';
+      if (!MODULOS[escopo]) escopo = 'geral';
+      if (escopo === 'comercial' && !canComercial) escopo = 'geral';
+
+      // Marcar módulo ativo na sidebar
+      const ativoEl = document.getElementById('dash-mod-' + escopo);
+      if (ativoEl) ativoEl.classList.add('active');
+
+      // Cabeçalho + abas + widgets
+      const modulo = MODULOS[escopo];
+      document.getElementById('dash-head-title').innerHTML = `${tabIco('painel')} ${modulo.nome}`;
+      document.getElementById('dash-head-sub').textContent = '// menu principal — seus widgets';
+      montarTabs(user, escopo);
+
+      await renderWidgets(escopo, document.getElementById('dash-widgets'), user);
+    });
+  </script>
+</body>
+
+</html>

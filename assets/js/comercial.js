@@ -253,7 +253,7 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras = [], _obraAtual = null, _filtroRep = '', _filtroEtapa = '', _unsubObras = null;
-let _filtroDataDe = '', _filtroDataAte = '', _filtroEtapaAtraso = '', _filtroBusca = '', _filtroVencendo = false;
+let _filtroDataDe = '', _filtroDataAte = '', _filtroEtapaAtraso = '', _filtroBusca = '';
 let _ordenacao = 'recente';
 let _filtroPeriodoDe = '', _filtroPeriodoAte = '';
 let _filtroMinhasPendencias = false;
@@ -267,7 +267,6 @@ function setFiltroEtapa(val) { _filtroEtapa = val; _paginaAtual = 0; renderObras
 function setFiltroDataDe(val) { _filtroDataDe = val; _paginaAtual = 0; renderObras(); }
 function setFiltroDataAte(val) { _filtroDataAte = val; _paginaAtual = 0; renderObras(); }
 function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso = val; _paginaAtual = 0; renderObras(); }
-function toggleFiltroVencendo(btn) { _filtroVencendo = !_filtroVencendo; _paginaAtual = 0; if (btn) { btn.style.background = _filtroVencendo ? 'var(--accent)' : ''; btn.style.color = _filtroVencendo ? '#fff' : 'var(--text)'; } renderObras(); }
 function setFiltroBusca(val) { _filtroBusca = val.toLowerCase().trim(); _paginaAtual = 0; renderObras(); }
 function setOrdenacao(val) { _ordenacao = val; _paginaAtual = 0; renderObras(); }
 function setFiltroPeriodoDe(val) { _filtroPeriodoDe = val; _paginaAtual = 0; renderObras(); }
@@ -545,14 +544,6 @@ function renderObras() {
     });
   }
   if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
-  if (_filtroVencendo) {
-    const daqui7 = new Date(); daqui7.setDate(daqui7.getDate() + 7);
-    lista = lista.filter(o => {
-      if (!o.prazoEstimado || o.concluida) return false;
-      const d = new Date(o.prazoEstimado + 'T12:00:00');
-      return d >= new Date() && d <= daqui7;
-    });
-  }
   // Ordenação
   if (_ordenacao === 'num-asc') lista = [...lista].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
   if (_ordenacao === 'num-desc') lista = [...lista].sort((a, b) => (parseInt(b.numero) || 0) - (parseInt(a.numero) || 0));
@@ -692,6 +683,7 @@ function renderObras() {
         return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
           <span class="card-etapa-nome">${cfg2.short}</span>
+          ${(() => { const _rv = _revCountEtapa(eData, cfg2); return _rv > 0 ? `<span style="background:#f59e0b;color:#fff;font-size:0.55rem;font-weight:800;padding:0.05rem 0.3rem;border-radius:4px;font-family:var(--font-mono);white-space:nowrap;margin-right:0.3rem;" title="${_rv} revisão(ões) nesta etapa">REV.${_rv}</span>` : ''; })()}
           ${info}
         </div>`;
       }
@@ -723,6 +715,7 @@ function renderObras() {
         return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
           <span class="card-etapa-nome">${cfg2.short}</span>
+          ${(() => { const _rv = _revCountEtapa(eData, cfg2); return _rv > 0 ? `<span style="background:#f59e0b;color:#fff;font-size:0.55rem;font-weight:800;padding:0.05rem 0.3rem;border-radius:4px;font-family:var(--font-mono);white-space:nowrap;margin-right:0.3rem;" title="${_rv} revisão(ões) nesta etapa">REV.${_rv}</span>` : ''; })()}
           ${info}
         </div>`;
       }
@@ -772,6 +765,7 @@ function renderObras() {
       return `<div class="card-etapa-row">
           <span class="card-etapa-dot" style="${dotStyle}">${dot}</span>
           <span class="card-etapa-nome">${cfg2.short}</span>
+          ${(() => { const _rv = _revCountEtapa(eData, cfg2); return _rv > 0 ? `<span style="background:#f59e0b;color:#fff;font-size:0.55rem;font-weight:800;padding:0.05rem 0.3rem;border-radius:4px;font-family:var(--font-mono);white-space:nowrap;margin-right:0.3rem;" title="${_rv} revisão(ões) nesta etapa">REV.${_rv}</span>` : ''; })()}
           ${info}
         </div>`;
     }).join('');
@@ -859,6 +853,18 @@ function _renderPaginacao(total, totalPags, inicio) {
 }
 
 // ── Modal nova obra ───────────────────────────────────────────────────────────
+function _revCountEtapa(e, cfg) {
+  if (!e) return 0;
+  let n = (e.revisoes || []).length;
+  Object.values(e.subEtapas || {}).forEach(s => { n += (s.revisoes || []).length; });
+  (e.cocLista || []).forEach(ci => { n += (ci.revisoes || []).length; });
+  if (cfg && cfg.isLista) (e.lista || []).forEach(it => {
+    n += (it.revisoes || []).length;
+    Object.values(it.subEtapas || {}).forEach(s => { n += (s.revisoes || []).length; });
+  });
+  return n;
+}
+
 function podeEditarComercial() {
   return !!(currentUser && (currentUser.isSuperAdmin || currentUser.role === 'superAdmin'
     || (currentUser.acessos || []).includes('adminComercial')
@@ -2595,7 +2601,7 @@ function exportarObraPDF(obraId) {
         }).join('');
         return `<tr style="background:#f0f9ff;"><td colspan="7" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev ? ` — ${dtPrev}` : ''}${dtConc ? ` — ${dtConc}` : ''}</td></tr>${subsItem}`;
       }).join('');
-      return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${listaHtml}`;
+      return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}${(() => { const _rv = _revCountEtapa(e, cfg); return _rv ? ` <span style="background:#f59e0b;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;font-family:monospace;margin-left:6px;">REV.${_rv}</span>` : ''; })()}</td></tr>${listaHtml}`;
     }
     const subsHtml = cfg.subEtapas.map(sub => {
       // COC: renderizar cada item da cocLista
@@ -2651,9 +2657,56 @@ function exportarObraPDF(obraId) {
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada ? '#ef4444' : '#6b7280'};font-weight:${atrasada ? '700' : '400'};">${diasAt}</td>
       </tr>`;
     }).join('');
-    return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}</td></tr>${subsHtml}`;
+    return `<tr style="background:#f9fafb;"><td colspan="7" style="padding:6px 8px;font-weight:700;color:${corStatus};border-left:3px solid ${corStatus};">${cfg.nome} — ${statusEtapa}${(() => { const _rv = _revCountEtapa(e, cfg); return _rv ? ` <span style="background:#f59e0b;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;font-family:monospace;margin-left:6px;">REV.${_rv}</span>` : ''; })()}</td></tr>${subsHtml}`;
   }).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obra #${obra.numero} — ${obra.nome}</title>
+  // Observações e Recusas agrupadas por etapa (cor da etapa correspondente)
+  const _grupos = [];
+  ETAPAS_ORDER.forEach(_id => {
+    const _e = obra.etapas?.[_id]; if (!_e) return;
+    const _cfg = ETAPAS_CONFIG[_id]; const _nome = _cfg?.nome || _id; const _cor = _cfg?.cor || '#6b7280';
+    const _g = { nome: _nome, cor: _cor, obs: [], rec: [] };
+    const _ao = (arr, sub) => (arr || []).forEach(o => _g.obs.push({ sub, texto: o.texto, data: o.data, hora: o.hora, por: o.por }));
+    const _ar = (arr, sub) => (arr || []).forEach(r => _g.rec.push({ sub, numero: r.numero, motivo: r.motivo, data: r.data, por: r.por }));
+    _ao(_e.observacoes, ''); _ar(_e.revisoes, '');
+    if (_cfg?.isLista) {
+      (_e.lista || []).forEach((it, ii) => {
+        const _lbl = it.titulo || 'Item ' + (ii + 1);
+        _ao(it.observacoes, _lbl); _ar(it.revisoes, _lbl);
+        Object.values(it.subEtapas || {}).forEach(s => { _ao(s.observacoes, _lbl); _ar(s.revisoes, _lbl); });
+      });
+    } else {
+      Object.values(_e.subEtapas || {}).forEach(s => { _ao(s.observacoes, ''); _ar(s.revisoes, ''); });
+    }
+    (_e.cocLista || []).forEach((ci, ci2) => { const _cl = ci.nome || 'COC ' + (ci2 + 1); _ao(ci.observacoes, _cl); _ar(ci.revisoes, _cl); });
+    if (_g.obs.length || _g.rec.length) _grupos.push(_g);
+  });
+  const _fmtD = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  const _gruposRec = _grupos.filter(g => g.rec.length);
+  const _gruposObs = _grupos.filter(g => g.obs.length);
+  const _cab = (g) => `<div style="font-size:11px;font-weight:800;color:${g.cor};border-left:4px solid ${g.cor};padding:3px 8px;margin:0 0 5px;background:${g.cor}14;">${g.nome}</div>`;
+  const _sub = (s) => s ? `<span style="color:#6b7280;font-weight:600;">${s} · </span>` : '';
+  const obsRecHtml = (_gruposRec.length || _gruposObs.length) ? `
+    <div style="margin-top:22px;page-break-inside:avoid;">
+      <h2 style="font-size:13px;color:#111827;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin:0 0 12px;">Observações e Recusas</h2>
+      ${_gruposRec.length ? `<div style="font-size:11px;font-weight:700;color:#b45309;margin:0 0 6px;">Recusas (REV)</div>` + _gruposRec.map(g => `
+        <div style="margin:0 0 10px;page-break-inside:avoid;">
+          ${_cab(g)}
+          ${g.rec.map(r => `<div style="font-size:10px;margin:0 0 4px 8px;padding:4px 9px;border-left:3px solid ${g.cor}66;background:#fffbeb;">
+            <span style="font-family:monospace;font-weight:700;color:#b45309;">REV.${r.numero}</span>
+            ${r.sub ? ` <span style="color:#6b7280;font-weight:600;">· ${r.sub}</span>` : ''}
+            <span style="color:#9ca3af;font-family:monospace;"> · ${_fmtD(r.data)} · ${r.por || '—'}</span>
+            <div style="margin-top:2px;color:#dc2626;font-weight:600;">${r.motivo || ''}</div>
+          </div>`).join('')}
+        </div>`).join('') : ''}
+      ${_gruposObs.length ? `<div style="font-size:11px;font-weight:700;color:#374151;margin:14px 0 6px;">Observações</div>` + _gruposObs.map(g => `
+        <div style="margin:0 0 10px;page-break-inside:avoid;">
+          ${_cab(g)}
+          ${g.obs.map(o => `<div style="font-size:10px;margin:0 0 4px 8px;padding:4px 9px;border-left:3px solid ${g.cor}66;background:#f9fafb;">
+            ${_sub(o.sub)}<span style="color:#9ca3af;font-family:monospace;">${_fmtD(o.data)}${o.hora ? ' ' + o.hora : ''} · ${o.por || '—'}</span>
+            <div style="margin-top:2px;color:#1f2937;">${o.texto || ''}</div>
+          </div>`).join('')}
+        </div>`).join('') : ''}
+    </div>` : '';  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obra #${obra.numero} — ${obra.nome}</title>
     <style>body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}
     .header{border-bottom:2px solid #ef4444;padding-bottom:12px;margin-bottom:20px;}
     h1{font-size:15px;margin:0 0 4px;color:#111827;}
@@ -2666,6 +2719,7 @@ function exportarObraPDF(obraId) {
     <div class="header"><h1>Obra #${obra.numero} — ${obra.nome}</h1>
     <div class="meta"><span>👤 ${obra.representante || '—'}</span><span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>${obra.prazoEstimado ? `<span>⏱ Prazo estimado: ${new Date(obra.prazoEstimado + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : ''}</div></div>
     <table><thead><tr><th>Status</th><th>Etapa / Sub-etapa</th><th>Responsável</th><th>Data de Início</th><th>Data Conclusão</th><th>Data Prevista</th><th>Dias em Atraso</th></tr></thead><tbody>${etapasHtml}</tbody></table>
+    ${obsRecHtml}
     <div class="footer">Premovale T.I — Gerado em ${hoje}</div>
     <script>window.onload=()=>{window.print();}<\/script></body></html>`;
   const w = window.open('', '_blank'); w.document.write(html); w.document.close();
@@ -3224,10 +3278,17 @@ function toggleMinhasPendencias() {
   // Fechar período se aberto
   const perDrop = document.getElementById('periodo-dropdown');
   if (perDrop) perDrop.style.display = 'none';
-  const open = pdrop.style.display === 'flex';
-  if (open) {
+  // Desligar: estado real está em _filtroMinhasPendencias (cobre gestor E usuário comum)
+  const ativo = _filtroMinhasPendencias || pdrop.style.display === 'flex';
+  if (ativo) {
     pdrop.style.display = 'none';
+    const wrap = document.getElementById('pendencia-user-wrap');
+    if (wrap) wrap.style.display = 'none';
+    _filtroMinhasPendencias = false;
+    _filtroUsuarioPendencia = '';
+    _paginaAtual = 0;
     if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
+    renderObras();
     return;
   }
   // Verificar se é gestor
