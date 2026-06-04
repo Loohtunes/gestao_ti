@@ -72,6 +72,7 @@ const ETAPAS_CONFIG = {
     isLista: true,
     subEtapasTemplate: [
       { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true },
+      { id: 'analise_comparativo', nome: 'Em Análise', dias: 0, dateLivre: true },
       { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
       { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
       { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true },
@@ -85,8 +86,9 @@ const ETAPAS_CONFIG = {
     isLista: true,
     subEtapasTemplate: [
       { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
+      { id: 'em_aprovacao', nome: 'Em aprovação', dias: 2, dateLivre: false },
       { id: 'envio', nome: 'Envio', dias: 0, dateLivre: true },
-      { id: 'aprovacao', nome: 'Aprovação', dias: 2, dateLivre: false, isAprovacaoRecusa: true },
+      { id: 'aprovacao', nome: 'Aprovação do Cliente', dias: 2, dateLivre: false, isAprovacaoRecusa: true },
     ]
   },
 };
@@ -150,6 +152,20 @@ function _migrateObraToV3(obra) {
   return { etapas };
 }
 
+
+function _migrateObraToV7(obra) {
+  // Insere as sub-etapas novas (Em aprovação / Em Análise) nas obras existentes,
+  // TRAVADAS: aparecem mas não interagem nem bloqueiam o avanço.
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  const locked = () => ({ status: 'pending', bloqueada: true, dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] });
+  (etapas.medicao?.lista || []).forEach(item => {
+    if (item.subEtapas && !item.subEtapas.em_aprovacao) item.subEtapas.em_aprovacao = locked();
+  });
+  (etapas.aditivos?.lista || []).forEach(item => {
+    if (item.subEtapas && !item.subEtapas.analise_comparativo) item.subEtapas.analise_comparativo = locked();
+  });
+  return { etapas };
+}
 
 function _migrateObraToV6(obra) {
   // Adiciona carta_assinatura nos aditivos existentes
@@ -275,7 +291,7 @@ function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 
 async function migrateObras() {
   try {
@@ -293,6 +309,7 @@ async function migrateObras() {
         if (ver < 4) migrated = { ...migrated, ..._migrateObraToV4(migrated) };
         if (ver < 5) migrated = { ...migrated, ..._migrateObraToV5(migrated) };
         if (ver < 6) migrated = { ...migrated, ..._migrateObraToV6(migrated) };
+        if (ver < 7) migrated = { ...migrated, ..._migrateObraToV7(migrated) };
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch (e) {
@@ -881,7 +898,6 @@ async function saveNovaObra() {
   const rep = document.getElementById('nova-obra-rep')?.value;
   const fechamento = document.getElementById('nova-obra-fechamento')?.value;
   const prazo = document.getElementById('nova-obra-prazo')?.value;
-  const obs = document.getElementById('nova-obra-obs')?.value.trim();
   if (!numero) { showComercialToast('Informe o número da obra.', 'error'); return; }
   if (_obras.some(o => String(o.numero).trim() === String(numero).trim())) {
     showComercialToast(`Já existe uma obra com o número #${numero}.`, 'error');
@@ -897,7 +913,7 @@ async function saveNovaObra() {
     const etapas = initObraEtapas(fechamento);
     await db.collection('obras').add({
       numero, nome, representante: rep, dataFechamento: fechamento,
-      prazoEstimado: prazo || null, obs: obs || '', concluida: false, etapas,
+      prazoEstimado: prazo || null, concluida: false, etapas,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: currentUser.username,
     });
     showComercialToast(`Obra #${numero} cadastrada! ✅`, 'success');
@@ -1718,6 +1734,14 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const sub = item.subEtapas?.[subCfg.id];
       if (!sub) return '';
       const subStatus = sub.status || 'pending';
+      // Sub-etapa travada (adicionada depois numa obra em andamento): aparece mas não interage
+      if (sub.bloqueada) {
+        return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);opacity:0.65;">
+          <span style="width:16px;height:16px;border-radius:50%;background:var(--muted);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <span style="flex:1;font-size:0.78rem;color:var(--muted);">${subCfg.nome}</span>
+          <span style="font-size:0.6rem;font-weight:700;color:var(--muted);padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);border:1px solid var(--border2);flex-shrink:0;">Travada</span>
+        </div>`;
+      }
       // Sub-etapa pulada — card igual aos demais, mas com tachado e badge Pulado
       if (subStatus === 'pulada') {
         const puladoFmt = sub.puladoEm
@@ -2091,13 +2115,16 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
   // Ativar próxima sub-etapa
   const subArr = cfg.subEtapasTemplate || [];
   const idx = subArr.findIndex(s => s.id === subId);
-  const prox = subArr[idx + 1];
+  let _proxIdx = idx + 1;
+  while (subArr[_proxIdx] && item.subEtapas[subArr[_proxIdx].id]?.bloqueada) _proxIdx++;
+  const prox = subArr[_proxIdx];
   if (prox && !item.subEtapas[prox.id]) item.subEtapas[prox.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
   if (prox) { item.subEtapas[prox.id].status = 'active'; item.subEtapas[prox.id].dataInicio = hoje; }
   // Verificar se todas as sub-etapas do item estão done ou pulada
   const todasSubDone = subArr.every(s => {
-    const st = item.subEtapas[s.id]?.status;
-    return st === 'done' || st === 'pulada';
+    const _sb = item.subEtapas[s.id];
+    if (_sb?.bloqueada) return true;
+    return _sb?.status === 'done' || _sb?.status === 'pulada';
   });
   if (todasSubDone) { item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username; }
   // Verificar conclusão da etapa
@@ -2463,7 +2490,6 @@ function openEditarObraModal(obraId) {
   document.getElementById('editar-obra-rep').value = obra.representante || '';
   document.getElementById('editar-obra-fechamento').value = obra.dataFechamento || '';
   document.getElementById('editar-obra-prazo').value = obra.prazoEstimado || '';
-  document.getElementById('editar-obra-obs').value = obra.obs || '';
   document.getElementById('editar-obra-modal').style.display = 'flex';
 }
 function closeEditarObraModal() {
@@ -2481,7 +2507,6 @@ async function saveEditarObra() {
     representante: document.getElementById('editar-obra-rep')?.value || '',
     dataFechamento: document.getElementById('editar-obra-fechamento')?.value || null,
     prazoEstimado: document.getElementById('editar-obra-prazo')?.value || null,
-    obs: document.getElementById('editar-obra-obs')?.value.trim() || '',
   };
   await db.collection('obras').doc(_editandoObraId).update(updates);
   _audit(_editandoObraId, 'edicao', 'Dados da obra editados por ' + currentUser.username);
@@ -2576,7 +2601,8 @@ function exportarObraPDF(obraId) {
         const dtConc = item.dataConclusao ? `✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}` : '';
         const subsItem = (cfg.subEtapasTemplate || []).map(sub => {
           const s = item.subEtapas?.[sub.id]; if (!s) return '';
-          const atrasada2 = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
+          const refData2 = s.dataLimite || (s.status === 'active' ? item.dataPrevista : null);
+          const atrasada2 = s.status !== 'done' && refData2 && refData2 < hoje2;
           let st2, corSt2;
           if (s.status === 'done') { st2 = '✓ Concluída'; corSt2 = '#22c55e'; }
           else if (s.status === 'pulada') { st2 = '⏭ Pulada'; corSt2 = '#6b7280'; }
@@ -2586,10 +2612,10 @@ function exportarObraPDF(obraId) {
           const tipo2 = s.tipoConclusao ? ` (${s.tipoConclusao})` : '';
           const dtInicio2 = s.dataInicio ? new Date(s.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtConcl2 = s.dataConclusao ? new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-          const dtPrev2 = s.dataLimite ? new Date(s.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+          const dtPrev2 = refData2 ? new Date(refData2 + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dias2 = (() => {
             if (atrasada2) {
-              return `${Math.ceil((new Date() - new Date(s.dataLimite + 'T12:00:00')) / (1000 * 60 * 60 * 24))} dias`;
+              return `${Math.ceil((new Date() - new Date(refData2 + 'T12:00:00')) / (1000 * 60 * 60 * 24))} dias`;
             }
             if (s.status === 'done' && s.dataConclusao && s.dataLimite && s.dataConclusao > s.dataLimite) {
               const dc = new Date(s.dataConclusao + 'T12:00:00'), dl = new Date(s.dataLimite + 'T12:00:00');
@@ -3062,7 +3088,7 @@ function _renderAuditoriaAba(obraId, el) {
         <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:var(--font-mono);">${dt} — ${e.por}</div>
       </div>
     </div>`;
-  }).join('') + '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:0.75rem;">🔒 Registro imutável — auditoria do sistema</div>';
+  }).join('') + '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:0.75rem;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Registro imutável — auditoria do sistema</div>';
 }
 
 function _renderHistoricoAba(obra, el) {
