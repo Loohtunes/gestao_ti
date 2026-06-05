@@ -72,8 +72,8 @@ const ETAPAS_CONFIG = {
     isLista: true,
     subEtapasTemplate: [
       { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true },
-      { id: 'analise_comparativo', nome: 'Em Análise', dias: 0, dateLivre: true },
       { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
+      { id: 'analise_comparativo', nome: 'Em Análise', dias: 0, dateLivre: true },
       { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
       { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true },
       { id: 'carta_assinatura', nome: 'Assinatura da Carta Aditiva', dias: 2, dateLivre: false, isAprovacaoRecusa: true, podeEncerrar: true },
@@ -463,17 +463,27 @@ function getPrazoInfo(prazo) {
 }
 
 
+// Data de referência p/ atraso de uma sub-etapa: dataLimite OU dataPrevista (subs isAnalise/data livre),
+// e, em itens de lista ativos, a dataPrevista do item.
+function _refAtraso(sub, item) {
+  if (!sub) return null;
+  return sub.dataLimite || sub.dataPrevista || (sub.status === 'active' && item ? item.dataPrevista : null) || null;
+}
+function _vencido(ref, status, hoje) {
+  return status !== 'done' && status !== 'pulada' && !!ref && ref < hoje;
+}
+
 function hasEtapaAtrasadaPorId(obra, etapaId) {
   if (!obra.etapas) return false;
   const hoje = new Date().toISOString().slice(0, 10);
   const e = obra.etapas[etapaId];
   if (!e?.ativa) return false;
   if (Array.isArray(e.lista)) {
-    return e.lista.some(item => Object.values(item.subEtapas || {}).some(
-      sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje));
+    return e.lista.some(item => _vencido(item.dataPrevista, item.status, hoje)
+      || Object.values(item.subEtapas || {}).some(sub => _vencido(_refAtraso(sub, item), sub.status, hoje)));
   }
-  return Object.values(e.subEtapas || {}).some(
-    sub => sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje);
+  return Object.values(e.subEtapas || {}).some(sub => !sub.isCocLista && _vencido(sub.dataLimite || sub.dataPrevista, sub.status, hoje))
+    || (e.cocLista || []).some(ci => _vencido(ci.dataPrevista, ci.status, hoje));
 }
 
 function hasSubEtapaAtrasada(obra) {
@@ -485,13 +495,17 @@ function hasSubEtapaAtrasada(obra) {
     // Lista (aditivos/medicao)
     if (Array.isArray(e.lista)) {
       for (const item of e.lista) {
+        if (_vencido(item.dataPrevista, item.status, hoje)) return true;
         for (const sub of Object.values(item.subEtapas || {})) {
-          if (sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje) return true;
+          if (_vencido(_refAtraso(sub, item), sub.status, hoje)) return true;
         }
       }
     } else {
       for (const sub of Object.values(e.subEtapas || {})) {
-        if (sub.status !== 'done' && sub.dataLimite && sub.dataLimite < hoje) return true;
+        if (!sub.isCocLista && _vencido(sub.dataLimite || sub.dataPrevista, sub.status, hoje)) return true;
+      }
+      for (const ci of (e.cocLista || [])) {
+        if (_vencido(ci.dataPrevista, ci.status, hoje)) return true;
       }
     }
   }
@@ -521,10 +535,11 @@ function getCorStripe(obra) {
     if (cfg?.isLista) {
       (e.lista || []).forEach(item => {
         if (item.status === 'done' || item.status === 'pulada') return;
-        Object.values(item.subEtapas || {}).forEach(s => avaliar(s.status, s.dataLimite || (s.status === 'active' ? item.dataPrevista : null)));
+        avaliar(item.status, item.dataPrevista);
+        Object.values(item.subEtapas || {}).forEach(s => avaliar(s.status, s.dataLimite || s.dataPrevista || (s.status === 'active' ? item.dataPrevista : null)));
       });
     } else {
-      Object.values(e.subEtapas || {}).forEach(s => { if (!s.isCocLista) avaliar(s.status, s.dataLimite); });
+      Object.values(e.subEtapas || {}).forEach(s => { if (!s.isCocLista) avaliar(s.status, s.dataLimite || s.dataPrevista); });
       (e.cocLista || []).forEach(ci => avaliar(ci.status, ci.dataPrevista));
     }
   }
@@ -800,9 +815,18 @@ function renderObras() {
         let atraso = 0;
         const hj = new Date().toISOString().slice(0, 10);
         ETAPAS_ORDER.forEach(etapaId => {
-          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa || e.status === 'done') return;
-          if (cfg.isLista) (e.lista || []).forEach(item => { if (item.status === 'done') return; Object.values(item.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; }); });
-          else Object.values(e.subEtapas || {}).forEach(s => { if (s.status !== 'done' && s.status !== 'pulada' && s.dataLimite && s.dataLimite < hj) atraso++; });
+          const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId];
+          if (!e?.ativa || e.status === 'done' || e.status === 'pulada') return;
+          if (cfg.isLista) {
+            (e.lista || []).forEach(item => {
+              if (item.status === 'done' || item.status === 'pulada') return;
+              const _sa = Object.values(item.subEtapas || {}).some(s => _vencido(_refAtraso(s, item), s.status, hj));
+              if (_sa || _vencido(item.dataPrevista, item.status, hj)) atraso++;
+            });
+          } else {
+            Object.values(e.subEtapas || {}).forEach(s => { if (!s.isCocLista && _vencido(s.dataLimite || s.dataPrevista, s.status, hj)) atraso++; });
+            (e.cocLista || []).forEach(ci => { if (_vencido(ci.dataPrevista, ci.status, hj)) atraso++; });
+          }
         });
         return atraso > 0
           ? `<span style="position:absolute;top:-7px;right:8px;background:#ef4444;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${atraso} sub-etapa${atraso > 1 ? 's' : ''} em atraso">${atraso}</span>`
@@ -872,6 +896,7 @@ function _renderPaginacao(total, totalPags, inicio) {
 // ── Modal nova obra ───────────────────────────────────────────────────────────
 function _revCountEtapa(e, cfg) {
   if (!e) return 0;
+  if (cfg && cfg.isIndependente) return 0; // Documentações não têm revisão
   let n = (e.revisoes || []).length;
   Object.values(e.subEtapas || {}).forEach(s => { n += (s.revisoes || []).length; });
   (e.cocLista || []).forEach(ci => { n += (ci.revisoes || []).length; });
@@ -1016,8 +1041,8 @@ function renderObraModal(obra) {
     const subsHtml = cfg.subEtapas.map(subCfg => {
       const subData = eData.subEtapas?.[subCfg.id] || {};
       const subStatus = subData.status || 'pending';
-      const limite = subData.dataLimite;
-      const atrasada = subStatus !== 'done' && limite && limite < hoje;
+      const limite = subData.dataLimite || subData.dataPrevista;
+      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && limite && limite < hoje;
       const isIndependenteSub = subCfg.isIndependente || cfg.isIndependente;
       const canConcluir = subStatus === 'active' && !obra.concluida;
       const canIniciarSub = isIndependenteSub && subStatus === 'pending' && !obra.concluida;
@@ -1085,7 +1110,7 @@ function renderObraModal(obra) {
       const motivoBadge = subData.motivoAtraso ? `<div class="sub-motivo-atraso">📌 ${subData.motivoAtraso}</div>` : '';
 
       // Revisões da sub-etapa
-      const subRevHtml = subRevisoes.length ? `<div class="sub-revisoes">
+      const subRevHtml = (!cfg.isIndependente && subRevisoes.length) ? `<div class="sub-revisoes">
         ${subRevisoes.map(r => `<div class="sub-revisao-item">
           <span class="etapa-revisao-badge">REV.${r.numero}</span>
           <div class="etapa-revisao-info">
@@ -1102,13 +1127,13 @@ function renderObraModal(obra) {
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>` : '',
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
         !subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
-        canProrrogar ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
+        (canProrrogar || (subCfg.isAnalise && subStatus !== 'done' && !obra.concluida)) ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
         `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${resp || 'Atribuir'}</button>`,
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
-        subCfg.isAnalise && subStatus !== 'done' ? `<button class="acao-item" data-action="dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>` : '',
         canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
       ].filter(Boolean).join('');
-      const actions = (subStatus === 'done' && !isIndependenteSub) || obra.concluida ? '' : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
+      const _reabrirDrop = (podeEditarComercial() && !isIndependenteSub) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
+      const actions = obra.concluida ? '' : (subStatus === 'done' && !isIndependenteSub) ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
       return `<div class="sub-etapa-item">
         <div class="sub-etapa-icon ${iconCls}" ${iconCls === 'active' ? `style="background:${cor};border-color:${cor};"` : iconCls === 'atrasada' ? 'style="background:#ef4444;border-color:#ef4444;"' : ''}>${statusIcon}</div>
         <div class="sub-etapa-content">
@@ -1129,7 +1154,7 @@ function renderObraModal(obra) {
       <div class="etapa-content">
         <div class="etapa-nome" style="${etapaStatus === 'active' ? `color:${cor};` : ''}" title="${(eData.observacoes || []).length} observação(ões)">
           ${cfg.nome}
-          ${(eData.revisoes || []).length > 0 ? `<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>` : ''}
+          ${(!cfg.isIndependente && (eData.revisoes || []).length > 0) ? `<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>` : ''}
           ${cfg.opcional ? '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>' : ''}
           ${canIniciar ? `<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>` : ''}
           ${!obra.concluida && etapaStatus !== 'done' ? `
@@ -1281,6 +1306,7 @@ async function saveRecusaLista() {
   (cfg.subEtapasTemplate || []).forEach((s, i) => {
     if (!item.subEtapas[s.id]) return;
     item.subEtapas[s.id].status = i === 0 ? 'active' : 'pending';
+    delete item.subEtapas[s.id].bloqueada; // revisão valida a sub-etapa retroativa
     item.subEtapas[s.id].dataConclusao = null; item.subEtapas[s.id].motivoAtraso = null;
     item.subEtapas[s.id].responsavel = null; // Limpar atribuição na revisão
     if (i === 0) item.subEtapas[s.id].dataInicio = hoje;
@@ -1374,6 +1400,7 @@ async function saveRecusa() {
   subs.forEach((s, idx) => {
     if (!etapas[etapaId].subEtapas[s.id]) return;
     etapas[etapaId].subEtapas[s.id].status = idx === 0 ? 'active' : 'pending';
+    delete etapas[etapaId].subEtapas[s.id].bloqueada; // revisão valida a sub-etapa retroativa
     etapas[etapaId].subEtapas[s.id].dataConclusao = null;
     etapas[etapaId].subEtapas[s.id].motivoAtraso = null;
     etapas[etapaId].subEtapas[s.id].tipoConclusao = null;
@@ -1407,8 +1434,9 @@ function _renderCocLista(obra, etapaId, subId) {
   const itemsHtml = cocLista.map((item, idx) => {
     const isDone = item.status === 'done';
     const toggleId = `coc-item-${idx}`;
+    const _cocAtras = item.status !== 'done' && item.dataPrevista && item.dataPrevista < hoje;
     const dtPrev = item.dataPrevista
-      ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+      ? `<span style="font-size:0.65rem;color:${_cocAtras ? '#ef4444' : 'var(--muted)'};font-weight:${_cocAtras ? '700' : '400'};font-family:var(--font-mono);">${_cocAtras ? '⚠ ' : ''}${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const dtConc = item.dataConclusao
       ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const dropId = `acao-coc-${idx}`;
@@ -1424,7 +1452,8 @@ function _renderCocLista(obra, etapaId, subId) {
         ${cocActive ? `<button class="acao-item" data-action="coc-prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : ''}
         <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${item.responsavel || ''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.responsavel || 'Atribuir'}</button>
         <button class="acao-item" data-action="coc-obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
-        ${cocActive ? `<button class="acao-item" data-action="coc-dataprevista" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Data Prevista</button>` : ''}
+        ${podeEditarComercial() ? `<button class="acao-item" data-action="coc-editar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>` : ''}
+        ${podeEditarComercial() ? `<button class="acao-item" data-action="coc-excluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Excluir</button>` : ''}
       </div>
     </div>` : '';
 
@@ -1573,6 +1602,10 @@ async function _prorrogarCocItem(obraId, etapaId, idx) {
   const info = document.getElementById('prorrogar-modal-info');
   if (info) { info.textContent = `Data prevista atual: ${item?.dataPrevista ? new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}`; }
   const just = document.getElementById('prorrogar-justificativa'); if (just) just.value = '';
+  const _jwC = document.getElementById('prorrogar-just-wrap'); if (_jwC) _jwC.style.display = 'none';
+  const _dlC = document.getElementById('prorrogar-data-label'); if (_dlC) _dlC.innerHTML = 'Data prevista <span style="color:var(--accent);">*</span>';
+  if (input) input.min = '';
+  document.getElementById('prorrogar-modal').dataset.analiseMode = '';
   document.getElementById('prorrogar-modal').dataset.cocMode = '1';
   document.getElementById('prorrogar-modal').style.display = 'flex';
 }
@@ -1721,10 +1754,11 @@ function renderListaEtapa(obra, etapaId, hoje) {
   const itemsHtml = lista.map((item, idx) => {
     const isDone = item.status === 'done';
     const corItem = isDone ? '#22c55e' : cfg.cor;
+    const _itemAtras = item.status !== 'done' && item.dataPrevista && item.dataPrevista < hoje;
     const dtPrev = item.dataPrevista
-      ? `<span style="font-size:0.65rem;color:var(--muted);font-family:var(--font-mono);">
+      ? `<span style="font-size:0.65rem;color:${_itemAtras ? '#ef4444' : 'var(--muted)'};font-weight:${_itemAtras ? '700' : '400'};font-family:var(--font-mono);">
            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-           ${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+           ${_itemAtras ? '⚠ ' : ''}${new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const dtConc = item.dataConclusao
       ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(item.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
     const toggleId = `lista-item-${etapaId}-${idx}`;
@@ -1734,12 +1768,19 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const sub = item.subEtapas?.[subCfg.id];
       if (!sub) return '';
       const subStatus = sub.status || 'pending';
-      // Sub-etapa travada (adicionada depois numa obra em andamento): aparece mas não interage
+      // Sub-etapa RETROATIVA (adicionada depois a uma obra antiga): opcional, NÃO bloqueia a obra
       if (sub.bloqueada) {
-        return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);opacity:0.65;">
-          <span style="width:16px;height:16px;border-radius:50%;background:var(--muted);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <span style="flex:1;font-size:0.78rem;color:var(--muted);">${subCfg.nome}</span>
-          <span style="font-size:0.6rem;font-weight:700;color:var(--muted);padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);border:1px solid var(--border2);flex-shrink:0;">Travada</span>
+        const _retroDone = sub.status === 'done';
+        const _rid = `retro-${etapaId}-${item.id}-${subCfg.id}`;
+        const _retroData = (_retroDone && sub.dataConclusao) ? `<span style="font-size:0.65rem;color:#22c55e;font-family:var(--font-mono);">✓ ${new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}</span>` : '';
+        const _retroAcao = _retroDone
+          ? `<button class="acao-item" data-action="retro-reabrir" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button>`
+          : `<button class="acao-item concluir" data-action="retro-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>`;
+        const _retroMenu = podeEditarComercial() ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${_rid}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${_rid}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_retroAcao}<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
+        return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
+          <span style="width:16px;height:16px;border-radius:50%;background:${_retroDone ? '#22c55e' : 'var(--surface2)'};color:${_retroDone ? '#fff' : 'var(--muted)'};border:1px ${_retroDone ? 'solid #22c55e' : 'dashed var(--border2)'};display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">${_retroDone ? '✓' : ''}</span>
+          <span style="flex:1;font-size:0.78rem;${_retroDone ? '' : 'color:var(--muted);'}">${subCfg.nome} <span style="font-size:0.55rem;font-weight:700;color:var(--muted);padding:0.05rem 0.35rem;border-radius:4px;font-family:var(--font-mono);border:1px solid var(--border2);vertical-align:middle;">RETROATIVA</span></span>
+          <div style="display:flex;align-items:center;gap:0.4rem;">${_retroData}${_retroMenu}</div>
         </div>`;
       }
       // Sub-etapa pulada — card igual aos demais, mas com tachado e badge Pulado
@@ -1753,7 +1794,8 @@ function renderListaEtapa(obra, etapaId, hoje) {
           ${puladoFmt}
         </div>`;
       }
-      const atrasada = subStatus !== 'done' && sub.dataLimite && sub.dataLimite < hoje;
+      const _refSub = sub.dataLimite || sub.dataPrevista || (subStatus === 'active' ? item.dataPrevista : null);
+      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && _refSub && _refSub < hoje;
       const diasCount = sub.dataInicio ? Math.floor((new Date() - new Date(sub.dataInicio + 'T12:00:00')) / (1000 * 60 * 60 * 24)) : 0;
       let dataInfo = '';
       if (subCfg.isAnalise && subStatus === 'active' && sub.dataInicio) {
@@ -1776,6 +1818,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const canConc = subStatus !== 'done' && !obra.concluida;
       const resp = sub.responsavel;
 
+      const _reabrirDropLista = (podeEditarComercial() && subStatus === 'done' && !obra.concluida) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
       const acoesDropdown = !obra.concluida && subStatus !== 'done' ? (() => {
         const _dId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
         const _resp = sub.responsavel || '';
@@ -1790,7 +1833,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
           `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         ].join('');
         return `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${_dId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${_dId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_items}</div></div>`;
-      })() : '';
+      })() : _reabrirDropLista;
 
       return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
         <span style="width:16px;height:16px;border-radius:50%;background:${dotColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">${dotSymbol}</span>
@@ -1809,6 +1852,13 @@ function renderListaEtapa(obra, etapaId, hoje) {
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
         <span style="font-size:0.8rem;font-weight:700;color:${corItem};flex:1;">${isDone ? '✓ ' : ''} ${item.titulo}${(item.revisoes || []).length > 0 ? ` <span style="background:#f59e0b;color:#fff;font-size:0.58rem;font-weight:800;padding:0.1rem 0.35rem;border-radius:4px;font-family:var(--font-mono);vertical-align:middle;">REV.${item.revisoes.length}</span>` : ''}</span>
         ${dtConc}${!isDone ? dtPrev : ''}
+        ${canAdd ? `<button
+            onclick="event.stopPropagation();editarRegistro('${obra.id}','${etapaId}','${item.id}',null)"
+            title="Editar ${item.titulo}"
+            style="background:none;border:none;cursor:pointer;padding:0.15rem 0.25rem;color:var(--muted);border-radius:4px;flex-shrink:0;"
+            onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>`: ''}
         ${canAdd ? `<button
             onclick="event.stopPropagation();confirmarExcluirItem('${obra.id}','${etapaId}','${item.id}','${item.titulo}')"
             title="Excluir ${item.titulo}"
@@ -2040,6 +2090,11 @@ function _initAcaoDelegate() {
       case 'aprovado': processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
       case 'recusado': processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
       case 'iniciar-sub': iniciarSubEtapa(obraId, etapaId, subId); break;
+      case 'reabrir-sub': reabrirSubEtapa(obraId, etapaId, subId, itemId); break;
+      case 'retro-concluir': openConcluirRetroModal(obraId, etapaId, subId, itemId); break;
+      case 'retro-reabrir': reabrirSubRetro(obraId, etapaId, subId, itemId); break;
+      case 'coc-editar': { const _ce = parseInt(btn.dataset.coc); editarRegistro(obraId, etapaId, null, _ce); break; }
+      case 'coc-excluir': { const _cx = parseInt(btn.dataset.coc); excluirCocItem(obraId, etapaId, _cx); break; }
       case 'coc-iniciar': {
         const ci = parseInt(btn.dataset.coc);
         _iniciarCocItem(obraId, etapaId, ci);
@@ -2140,6 +2195,9 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
     _audit(obraId, 'conclusao', `${item.titulo} · ${_subNmL} concluída${tipo ? ' (' + tipo + ')' : ''}${dataCustom && dataCustom !== new Date().toISOString().slice(0, 10) ? ' com data ' + dataCustom : ''}`);
     await db.collection('obras').doc(obraId).update({ etapas });
     showComercialToast('Sub-etapa concluída! ✅', 'success');
+    if (prox && (prox.dateLivre || prox.isAnalise || !prox.dias) && !item.subEtapas[prox.id]?.dataLimite) {
+      setTimeout(() => openProrrogarModal(obraId, etapaId, prox.id, itemId), 300);
+    }
   }
 }
 
@@ -2179,6 +2237,9 @@ async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
     etapas[etapaId].subEtapas[proxSub.id].dataLimite = calcDataLimite(proxSub, etapas, obra.dataFechamento);
     await db.collection('obras').doc(obraId).update({ etapas });
     showComercialToast(`"${proxSub.nome}" liberada! ✅`, 'success');
+    if ((proxSub.dateLivre || proxSub.isAnalise || !proxSub.dias) && !etapas[etapaId].subEtapas[proxSub.id].dataLimite) {
+      setTimeout(() => openProrrogarModal(obraId, etapaId, proxSub.id, null), 300);
+    }
   } else if (isIndSub || !proxSub) {
     // Independente ou última sub: verificar se todas as sub-etapas da etapa estão done
     const todasSubDone = subEtapasArr.every(s => etapas[etapaId].subEtapas[s.id]?.status === 'done');
@@ -2308,19 +2369,29 @@ function openProrrogarModal(obraId, etapaId, subId, itemId) {
     const lista = obra?.etapas?.[etapaId]?.lista || [];
     for (const item of lista) { if (item.subEtapas?.[subId]) { sub = item.subEtapas[subId]; break; } }
   }
-  const limFmt = sub?.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  const _modalP = document.getElementById('prorrogar-modal');
+  const _freeMode = !!(subCfg && (subCfg.isAnalise || subCfg.dateLivre || subCfg.dias === 0));
+  _modalP.dataset.analiseMode = _freeMode ? '1' : '';
+  _modalP.dataset.cocMode = '';
+  const _jw = document.getElementById('prorrogar-just-wrap'); if (_jw) _jw.style.display = _freeMode ? 'none' : '';
+  const _dl = document.getElementById('prorrogar-data-label'); if (_dl) _dl.innerHTML = (_freeMode ? 'Data prevista' : 'Nova data limite') + ' <span style="color:var(--accent);">*</span>';
+  const _dataAtual = sub?.dataLimite || sub?.dataPrevista || null;
   const title = document.getElementById('prorrogar-modal-title');
-  if (title) title.textContent = `Prorrogar — ${cfg.nome} · ${subCfg?.nome || ''}`;
+  if (title) title.textContent = `${_freeMode ? (_dataAtual ? 'Editar data' : 'Definir data') : 'Prorrogar'} — ${cfg.nome} · ${subCfg?.nome || ''}`;
   const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
   const input = document.getElementById('prorrogar-data-input');
-  if (input) { input.min = amanha.toISOString().slice(0, 10); input.value = sub?.dataLimite || ''; }
+  if (input) { input.min = _freeMode ? '' : amanha.toISOString().slice(0, 10); input.value = _dataAtual || ''; }
   const info2 = document.getElementById('prorrogar-modal-info');
   if (info2) {
-    const limFmt2 = sub?.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
-    const prorrCount = sub?.diasProrrogados || 0;
-    info2.textContent = `Limite atual: ${limFmt2}${prorrCount ? ' (prorrogado ' + prorrCount + 'x)' : ''}`.trim();
+    if (_freeMode) {
+      info2.textContent = `Data prevista atual: ${_dataAtual ? new Date(_dataAtual + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}`;
+    } else {
+      const limFmt2 = sub?.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+      const prorrCount = sub?.diasProrrogados || 0;
+      info2.textContent = `Limite atual: ${limFmt2}${prorrCount ? ' (prorrogado ' + prorrCount + 'x)' : ''}`.trim();
+    }
   }
-  document.getElementById('prorrogar-modal').style.display = 'flex';
+  _modalP.style.display = 'flex';
 }
 
 function closeProrrogarModal() {
@@ -2339,6 +2410,17 @@ async function saveProrrogacao() {
     const etapas2 = JSON.parse(JSON.stringify(obra2.etapas));
     etapas2[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista = novaData;
     await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas2 });
+    closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
+  }
+  // Modo data-prevista (subs isAnalise / Documentações): edita dataPrevista, sem justificativa
+  if (document.getElementById('prorrogar-modal')?.dataset?.analiseMode === '1') {
+    document.getElementById('prorrogar-modal').dataset.analiseMode = '';
+    const obraA = _obras.find(o => o.id === _prorrogarObraId); if (!obraA) return;
+    const etapasA = JSON.parse(JSON.stringify(obraA.etapas));
+    const refA = _findSubRef(etapasA, _prorrogarEtapaId, _prorrogarSubId, _prorrogarItemId);
+    if (!refA) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
+    refA.sub.dataLimite = novaData; refA.sub.dataPrevista = null;
+    await db.collection('obras').doc(_prorrogarObraId).update({ etapas: etapasA });
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
   }
   const justProrroga = document.getElementById('prorrogar-justificativa')?.value.trim();
@@ -2565,6 +2647,158 @@ async function reabrirObra(obraId) {
   showComercialToast('Obra reaberta! ✅', 'success');
 }
 
+// ── Onda 2: Editar registro (COC / Aditivo / Medição) ───────────────────
+function editarRegistro(obraId, etapaId, itemId, cocIdx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const isCoc = (cocIdx !== null && cocIdx !== undefined && cocIdx !== '');
+  let nome = '', data = '';
+  if (isCoc) {
+    const it = obra.etapas?.[etapaId]?.cocLista?.[cocIdx]; if (!it) return;
+    nome = it.nome || ''; data = it.dataPrevista || '';
+  } else {
+    const it = (obra.etapas?.[etapaId]?.lista || []).find(i => i.id === itemId); if (!it) return;
+    nome = it.titulo || ''; data = it.dataPrevista || '';
+  }
+  document.getElementById('editar-registro-obra').value = obraId;
+  document.getElementById('editar-registro-etapa').value = etapaId;
+  document.getElementById('editar-registro-item').value = itemId || '';
+  document.getElementById('editar-registro-coc').value = (isCoc ? cocIdx : '');
+  document.getElementById('editar-registro-label').innerHTML = (isCoc ? 'Nome / Identificação' : 'Título') + ' <span style="color:var(--accent);">*</span>';
+  document.getElementById('editar-registro-title').textContent = 'Editar ' + (isCoc ? 'COC' : (ETAPAS_CONFIG[etapaId]?.nome || 'registro'));
+  document.getElementById('editar-registro-nome').value = nome;
+  document.getElementById('editar-registro-data').value = data;
+  document.getElementById('editar-registro-modal').style.display = 'flex';
+}
+function closeEditarRegistroModal() { document.getElementById('editar-registro-modal').style.display = 'none'; }
+async function salvarEditarRegistro() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obraId = document.getElementById('editar-registro-obra').value;
+  const etapaId = document.getElementById('editar-registro-etapa').value;
+  const itemId = document.getElementById('editar-registro-item').value;
+  const cocRaw = document.getElementById('editar-registro-coc').value;
+  const nome = document.getElementById('editar-registro-nome').value.trim();
+  const data = document.getElementById('editar-registro-data').value || null;
+  if (!nome) { showComercialToast('Informe o título/nome.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  if (cocRaw !== '') {
+    const it = etapas[etapaId]?.cocLista?.[parseInt(cocRaw)]; if (!it) return;
+    it.nome = nome; it.dataPrevista = data;
+    _audit(obraId, 'coc_edit', `COC editado: "${nome}"`);
+  } else {
+    const it = (etapas[etapaId]?.lista || []).find(i => i.id === itemId); if (!it) return;
+    it.titulo = nome; it.dataPrevista = data;
+    _audit(obraId, 'item_edit', `Registro editado: "${nome}"`);
+  }
+  await db.collection('obras').doc(obraId).update({ etapas });
+  showComercialToast('Registro atualizado. ✅', 'success');
+  closeEditarRegistroModal();
+}
+
+// ── Onda 2: Excluir COC ──────────────────────────────────
+async function excluirCocItem(obraId, etapaId, cocIdx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const it = obra.etapas?.[etapaId]?.cocLista?.[cocIdx]; if (!it) return;
+  if (!confirm(`Excluir o COC "${it.nome || ''}"? Não pode ser desfeito.`)) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  etapas[etapaId].cocLista.splice(cocIdx, 1);
+  _audit(obraId, 'coc_del', `COC excluído: "${it.nome || ''}"`);
+  await db.collection('obras').doc(obraId).update({ etapas });
+  showComercialToast('COC excluído. ✅', 'success');
+}
+
+// ── Onda 2: Reabrir sub-etapa (volta p/ ativa; posteriores -> pendente) ─────
+async function reabrirSubEtapa(obraId, etapaId, subId, itemId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  if (!confirm('Reabrir esta sub-etapa? As sub-etapas posteriores voltam para pendente.')) return;
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const cfg = ETAPAS_CONFIG[etapaId]; if (!cfg) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const tpl = cfg.subEtapasTemplate || cfg.subEtapas || [];
+  let subsObj, item = null;
+  if (itemId) {
+    item = (etapas[etapaId]?.lista || []).find(i => i.id === itemId); if (!item) return;
+    item.subEtapas = item.subEtapas || {}; subsObj = item.subEtapas;
+  } else {
+    etapas[etapaId].subEtapas = etapas[etapaId].subEtapas || {}; subsObj = etapas[etapaId].subEtapas;
+  }
+  const idx = tpl.findIndex(s => s.id === subId);
+  if (idx < 0 || !subsObj[subId]) return;
+  subsObj[subId].status = 'active';
+  subsObj[subId].dataConclusao = null;
+  subsObj[subId].concluidoPor = null;
+  for (let i = idx + 1; i < tpl.length; i++) {
+    const sid = tpl[i].id;
+    if (!subsObj[sid] || subsObj[sid].bloqueada) continue;
+    subsObj[sid].status = 'pending';
+    subsObj[sid].dataLimite = null;
+    subsObj[sid].dataConclusao = null;
+    subsObj[sid].concluidoPor = null;
+    if ('motivoAtraso' in subsObj[sid]) subsObj[sid].motivoAtraso = null;
+  }
+  if (item) { item.status = 'active'; item.dataConclusao = null; }
+  if (etapas[etapaId]) etapas[etapaId].status = 'active';
+  _audit(obraId, 'reabrir_sub', `Sub-etapa reaberta: "${(tpl[idx] && tpl[idx].nome) || subId}"`);
+  await db.collection('obras').doc(obraId).update({ etapas, concluida: false, dataConclusao: null });
+  showComercialToast('Sub-etapa reaberta. ✅', 'success');
+}
+
+// ── Onda 2.1: Sub-etapas retroativas (concluir c/ data livre + obs / reabrir) ──
+let _retroRef = {};
+function openConcluirRetroModal(obraId, etapaId, subId, itemId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  _retroRef = { obraId, etapaId, subId, itemId: itemId || null };
+  const cfg = ETAPAS_CONFIG[etapaId];
+  const tpl = (cfg && (cfg.subEtapasTemplate || cfg.subEtapas)) || [];
+  const nome = (tpl.find(s => s.id === subId) || {}).nome || subId;
+  document.getElementById('retro-concluir-title').textContent = 'Concluir: ' + nome;
+  document.getElementById('retro-concluir-data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('retro-concluir-obs').value = '';
+  document.getElementById('retro-concluir-modal').style.display = 'flex';
+}
+function closeConcluirRetroModal() { document.getElementById('retro-concluir-modal').style.display = 'none'; }
+async function salvarConclusaoRetro() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const data = document.getElementById('retro-concluir-data').value;
+  if (!data) { showComercialToast('Informe a data de conclusão.', 'error'); return; }
+  const obsTxt = document.getElementById('retro-concluir-obs').value.trim();
+  const { obraId, etapaId, subId, itemId } = _retroRef;
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  let subsObj;
+  if (itemId) { const it = (etapas[etapaId]?.lista || []).find(i => i.id === itemId); if (!it) return; it.subEtapas = it.subEtapas || {}; subsObj = it.subEtapas; }
+  else { etapas[etapaId].subEtapas = etapas[etapaId].subEtapas || {}; subsObj = etapas[etapaId].subEtapas; }
+  const sub = subsObj[subId]; if (!sub) return;
+  sub.status = 'done';
+  sub.dataConclusao = data;
+  sub.concluidoPor = currentUser.username;
+  if (obsTxt) {
+    if (!sub.observacoes) sub.observacoes = [];
+    sub.observacoes.push({ texto: obsTxt, data: new Date().toISOString().slice(0, 10), hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), por: currentUser.username });
+  }
+  _audit(obraId, 'retro_concluir', `Sub-etapa retroativa concluída: "${subId}" (${data})`);
+  await db.collection('obras').doc(obraId).update({ etapas });
+  showComercialToast('Sub-etapa concluída. ✅', 'success');
+  closeConcluirRetroModal();
+}
+async function reabrirSubRetro(obraId, etapaId, subId, itemId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  let subsObj;
+  if (itemId) { const it = (etapas[etapaId]?.lista || []).find(i => i.id === itemId); if (!it) return; it.subEtapas = it.subEtapas || {}; subsObj = it.subEtapas; }
+  else { etapas[etapaId].subEtapas = etapas[etapaId].subEtapas || {}; subsObj = etapas[etapaId].subEtapas; }
+  const sub = subsObj[subId]; if (!sub) return;
+  sub.status = 'pending';
+  sub.dataConclusao = null;
+  sub.concluidoPor = null;
+  _audit(obraId, 'retro_reabrir', `Sub-etapa retroativa reaberta: "${subId}"`);
+  await db.collection('obras').doc(obraId).update({ etapas });
+  showComercialToast('Sub-etapa reaberta. ✅', 'success');
+}
+
 // ── PDF individual da obra ────────────────────────────────────────────────────
 function exportarObraPDF(obraId) {
   const obra = _obras.find(o => o.id === obraId);
@@ -2577,8 +2811,9 @@ function exportarObraPDF(obraId) {
     const e = obra.etapas?.[etapaId];
     if (!e?.ativa && e?.status !== 'pulada') return '';
     // Status da etapa: verificar atraso nas sub-etapas
-    const temAtrasoEtapa = Object.values(e.subEtapas || {}).some(
-      s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2);
+    const temAtrasoEtapa = Object.values(e.subEtapas || {}).some(s => !s.isCocLista && _vencido(s.dataLimite || s.dataPrevista, s.status, hoje2))
+      || (e.cocLista || []).some(ci => _vencido(ci.dataPrevista, ci.status, hoje2))
+      || (cfg.isLista && (e.lista || []).some(item => _vencido(item.dataPrevista, item.status, hoje2) || Object.values(item.subEtapas || {}).some(s => _vencido(_refAtraso(s, item), s.status, hoje2))));
     const _etapaDone = cfg.isLista
       ? ((e.lista || []).length > 0 && (e.lista || []).every(i => i.status === 'done'))
       : e.status === 'done';
@@ -2649,7 +2884,8 @@ function exportarObraPDF(obraId) {
         }).join('');
       }
       const s = e.subEtapas?.[sub.id]; if (!s) return '';
-      const atrasada = s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2;
+      const refData = s.dataLimite || s.dataPrevista;
+      const atrasada = s.status !== 'done' && refData && refData < hoje2;
       let st, corSt;
       if (s.status === 'done') { st = '✓ Concluída'; corSt = '#22c55e'; }
       else if (atrasada) { st = '⚠ Atrasada'; corSt = '#ef4444'; }
@@ -2661,14 +2897,14 @@ function exportarObraPDF(obraId) {
       const dtConcl = s.dataConclusao
         ? `${new Date(s.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR')}${por}`
         : '—';
-      const dtPrev = s.dataLimite ? new Date(s.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+      const dtPrev = refData ? new Date(refData + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
       const diasAt = (() => {
         if (atrasada) {
-          const d = new Date(s.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
+          const d = new Date(refData + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
           return Math.ceil((ag - d) / (1000 * 60 * 60 * 24)) + ' dias';
         }
-        if (s.status === 'done' && s.dataConclusao && s.dataLimite && s.dataConclusao > s.dataLimite) {
-          const dc = new Date(s.dataConclusao + 'T12:00:00'), dl = new Date(s.dataLimite + 'T12:00:00');
+        if (s.status === 'done' && s.dataConclusao && refData && s.dataConclusao > refData) {
+          const dc = new Date(s.dataConclusao + 'T12:00:00'), dl = new Date(refData + 'T12:00:00');
           return Math.ceil((dc - dl) / (1000 * 60 * 60 * 24)) + ' dias';
         }
         return '—';

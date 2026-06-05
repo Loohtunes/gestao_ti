@@ -37,19 +37,19 @@
 
     <div class="nav-right">
       <div id="session-timer" style="display:none;flex-direction:column;align-items:center;gap:3px;min-width:120px;">
-      <div style="display:flex;align-items:center;gap:0.4rem;">
-        <span
-          style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
-        <span id="session-countdown"
-          style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
-      </div>
-      <div id="session-bar-track"
-        style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
-        <div id="session-bar-fill"
-          style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+        <div style="display:flex;align-items:center;gap:0.4rem;">
+          <span
+            style="font-size:0.6rem;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">Sessão</span>
+          <span id="session-countdown"
+            style="font-size:0.75rem;font-family:'Space Mono',monospace;font-weight:700;color:var(--muted);letter-spacing:0.05em;transition:color 0.3s;">--:--</span>
+        </div>
+        <div id="session-bar-track"
+          style="width:110px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;">
+          <div id="session-bar-fill"
+            style="height:100%;width:100%;border-radius:2px;background:var(--accent);transition:width 1s linear,background 0.3s;">
+          </div>
         </div>
       </div>
-    </div>
       <div style="position:relative;display:inline-block;" id="ramais-wrapper">
         <button class="sync-fab-small" id="ramais-btn" onclick="toggleRamaisDropdown()" title="Ramais"
           style="gap:0.4rem;">
@@ -103,25 +103,42 @@
         <span class="chamados-sidebar-label">Módulos</span>
 
         <a class="chamados-sidebar-item" id="navpai-ti" href="dashboard.html?modulo=ti" title="T.I">
-          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="12" x="3" y="4" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="12" x="3" y="4" rx="2" />
+              <path d="M8 20h8M12 16v4" />
+            </svg></span>
           <span class="chamados-sidebar-name">T.I</span>
         </a>
 
         <span class="chamados-sidebar-item mod-pai-soon" title="Engenharia — Em breve">
-          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1M12 18h1M7 18h1"/></svg></span>
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M17 18h1M12 18h1M7 18h1" />
+            </svg></span>
           <span class="chamados-sidebar-name">Engenharia</span>
           <span class="chamados-sidebar-soon">Em breve</span>
         </span>
 
-        <a class="chamados-sidebar-item" id="navpai-comercial" href="dashboard.html?modulo=comercial" title="Comercial" style="display:none;">
-          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <a class="chamados-sidebar-item" id="navpai-comercial" href="dashboard.html?modulo=comercial" title="Comercial"
+          style="display:none;">
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="7" rx="2" />
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+            </svg></span>
           <span class="chamados-sidebar-name">Comercial</span>
         </a>
 
         <div class="chamados-sidebar-divider"></div>
 
         <a class="chamados-sidebar-item" id="navpai-geral" href="menu.html" title="Menu Principal">
-          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+          <span class="chamados-sidebar-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg></span>
           <span class="chamados-sidebar-name">Menu Principal</span>
         </a>
 
@@ -643,14 +660,15 @@
       </div>
       <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
         <div>
-          <label class="form-label">Nova data limite <span style="color:var(--accent);">*</span></label>
+          <label class="form-label" id="prorrogar-data-label">Nova data limite <span
+              style="color:var(--accent);">*</span></label>
           <input type="date" id="prorrogar-data-input" class="form-input" style="width:100%;margin-top:0.4rem;"
             onkeydown="if(event.key==='Enter')saveProrrogacao()">
           <div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">
             A data de fechamento da obra permanece imutável.
           </div>
         </div>
-        <div>
+        <div id="prorrogar-just-wrap">
           <label class="form-label">Justificativa <span style="color:var(--accent);">*</span></label>
           <textarea id="prorrogar-justificativa" class="form-input" rows="2" placeholder="Motivo da prorrogação..."
             style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
@@ -799,6 +817,65 @@
       <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
         <button class="btn-secondary" onclick="closeAddItemModal()">Cancelar</button>
         <button class="btn-primary" onclick="saveAddItem()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL EDITAR REGISTRO (COC / Aditivo / Medição) ══ -->
+  <div id="editar-registro-modal"
+    style="display:none;position:fixed;inset:0;z-index:1080;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;"
+    onclick="if(event.target===this)closeEditarRegistroModal()">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="editar-registro-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <input type="hidden" id="editar-registro-obra">
+      <input type="hidden" id="editar-registro-etapa">
+      <input type="hidden" id="editar-registro-item">
+      <input type="hidden" id="editar-registro-coc">
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <div>
+          <label class="form-label" id="editar-registro-label">Título <span
+              style="color:var(--accent);">*</span></label>
+          <input type="text" id="editar-registro-nome" class="form-input" style="width:100%;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label class="form-label">Data prevista</label>
+          <input type="date" id="editar-registro-data" class="form-input" style="width:100%;margin-top:0.25rem;">
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeEditarRegistroModal()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarEditarRegistro()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL CONCLUIR SUB-ETAPA RETROATIVA ══ -->
+  <div id="retro-concluir-modal"
+    style="display:none;position:fixed;inset:0;z-index:1080;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;"
+    onclick="if(event.target===this)closeConcluirRetroModal()">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="retro-concluir-title" style="font-size:0.9rem;font-weight:700;"></div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <div>
+          <label class="form-label">Data de conclusão <span style="color:var(--accent);">*</span></label>
+          <input type="date" id="retro-concluir-data" class="form-input" style="width:100%;margin-top:0.25rem;">
+        </div>
+        <div>
+          <label class="form-label">Observação <span
+              style="color:var(--muted);font-weight:400;">(opcional)</span></label>
+          <textarea id="retro-concluir-obs" class="form-input" rows="3" placeholder="Observação sobre essa etapa..."
+            style="width:100%;resize:none;margin-top:0.25rem;"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="closeConcluirRetroModal()">Cancelar</button>
+        <button class="btn-primary" onclick="salvarConclusaoRetro()">Concluir</button>
       </div>
     </div>
   </div>
