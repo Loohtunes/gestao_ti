@@ -1002,7 +1002,7 @@ function renderObraModal(obra) {
     if (!eData?.ativa || eData?.status === 'pulada') {
       const isPulada = eData?.status === 'pulada';
       const canIniciarX = !obra.concluida;
-      return `<div class="etapa-item">
+      return `<div class="etapa-item" data-etapa-row="${etapaId}">
         <div class="etapa-icon pending" style="${isPulada ? 'opacity:0.5;' : 'opacity:0.4;'}">⏭</div>
         <div class="etapa-content">
           <div class="etapa-nome" style="opacity:${isPulada ? '0.7' : '0.6'};">
@@ -1023,7 +1023,7 @@ function renderObraModal(obra) {
       const etapaConcluida = obra.concluida || (_listaEtapa.length > 0 && _listaEtapa.every(i => i.status === 'done'));
       const listaIconCls = etapaConcluida ? 'done' : eStatus === 'active' ? 'active' : 'pending';
       const listaIconStyle = (etapaConcluida || eStatus === 'active') ? `style="background:${cor2};border-color:${cor2};"` : '';
-      return `<div class="etapa-item">
+      return `<div class="etapa-item" data-etapa-row="${etapaId}">
         <div class="etapa-icon ${listaIconCls}" ${listaIconStyle}>${etapaConcluida ? '✓' : ''}</div>
         <div class="etapa-content">
           <div class="etapa-nome" style="${eStatus === 'active' ? `color:${cor2};` : ''}">
@@ -1149,7 +1149,7 @@ function renderObraModal(obra) {
     const etapaIconStyle = etapaStatus === 'active' ? `style="background:${cor};border-color:${cor};"` : etapaStatus === 'done' ? `style="background:${cor};border-color:${cor};"` : '';
     const canRevisao = etapaStatus !== 'pending' && !obra.concluida;
     const canIniciar = etapaStatus === 'pending' && !obra.concluida;
-    return `<div class="etapa-item">
+    return `<div class="etapa-item" data-etapa-row="${etapaId}">
       <div class="etapa-icon ${etapaIconCls}" ${etapaIconStyle}>${etapaStatus === 'done' ? '✓' : ''}</div>
       <div class="etapa-content">
         <div class="etapa-nome" style="${etapaStatus === 'active' ? `color:${cor};` : ''}" title="${(eData.observacoes || []).length} observação(ões)">
@@ -3647,8 +3647,22 @@ function highlightObraFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const obraId = params.get('obra');
   if (!obraId) return;
+  const etapaAlvo = params.get('etapa');
   // Aguardar o DOM renderizar os cards
   setTimeout(() => {
+    if (etapaAlvo) {
+      openObraModal(obraId);
+      setTimeout(() => {
+        const row = document.querySelector(`[data-etapa-row="${etapaAlvo}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          row.classList.add('etapa-row-highlight');
+          setTimeout(() => row.classList.remove('etapa-row-highlight'), 2500);
+        }
+        const u = new URL(window.location); u.searchParams.delete('obra'); u.searchParams.delete('etapa'); window.history.replaceState({}, '', u);
+      }, 280);
+      return;
+    }
     const card = document.querySelector(`.obra-card[data-obra-id="${obraId}"]`);
     if (!card) return;
     card.scrollIntoView({ behavior: 'smooth', block: 'center' });

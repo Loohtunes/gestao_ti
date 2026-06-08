@@ -194,7 +194,8 @@
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main class="config-main">
-      <div class="dash-construcao">
+      <div id="dash-content" style="display:none;"></div>
+      <div class="dash-construcao" id="dash-construcao">
         <svg width="130" height="130" viewBox="0 0 64 64" fill="none" stroke="var(--muted)" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20 58 L28 40 L36 40 L44 58 Z" />
@@ -291,6 +292,298 @@
       ).join('');
     }
 
+    // ===== Painel Comercial: dados, métricas e alertas =====
+    const ETAPA_LABELS = { proposta: 'Proposta', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos', medicao: 'Medição' };
+    const SUB_LABELS = { elaboracao: 'Elaboração', envio: 'Envio', analise_cliente: 'Análise do Cliente', assinatura: 'Assinatura', em_analise: 'Em Análise', coc: 'COC', art: 'ART', cno_sfobras: 'CNO/SFOBRAS', serasa: 'Serasa', comparativo_recebimento: 'Recebimento do Comparativo', analise_comparativo: 'Em Análise', carta_envio: 'Envio da Carta Aditiva', carta_aprovacao: 'Aprovação da Carta Aditiva', carta_assinatura: 'Assinatura da Carta Aditiva', termo_envio: 'Envio do Termo Aditivo', termo_assinatura: 'Assinatura do Termo Aditivo', em_aprovacao: 'Em aprovação', aprovacao: 'Aprovação do Cliente' };
+    function _refAtrasoSub(sub, item) {
+      if (!sub) return null;
+      return sub.dataLimite || sub.dataPrevista || (sub.status === 'active' && item ? item.dataPrevista : null) || null;
+    }
+    function _etapaEmAtraso(e, hoje) {
+      if (!e) return false;
+      if (Array.isArray(e.lista)) {
+        return e.lista.some(item => item.status !== 'done' && item.status !== 'pulada' && (
+          (item.dataPrevista && item.dataPrevista < hoje) ||
+          Object.values(item.subEtapas || {}).some(s => { const r = _refAtrasoSub(s, item); return s.status !== 'done' && s.status !== 'pulada' && r && r < hoje; })
+        ));
+      }
+      return Object.values(e.subEtapas || {}).some(s => !s.isCocLista && s.status !== 'done' && s.status !== 'pulada' && (s.dataLimite || s.dataPrevista) && (s.dataLimite || s.dataPrevista) < hoje)
+        || (e.cocLista || []).some(ci => ci.status !== 'done' && ci.status !== 'pulada' && ci.dataPrevista && ci.dataPrevista < hoje);
+    }
+    function _coletarPrazosObra(o) {
+      const out = [];
+      Object.entries(o.etapas || {}).forEach(([etapaKey, e]) => {
+        if (!e || !e.ativa || e.status === 'done' || e.status === 'pulada') return;
+        if (Array.isArray(e.lista)) {
+          e.lista.forEach(item => {
+            if (item.status === 'done' || item.status === 'pulada') return;
+            if (item.dataPrevista) out.push({ ref: item.dataPrevista, status: item.status, etapaKey, subLabel: item.titulo || '' });
+            Object.entries(item.subEtapas || {}).forEach(([sid, s]) => { const r = _refAtrasoSub(s, item); if (r) out.push({ ref: r, status: s.status, etapaKey, subLabel: (item.titulo ? item.titulo + ' · ' : '') + (SUB_LABELS[sid] || sid) }); });
+          });
+        } else {
+          Object.entries(e.subEtapas || {}).forEach(([sid, s]) => { if (s.isCocLista) return; const r = s.dataLimite || s.dataPrevista; if (r) out.push({ ref: r, status: s.status, etapaKey, subLabel: (SUB_LABELS[sid] || sid) }); });
+          (e.cocLista || []).forEach(ci => { if (ci.dataPrevista) out.push({ ref: ci.dataPrevista, status: ci.status, etapaKey, subLabel: ci.nome ? 'COC · ' + ci.nome : 'COC' }); });
+        }
+      });
+      return out;
+    }
+    function _renderTarefas(obras, hoje, dHoje) {
+      const cont = document.getElementById('cpain-tarefas-cont');
+      if (!cont) return;
+      const u = currentUser?.username;
+      const tarefas = [];
+      if (u) obras.filter(o => !o.concluida).forEach(o => {
+        Object.entries(o.etapas || {}).forEach(([etapaKey, e]) => {
+          if (!e || !e.ativa || e.status === 'pulada') return;
+          if (Array.isArray(e.lista)) {
+            e.lista.forEach(item => {
+              if (item.status === 'done' || item.status === 'pulada') return;
+              Object.entries(item.subEtapas || {}).forEach(([sid, s]) => {
+                if (s.status !== 'done' && s.responsavel === u) tarefas.push({ o, etapaKey, ref: _refAtrasoSub(s, item), subLabel: (item.titulo ? item.titulo + ' \u00b7 ' : '') + (SUB_LABELS[sid] || sid) });
+              });
+            });
+          } else {
+            Object.entries(e.subEtapas || {}).forEach(([sid, s]) => {
+              if (s.isCocLista) return;
+              if (s.status !== 'done' && s.responsavel === u) tarefas.push({ o, etapaKey, ref: s.dataLimite || s.dataPrevista, subLabel: (SUB_LABELS[sid] || sid) });
+            });
+            (e.cocLista || []).forEach(ci => {
+              if (ci.status !== 'done' && ci.responsavel === u) tarefas.push({ o, etapaKey, ref: ci.dataPrevista, subLabel: ci.nome ? 'COC \u00b7 ' + ci.nome : 'COC' });
+            });
+          }
+        });
+      });
+      tarefas.sort((a, b) => {
+        const aV = !!(a.ref && a.ref < hoje), bV = !!(b.ref && b.ref < hoje);
+        if (aV !== bV) return aV ? -1 : 1;
+        if (!a.ref && !b.ref) return 0;
+        if (!a.ref) return 1; if (!b.ref) return -1;
+        return a.ref < b.ref ? -1 : 1;
+      });
+      if (!tarefas.length) { cont.style.display = 'block'; cont.innerHTML = `<div class="cpain-vazio">Você não tem tarefas atribuídas no momento. 🎉</div>`; return; }
+      cont.innerHTML = tarefas.map(t => {
+        const nome = `#${t.o.numero || t.o.id.slice(-6).toUpperCase()} ${t.o.nome || ''}`.trim();
+        const etpTxt = `${ETAPA_LABELS[t.etapaKey] || t.etapaKey || ''} \u00b7 ${t.subLabel}`;
+        let badge;
+        if (t.ref && t.ref < hoje) badge = `<span class="cpain-tarefa-badge" style="background:#fee2e2;color:#b91c1c;">⚠ Atrasada</span>`;
+        else if (t.ref) { const dias = Math.round((new Date(t.ref + 'T12:00:00') - dHoje) / 86400000); badge = `<span class="cpain-tarefa-badge" style="background:#fef3c7;color:#b45309;">${dias === 0 ? 'Vence hoje' : 'Vence em ' + dias + 'd'}</span>`; }
+        else badge = `<span class="cpain-tarefa-badge" style="background:var(--surface3);color:var(--muted);">Sem prazo</span>`;
+        return `<div class="cpain-tarefa-card" onclick="window.location.href='comercial.html?obra=${t.o.id}&etapa=${t.etapaKey}'">
+          <div class="cpain-tarefa-nome" title="${nome}">${nome}</div>
+          <div class="cpain-tarefa-etapa" title="${etpTxt}">${etpTxt}</div>
+          ${badge}
+        </div>`;
+      }).join('');
+    }
+
+    // ===== Quadro de Avisos (post-its persistidos, tempo real) =====
+    const CORES_AVISO = ['#fef08a', '#bfdbfe', '#fecaca', '#bbf7d0', '#fed7aa', '#e9d5ff', '#fbcfe8', '#a7f3d0', '#e2e8f0'];
+    let _avisosTime = {}, _avisosPessoal = {}, _unsubAT = null, _unsubAP = null, _avisoBusy = false, _avisoPending = false;
+    function _ehGestorComercial() {
+      const u = currentUser; if (!u) return false;
+      return !!(u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('adminComercial'));
+    }
+    function _escAviso(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    function _initAvisos() {
+      const board = document.getElementById('cpain-board');
+      if (!board) return;
+      const addBtn = document.getElementById('cpain-add-aviso');
+      if (addBtn) addBtn.onclick = (ev) => { ev.stopPropagation(); _toggleAddMenu(); };
+      document.addEventListener('click', () => { const m = document.getElementById('cpain-add-menu'); if (m) m.remove(); });
+      if (_unsubAT) _unsubAT(); if (_unsubAP) _unsubAP();
+      _unsubAT = db.collection('avisos').where('escopo', '==', 'time').onSnapshot(snap => {
+        _avisosTime = {}; snap.forEach(d => _avisosTime[d.id] = Object.assign({ id: d.id }, d.data())); _renderAvisos();
+      }, e => console.error('[avisos time]', e));
+      const u = currentUser?.username;
+      if (u) _unsubAP = db.collection('avisos').where('autor', '==', u).onSnapshot(snap => {
+        _avisosPessoal = {}; snap.forEach(d => { const x = d.data(); if (x.escopo === 'pessoal') _avisosPessoal[d.id] = Object.assign({ id: d.id }, x); }); _renderAvisos();
+      }, e => console.error('[avisos pessoal]', e));
+    }
+    function _toggleAddMenu() {
+      const head = document.querySelector('.cpain-avisos-head');
+      let m = document.getElementById('cpain-add-menu');
+      if (m) { m.remove(); return; }
+      m = document.createElement('div'); m.className = 'cpain-add-menu'; m.id = 'cpain-add-menu';
+      m.innerHTML = `<button data-esc="time">Aviso do Time</button><button data-esc="pessoal">Lembrete Pessoal</button>`;
+      m.querySelectorAll('button').forEach(b => b.onclick = (ev) => { ev.stopPropagation(); _criarAviso(b.dataset.esc); m.remove(); });
+      head.appendChild(m);
+    }
+    async function _criarAviso(escopo) {
+      const u = currentUser?.username; if (!u) return;
+      const n = Object.keys(_avisosTime).length + Object.keys(_avisosPessoal).length;
+      try {
+        await db.collection('avisos').add({ texto: '', cor: CORES_AVISO[0], x: 16 + (n % 6) * 26, y: 16 + (n % 6) * 26, escopo, autor: u, createdAt: Date.now(), updatedAt: Date.now() });
+      } catch (e) { console.error('[criar aviso]', e); }
+    }
+    function _renderAvisos() {
+      if (_avisoBusy) { _avisoPending = true; return; }
+      const board = document.getElementById('cpain-board'); if (!board) return;
+      const all = Object.values(_avisosTime).concat(Object.values(_avisosPessoal));
+      if (!all.length) { board.innerHTML = `<div class="cpain-board-vazio">Sem avisos ainda. Clique em "+ Aviso" para começar.</div>`; return; }
+      const me = currentUser?.username, gestor = _ehGestorComercial();
+      board.innerHTML = all.map(a => {
+        const canEdit = a.autor === me;
+        const canDel = a.escopo === 'pessoal' ? a.autor === me : (a.autor === me || gestor);
+        const tag = a.escopo === 'time' ? 'Time' : 'Pessoal';
+        return `<div class="cpain-postit" data-id="${a.id}" style="left:${a.x || 16}px;top:${a.y || 16}px;background:${a.cor || CORES_AVISO[0]};">
+          <div class="cpain-postit-head" data-drag="${canEdit ? '1' : '0'}">
+            <span class="cpain-postit-tag">${tag}</span>
+            <div class="cpain-postit-actions">
+              ${canEdit ? `<button data-act="cor" title="Cor">●</button>` : ''}
+              ${canDel ? `<button data-act="del" title="Excluir">×</button>` : ''}
+            </div>
+          </div>
+          <div class="cpain-postit-text" ${canEdit ? 'contenteditable="true"' : ''}>${_escAviso(a.texto)}</div>
+          <div class="cpain-postit-autor">— ${_escAviso(a.autor)}</div>
+        </div>`;
+      }).join('');
+      board.querySelectorAll('.cpain-postit').forEach(el => _bindPostit(el));
+    }
+    function _bindPostit(el) {
+      const id = el.dataset.id;
+      const a = Object.assign({}, _avisosTime, _avisosPessoal)[id]; if (!a) return;
+      const head = el.querySelector('.cpain-postit-head');
+      if (head && head.dataset.drag === '1') {
+        head.addEventListener('mousedown', (e) => {
+          if (e.target.closest('button')) return;
+          e.preventDefault(); _avisoBusy = true;
+          const board = document.getElementById('cpain-board');
+          const rect = board.getBoundingClientRect();
+          const offX = e.clientX - el.offsetLeft, offY = e.clientY - el.offsetTop;
+          const move = (ev) => {
+            let nx = ev.clientX - offX, ny = ev.clientY - offY;
+            nx = Math.max(0, Math.min(nx, rect.width - el.offsetWidth));
+            ny = Math.max(0, Math.min(ny, rect.height - el.offsetHeight));
+            el.style.left = nx + 'px'; el.style.top = ny + 'px';
+          };
+          const up = async () => {
+            document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+            const nx = parseInt(el.style.left) || 0, ny = parseInt(el.style.top) || 0;
+            try { await db.collection('avisos').doc(id).update({ x: nx, y: ny, updatedAt: Date.now() }); } catch (err) { console.error(err); }
+            _avisoBusy = false; if (_avisoPending) { _avisoPending = false; _renderAvisos(); }
+          };
+          document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+        });
+      }
+      const txt = el.querySelector('.cpain-postit-text');
+      if (txt && txt.isContentEditable) {
+        txt.addEventListener('focus', () => { _avisoBusy = true; });
+        txt.addEventListener('blur', async () => {
+          const novo = txt.textContent.trim();
+          if (novo !== (a.texto || '')) { try { await db.collection('avisos').doc(id).update({ texto: novo, updatedAt: Date.now() }); } catch (e) { console.error(e); } }
+          _avisoBusy = false; if (_avisoPending) { _avisoPending = false; _renderAvisos(); }
+        });
+      }
+      const corBtn = el.querySelector('[data-act="cor"]');
+      if (corBtn) corBtn.addEventListener('click', (e) => { e.stopPropagation(); _abrirPaleta(el, id); });
+      const delBtn = el.querySelector('[data-act="del"]');
+      if (delBtn) delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Excluir este aviso?')) return;
+        try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
+      });
+    }
+    function _abrirPaleta(el, id) {
+      let pal = el.querySelector('.cpain-postit-cores');
+      if (pal) { pal.remove(); return; }
+      pal = document.createElement('div'); pal.className = 'cpain-postit-cores';
+      pal.innerHTML = CORES_AVISO.map(c => `<span class="cpain-cor-swatch" data-cor="${c}" style="background:${c};"></span>`).join('');
+      pal.querySelectorAll('.cpain-cor-swatch').forEach(s => s.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try { await db.collection('avisos').doc(id).update({ cor: s.dataset.cor, updatedAt: Date.now() }); } catch (err) { console.error(err); }
+      }));
+      el.appendChild(pal);
+    }
+
+    async function renderPainelComercial() {
+      const cont = document.getElementById('dash-content');
+      cont.innerHTML = `
+        <div class="cpain-grid">
+          <section class="cpain-avisos">
+            <div class="cpain-avisos-head">
+              <div class="cpain-block-title">Quadro de Avisos</div>
+              <button class="cpain-add-btn" id="cpain-add-aviso" title="Novo aviso">+ Aviso</button>
+            </div>
+            <div class="cpain-board" id="cpain-board"></div>
+          </section>
+          <div class="cpain-right">
+            <section class="cpain-metricas" id="cpain-metricas"></section>
+            <section class="cpain-alertas">
+              <div class="cpain-block-title">Alertas Comerciais</div>
+              <div class="cpain-alertas-row" id="cpain-alertas-row"><div class="cpain-vazio">Carregando…</div></div>
+            </section>
+            <section class="cpain-tarefas">
+              <div class="cpain-block-title">Tarefas atribuídas a você</div>
+              <div class="cpain-tarefas-cont" id="cpain-tarefas-cont"><div class="cpain-vazio">Carregando…</div></div>
+            </section>
+          </div>
+        </div>`;
+      let obras = [];
+      try {
+        const snap = await db.collection('obras').get();
+        snap.forEach(d => obras.push(Object.assign({ id: d.id }, d.data())));
+      } catch (e) { console.error('Erro ao carregar obras', e); }
+      obras = obras.filter(o => !o.arquivada);
+      const hoje = new Date().toISOString().slice(0, 10);
+      const dHoje = new Date(hoje + 'T12:00:00');
+      let mObras = 0, mAnd = 0, mAtr = 0, mConc = 0;
+      obras.forEach(o => {
+        if (!o.concluida) mObras++;
+        Object.values(o.etapas || {}).forEach(e => {
+          if (!e) return;
+          if (e.status === 'done') mConc++;
+          if (e.ativa && e.status === 'active') mAnd++;
+          if (!o.concluida && e.ativa && e.status !== 'done' && e.status !== 'pulada' && _etapaEmAtraso(e, hoje)) mAtr++;
+        });
+      });
+      const mets = [
+        { n: mObras, l: 'Obras em andamento', c: 'var(--accent)' },
+        { n: mAnd, l: 'Etapas em andamento', c: '#3b82f6' },
+        { n: mAtr, l: 'Etapas em atraso', c: '#ef4444' },
+        { n: mConc, l: 'Etapas concluídas', c: '#22c55e' }
+      ];
+      document.getElementById('cpain-metricas').innerHTML = mets.map(m =>
+        `<div class="cpain-metrica"><div class="cpain-metrica-num" style="color:${m.c};">${m.n}</div><div class="cpain-metrica-label">${m.l}</div></div>`).join('');
+      const alertas = [];
+      obras.filter(o => !o.concluida).forEach(o => {
+        let pAtr = null, pVenc = null, diasVenc = null;
+        _coletarPrazosObra(o).forEach(p => {
+          if (p.status === 'done' || p.status === 'pulada' || !p.ref) return;
+          if (p.ref < hoje) { if (!pAtr || p.ref < pAtr.ref) pAtr = p; }
+          else { const dias = Math.round((new Date(p.ref + 'T12:00:00') - dHoje) / 86400000); if (dias <= 7 && (pVenc === null || dias < diasVenc)) { pVenc = p; diasVenc = dias; } }
+        });
+        if (pAtr) alertas.push({ o, tipo: 'atraso', data: pAtr.ref, etapaKey: pAtr.etapaKey, subLabel: pAtr.subLabel });
+        else if (pVenc) alertas.push({ o, tipo: 'vence', dias: diasVenc, etapaKey: pVenc.etapaKey, subLabel: pVenc.subLabel });
+      });
+      alertas.sort((a, b) => ((a.tipo === 'atraso' ? 0 : 1) - (b.tipo === 'atraso' ? 0 : 1)) || ((a.data || '') < (b.data || '') ? -1 : 1));
+      const row = document.getElementById('cpain-alertas-row');
+      if (!alertas.length) {
+        row.style.display = 'block';
+        row.innerHTML = `<div class="cpain-vazio">Nenhuma obra com etapa em atraso ou vencendo nos próximos 7 dias. 🎉</div>`;
+      } else {
+        const MAX_AL = 20;
+        const extra = alertas.length - MAX_AL;
+        row.innerHTML = alertas.slice(0, MAX_AL).map(a => {
+          const nome = `#${a.o.numero || a.o.id.slice(-6).toUpperCase()} ${a.o.nome || ''}`.trim();
+          const atraso = a.tipo === 'atraso';
+          const badge = atraso
+            ? `<span class="cpain-alerta-badge" style="background:#fee2e2;color:#b91c1c;">⚠ Atrasada</span>`
+            : `<span class="cpain-alerta-badge" style="background:#fef3c7;color:#b45309;">Vence em ${a.dias}d</span>`;
+          const dataTxt = atraso ? `desde ${new Date(a.data + 'T12:00:00').toLocaleDateString('pt-BR')}` : '';
+          const etpNome = ETAPA_LABELS[a.etapaKey] || a.etapaKey || '';
+          const etpTxt = a.subLabel ? `${etpNome} · ${a.subLabel}` : etpNome;
+          return `<div class="cpain-alerta-card" onclick="window.location.href='comercial.html?obra=${a.o.id}'" style="border-left:3px solid ${atraso ? '#ef4444' : '#f59e0b'};">
+            <div class="cpain-alerta-nome" title="${nome}">${nome}</div>
+            ${etpTxt ? `<div class="cpain-alerta-etapa" title="${etpTxt}">${etpTxt}</div>` : ''}
+            ${badge}
+            ${dataTxt ? `<div style="font-size:0.6rem;color:var(--muted);margin-top:0.3rem;font-family:var(--font-mono);">${dataTxt}</div>` : ''}
+          </div>`;
+        }).join('') + (extra > 0 ? `<div class="cpain-alerta-card cpain-alerta-mais" onclick="window.location.href='comercial.html'"><div class="cpain-alerta-mais-num">+${extra}</div><div class="cpain-alerta-mais-txt">ver todas no Controle de Obras</div></div>` : '');
+      }
+      _renderTarefas(obras, hoje, dHoje);
+      _initAvisos();
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       if (typeof loadUsers === 'function') await loadUsers();
       const savedId = localStorage.getItem('chamados-current-user-id');
@@ -345,6 +638,11 @@
       // Cabeçalho + abas + widgets
       const modulo = MODULOS[escopo];
       montarTabs(user, escopo);
+      if (escopo === 'comercial') {
+        document.getElementById('dash-construcao').style.display = 'none';
+        document.getElementById('dash-content').style.display = '';
+        renderPainelComercial();
+      }
     });
   </script>
 </body>

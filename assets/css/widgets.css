@@ -202,3 +202,454 @@
   font-family: 'Space Mono', monospace;
   margin-top: 0.5rem;
 }
+
+
+/* ===== Painel Comercial ===== */
+.cpain-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.25rem;
+  align-items: stretch;
+}
+
+.cpain-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.cpain-block-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.6rem;
+}
+
+.cpain-avisos,
+.cpain-alertas,
+.cpain-tarefas,
+.cpain-metricas {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+}
+
+.cpain-avisos {
+  min-height: 300px;
+  background: var(--surface);
+  border-color: var(--surface3);
+  display: flex;
+  flex-direction: column;
+}
+
+.cpain-soon {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.cpain-vazio {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.4rem 0;
+}
+
+.cpain-alertas-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-columns: 205px;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface3) transparent;
+}
+
+.cpain-alertas-row::-webkit-scrollbar {
+  height: 8px;
+}
+
+.cpain-alertas-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cpain-alertas-row::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.cpain-alertas-row::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.cpain-alerta-card {
+  flex: 0 0 205px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  background: var(--surface2);
+}
+
+.cpain-alerta-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px #00000018;
+}
+
+.cpain-alerta-nome {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpain-alerta-etapa {
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpain-alerta-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+.cpain-metricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.cpain-metrica {
+  text-align: center;
+  padding: 0.6rem 0.4rem;
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.cpain-metrica-num {
+  font-size: 1.9rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.cpain-metrica-label {
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+  font-weight: 600;
+}
+
+@media (max-width:900px) {
+  .cpain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cpain-metricas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cpain-alerta-mais {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface3);
+  border-style: dashed;
+}
+
+.cpain-alerta-mais-num {
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.cpain-alerta-mais-txt {
+  font-size: 0.58rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.2rem;
+}
+
+
+/* ===== Painel Comercial: Tarefas ===== */
+.cpain-tarefas-cont {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(3, auto);
+  grid-auto-columns: 205px;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface3) transparent;
+}
+
+.cpain-tarefas-cont::-webkit-scrollbar {
+  height: 8px;
+}
+
+.cpain-tarefas-cont::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cpain-tarefas-cont::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.cpain-tarefas-cont::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.cpain-tarefa-card {
+  border: 1px solid var(--border2);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  padding: 0.6rem 0.7rem;
+  cursor: pointer;
+  background: var(--surface2);
+  transition: transform .12s, box-shadow .12s;
+}
+
+.cpain-tarefa-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px #00000018;
+}
+
+.cpain-tarefa-nome {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpain-tarefa-etapa {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cpain-tarefa-badge {
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+}
+
+
+/* ===== Quadro de Avisos: lousa + post-its ===== */
+.cpain-avisos-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+  position: relative;
+}
+
+.cpain-avisos-head .cpain-block-title {
+  margin-bottom: 0;
+}
+
+.cpain-add-btn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+}
+
+.cpain-add-btn:hover {
+  filter: brightness(1.08);
+}
+
+.cpain-add-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px #00000030;
+  z-index: 30;
+  overflow: hidden;
+  min-width: 160px;
+}
+
+.cpain-add-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.cpain-add-menu button:hover {
+  background: var(--surface2);
+}
+
+.cpain-board {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.cpain-board-vazio {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  pointer-events: none;
+  text-align: center;
+  padding: 1rem;
+}
+
+.cpain-postit {
+  position: absolute;
+  width: 172px;
+  min-height: 92px;
+  padding: 0.45rem 0.55rem;
+  border-radius: 4px;
+  box-shadow: 0 3px 10px #00000028;
+  display: flex;
+  flex-direction: column;
+  color: #1a1a1a;
+}
+
+.cpain-postit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.cpain-postit-head[data-drag="1"] {
+  cursor: grab;
+}
+
+.cpain-postit-head[data-drag="1"]:active {
+  cursor: grabbing;
+}
+
+.cpain-postit-tag {
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #00000018;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+}
+
+.cpain-postit-actions {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.cpain-postit-actions button {
+  background: #00000012;
+  border: none;
+  border-radius: 3px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: #1a1a1a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.cpain-postit-actions button:hover {
+  background: #00000026;
+}
+
+.cpain-postit-text {
+  flex: 1;
+  font-size: 0.76rem;
+  line-height: 1.3;
+  outline: none;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.cpain-postit-text[contenteditable]:empty::before {
+  content: 'Escreva...';
+  opacity: 0.45;
+}
+
+.cpain-postit-autor {
+  font-size: 0.55rem;
+  opacity: 0.6;
+  margin-top: 0.3rem;
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.cpain-postit-cores {
+  display: flex;
+  gap: 0.28rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cpain-cor-swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff80;
+  box-shadow: 0 1px 3px #00000030;
+}
+
+.cpain-cor-swatch:hover {
+  transform: scale(1.15);
+}

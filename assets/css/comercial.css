@@ -1037,6 +1037,11 @@ body.dark-mode .sub-action-btn.prorrogar:hover {
   border-color: var(--accent) !important;
 }
 
+.etapa-row-highlight {
+  animation: card-highlight-pulse 2.5s ease forwards;
+  border-radius: 12px;
+}
+
 /* ── Prazo concluída ── */
 .obra-prazo.concluida {
   color: #22c55e;
