@@ -532,8 +532,34 @@
   position: relative;
   flex: 1;
   min-height: 260px;
-  overflow: hidden;
+  overflow: auto;
   border-radius: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface3) transparent;
+}
+
+.cpain-board::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cpain-board::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cpain-board::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.cpain-board::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.cpain-board-canvas {
+  position: relative;
+  width: 960px;
+  height: 640px;
 }
 
 .cpain-board-vazio {

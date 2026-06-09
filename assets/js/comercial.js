@@ -479,8 +479,7 @@ function hasEtapaAtrasadaPorId(obra, etapaId) {
   const e = obra.etapas[etapaId];
   if (!e?.ativa) return false;
   if (Array.isArray(e.lista)) {
-    return e.lista.some(item => _vencido(item.dataPrevista, item.status, hoje)
-      || Object.values(item.subEtapas || {}).some(sub => _vencido(_refAtraso(sub, item), sub.status, hoje)));
+    return e.lista.some(item => Object.values(item.subEtapas || {}).some(sub => _vencido(_refAtraso(sub, item), sub.status, hoje)));
   }
   return Object.values(e.subEtapas || {}).some(sub => !sub.isCocLista && _vencido(sub.dataLimite || sub.dataPrevista, sub.status, hoje))
     || (e.cocLista || []).some(ci => _vencido(ci.dataPrevista, ci.status, hoje));
@@ -495,7 +494,6 @@ function hasSubEtapaAtrasada(obra) {
     // Lista (aditivos/medicao)
     if (Array.isArray(e.lista)) {
       for (const item of e.lista) {
-        if (_vencido(item.dataPrevista, item.status, hoje)) return true;
         for (const sub of Object.values(item.subEtapas || {})) {
           if (_vencido(_refAtraso(sub, item), sub.status, hoje)) return true;
         }
@@ -535,7 +533,7 @@ function getCorStripe(obra) {
     if (cfg?.isLista) {
       (e.lista || []).forEach(item => {
         if (item.status === 'done' || item.status === 'pulada') return;
-        avaliar(item.status, item.dataPrevista);
+        // Prioriza o prazo das sub-etapas; o item.dataPrevista entra só como fallback da sub ativa
         Object.values(item.subEtapas || {}).forEach(s => avaliar(s.status, s.dataLimite || s.dataPrevista || (s.status === 'active' ? item.dataPrevista : null)));
       });
     } else {
@@ -544,9 +542,8 @@ function getCorStripe(obra) {
     }
   }
   if (temAtraso) return '#ef4444';   // vermelho
-  // Amarelo: sub-etapa vencendo em ≤7d OU prazo estimado em ≤7d
-  const prazoVencendo = obra.prazoEstimado && obra.prazoEstimado >= hoje && obra.prazoEstimado <= d7s;
-  if (temVencendo || prazoVencendo) return '#f59e0b';
+  // Amarelo: apenas se alguma sub-etapa/item estiver vencendo em ≤7d (independe do prazo estimado da obra)
+  if (temVencendo) return '#f59e0b';
   return '#3b82f6';                  // azul padrão
 }
 
@@ -3442,8 +3439,10 @@ function exportarRelatorioPendencias() {
       const e = obra.etapas?.[etapaId];
       const cfg = ETAPAS_CONFIG[etapaId];
       if (!e?.ativa) return;
-      const processSub = (sub, subNome, titulo) => {
-        if (sub.status === 'done' || !sub.responsavel) return;
+      const processSub = (sub, subNome, titulo, item) => {
+        // Apenas etapas em andamento (exclui não iniciadas/pendentes e concluídas)
+        if (sub.status !== 'active' || !sub.responsavel) return;
+        const ref = sub.dataLimite || sub.dataPrevista || (item ? item.dataPrevista : null);
         rows.push({
           numero: obra.numero || obra.id.slice(-6),
           nome: obra.nome,
@@ -3451,16 +3450,16 @@ function exportarRelatorioPendencias() {
           etapa: titulo ? `${cfg.nome} — ${titulo}` : cfg.nome,
           subEtapa: subNome,
           responsavel: sub.responsavel,
-          status: sub.dataLimite && sub.dataLimite < hoje ? 'Atrasada' : sub.status === 'active' ? 'Em andamento' : 'Pendente',
-          dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+          status: ref && ref < hoje ? 'Atrasada' : 'Em andamento',
+          dataLimite: ref ? new Date(ref + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
         });
       };
       if (cfg.isLista) {
         (e.lista || []).forEach(item => {
-          (cfg.subEtapasTemplate || []).forEach(s => processSub(item.subEtapas?.[s.id] || {}, s.nome, item.titulo));
+          (cfg.subEtapasTemplate || []).forEach(s => processSub(item.subEtapas?.[s.id] || {}, s.nome, item.titulo, item));
         });
       } else {
-        (cfg.subEtapas || []).forEach(s => processSub(e.subEtapas?.[s.id] || {}, s.nome, null));
+        (cfg.subEtapas || []).forEach(s => processSub(e.subEtapas?.[s.id] || {}, s.nome, null, null));
       }
     });
   });
