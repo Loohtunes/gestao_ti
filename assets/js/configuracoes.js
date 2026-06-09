@@ -785,6 +785,7 @@ function renderConfigUsers() {
   // Filtrar por busca
   const filtered = _configUserSearch
     ? users.filter(u =>
+      (u.nome || '').toLowerCase().includes(_configUserSearch) ||
       (u.username || '').toLowerCase().includes(_configUserSearch) ||
       (u.setor || '').toLowerCase().includes(_configUserSearch) ||
       (u.email || '').toLowerCase().includes(_configUserSearch))
@@ -810,7 +811,7 @@ function renderConfigUsers() {
 
   container.innerHTML = page.map(u => {
     const role = u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : u.role === 'attendant' ? 'Atendente' : 'Solicitante';
-    const meta = [u.setor, role].filter(Boolean).join(' · ');
+    const meta = [u.nome ? '@' + u.username : null, u.setor, role].filter(Boolean).join(' · ');
     const superBadge = u.isSuperAdmin ? '<span class="config-user-badge super">★</span>' : '';
     const adminBadge = !u.isSuperAdmin && u.isAdmin ? '<span class="config-user-badge admin">Admin</span>' : '';
     const vipBadge = u.isVip ? '<span class="config-user-badge vip">⭐</span>' : '';
@@ -818,10 +819,10 @@ function renderConfigUsers() {
     const canRemove = configCurrentUser.isSuperAdmin && !u.isSuperAdmin;
     return `
       <div class="config-user-card">
-        <div class="config-user-avatar">${u.username.charAt(0).toUpperCase()}</div>
+        <div class="config-user-avatar">${(u.nome || u.username).charAt(0).toUpperCase()}</div>
         <div class="config-user-info">
           <div class="config-user-name-row">
-            <span class="config-user-name">${capitalizeName(u.username)}</span>
+            <span class="config-user-name">${capitalizeName(u.nome || u.username)}</span>
             <span class="config-user-badges-inline">${superBadge}${adminBadge}${vipBadge}</span>
           </div>
           <div class="config-user-meta">${meta}</div>
@@ -854,6 +855,7 @@ function renderConfigUsers() {
 function changeConfigPage(page) {
   const filtered = _configUserSearch
     ? users.filter(u =>
+      (u.nome || '').toLowerCase().includes(_configUserSearch) ||
       (u.username || '').toLowerCase().includes(_configUserSearch) ||
       (u.setor || '').toLowerCase().includes(_configUserSearch))
     : users;
@@ -893,6 +895,7 @@ function openConfigEditUser(userId) {
   configEditingId = userId;
   document.getElementById('config-form-title').textContent = 'Editar Usuário';
   document.getElementById('config-user-name-input').value = user.username;
+  document.getElementById('config-user-nome-input').value = user.nome || '';
   document.getElementById('config-user-pass-input').value = '';
   document.getElementById('config-user-pass-input').placeholder = 'Deixe vazio para manter a senha atual';
   document.getElementById('config-user-role-input').value = user.role;
@@ -918,7 +921,7 @@ function openConfigEditUser(userId) {
 }
 
 function resetConfigUserForm() {
-  ['config-user-name-input', 'config-user-pass-input', 'config-user-email-input',
+  ['config-user-nome-input', 'config-user-name-input', 'config-user-pass-input', 'config-user-email-input',
     'config-user-whatsapp-input', 'config-user-anydesk-input'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = '';
@@ -982,6 +985,7 @@ function _confirmarResetAcessos(username, setorAnterior, setorNovo) {
 
 async function saveConfigUser() {
   const name = document.getElementById('config-user-name-input').value.trim();
+  const nome = document.getElementById('config-user-nome-input').value.trim();
   const passRaw = document.getElementById('config-user-pass-input').value.trim();
   const role = document.getElementById('config-user-role-input').value;
   const email = document.getElementById('config-user-email-input').value.trim();
@@ -1028,16 +1032,19 @@ async function saveConfigUser() {
         }
       }
     }
+    if (idx !== -1 && users[idx]) users[idx].nome = nome;
     saveUsers();
     showUserList();
+    resetConfigUserForm();
     renderConfigUsers();
     showConfigNotification('Usuário atualizado! ✅', 'success');
   } else {
     if (users.find(u => u.username === name)) { alert('Esse nome de usuário já existe!'); return; }
     const hashedPass = await hashPassword(passRaw);
-    users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin, isSuperAdmin: false, email, whatsapp, anydesk, setor, isVip });
+    users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin, isSuperAdmin: false, email, whatsapp, anydesk, setor, isVip, nome });
     saveUsers();
     showUserList();
+    resetConfigUserForm();
     renderConfigUsers();
     showConfigNotification('Usuário criado! ✅', 'success');
   }
