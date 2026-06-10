@@ -49,9 +49,6 @@ async function initMenu() {
   // Inicializar comunicados
   if (typeof initComunicados === 'function') initComunicados();
 
-  // Alertas de estoque
-  loadAlertasEstoque();
-
   // Widgets pessoais (escopo geral) — motor de widgets
   if (typeof renderWidgets === 'function') {
     renderWidgets('geral', document.getElementById('widgets-geral'), user);
@@ -259,88 +256,4 @@ function toggleMenuSidebar() {
   const isCollapsed = sidebar.classList.toggle('collapsed');
   if (icon) icon.textContent = isCollapsed ? '›' : '‹';
   localStorage.setItem('chamados-sidebar-collapsed', isCollapsed ? '1' : '0');
-}
-
-// ══════════════════════════════════════════════════════════════════
-// ALERTAS DE ESTOQUE
-// ══════════════════════════════════════════════════════════════════
-async function loadAlertasEstoque() {
-  const section = document.getElementById('alertas-estoque-section');
-  const list = document.getElementById('alertas-estoque-list');
-  if (!section || !list) return;
-
-  // Apenas admins, superadmin e atendentes visualizam alertas de estoque
-  const canSee = menuCurrentUser?.isAdmin ||
-    menuCurrentUser?.isSuperAdmin ||
-    menuCurrentUser?.role === 'attendant';
-  if (!canSee) return;
-
-  try {
-    const snap = await db.collection('insumos').get();
-    if (snap.empty) return;
-
-    const alertas = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(i => {
-        const qtd = i.qtdFisica ?? 0;
-        const minimo = i.qtdMinima ?? 0;
-        return minimo > 0 && qtd <= minimo;
-      })
-      .sort((a, b) => {
-        // Zerados primeiro, depois por % de estoque
-        const pctA = (a.qtdFisica ?? 0) / (a.qtdMinima || 1);
-        const pctB = (b.qtdFisica ?? 0) / (b.qtdMinima || 1);
-        return pctA - pctB;
-      });
-
-    if (alertas.length === 0) return;
-
-    const MAX_VISIBLE = 4;
-    const hasMore = alertas.length > MAX_VISIBLE;
-    const hidden = alertas.length - MAX_VISIBLE;
-    const isUrgent = hidden >= 5;
-    const visible = alertas.slice(0, MAX_VISIBLE);
-
-    section.style.display = 'block';
-
-    // Reconstruir header com botão de atalho + badge
-    const headerEl = section.querySelector('.alertas-header');
-    if (headerEl) {
-      const badgeHtml = hasMore ? `
-        <span class="alertas-mais-badge ${isUrgent ? 'urgente' : ''}">
-          +${alertas.length - MAX_VISIBLE}
-          <span class="alertas-pulse ${isUrgent ? 'urgente' : ''}"></span>
-        </span>` : '';
-
-      headerEl.innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-        Alertas de Estoque
-        ${badgeHtml}
-        <a href="inventario.html?tab=insumos" class="alertas-ver-btn" title="Ver todos os insumos">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>`;
-    }
-
-    list.innerHTML = visible.map(i => {
-      const qtd = i.qtdFisica ?? 0;
-      const minimo = i.qtdMinima ?? 0;
-      const zerado = qtd <= 0;
-      const cor = zerado ? '#ef4444' : '#f59e0b';
-      const bgCor = zerado ? '#fee2e2' : '#fef3c7';
-      const label = zerado ? 'Zerado' : 'No limite';
-      return `
-        <a href="inventario.html?tab=insumos&id=${i.id}" class="alerta-estoque-item">
-          <div class="alerta-estoque-icon" style="background:${bgCor};">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${cor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
-          </div>
-          <div class="alerta-estoque-info">
-            <span class="alerta-estoque-nome">${i.nome}</span>
-            <span class="alerta-estoque-detalhe">${qtd} ${i.unidade || 'un'} · mín. ${minimo}</span>
-          </div>
-          <span class="alerta-estoque-badge" style="background:${bgCor};color:${cor};border-color:${cor}44;">${label}</span>
-        </a>`;
-    }).join('');
-  } catch (e) {
-    console.error('[Menu] Erro ao carregar alertas de estoque:', e);
-  }
 }

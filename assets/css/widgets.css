@@ -679,3 +679,157 @@
 .cpain-cor-swatch:hover {
   transform: scale(1.15);
 }
+
+
+/* ── Painel T.I ───────────────────────────────────────────────────────────── */
+.tipain-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.25rem;
+  align-items: start;
+}
+
+.tipain-block {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  min-width: 0;
+}
+
+.tipain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface3) transparent;
+}
+
+.tipain-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tipain-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tipain-list::-webkit-scrollbar-thumb {
+  background: var(--surface3);
+  border-radius: 4px;
+}
+
+.tipain-list::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+.tipain-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  background: var(--surface2);
+  transition: transform .12s, box-shadow .12s;
+}
+
+.tipain-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px #00000018;
+}
+
+.tipain-card-ic {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--surface3);
+  color: var(--muted);
+}
+
+.tipain-ic-vermelho {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.tipain-ic-amarelo {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.tipain-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.tipain-card-nome {
+  font-size: 0.84rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tipain-card-sub {
+  font-size: 0.72rem;
+  margin-top: 0.1rem;
+}
+
+.tipain-card-meta {
+  font-size: 0.66rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tipain-badge {
+  flex: 0 0 auto;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.18rem 0.5rem;
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.tipain-badge-vermelho {
+  background: #fee2e2;
+  color: #ef4444;
+  border: 1px solid #ef444444;
+}
+
+.tipain-badge-amarelo {
+  background: #fef3c7;
+  color: #f59e0b;
+  border: 1px solid #f59e0b44;
+}
+
+.tipain-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #16a34a;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.6rem 0;
+}
+
+@media (max-width:900px) {
+  .tipain-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1593,15 +1593,14 @@ async function _prorrogarCocItem(obraId, etapaId, idx) {
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
   const titleEl = document.getElementById('prorrogar-modal-title');
   if (titleEl) titleEl.textContent = `Prorrogar — COC · ${item?.nome || ''}`;
-  const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
+  const hojeCoc = new Date().toISOString().slice(0, 10);
   const input = document.getElementById('prorrogar-data-input');
-  if (input) { input.min = amanha.toISOString().slice(0, 10); input.value = item?.dataPrevista || ''; }
+  if (input) { input.min = hojeCoc; input.value = item?.dataPrevista || ''; }
   const info = document.getElementById('prorrogar-modal-info');
   if (info) { info.textContent = `Data prevista atual: ${item?.dataPrevista ? new Date(item.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}`; }
   const just = document.getElementById('prorrogar-justificativa'); if (just) just.value = '';
   const _jwC = document.getElementById('prorrogar-just-wrap'); if (_jwC) _jwC.style.display = 'none';
   const _dlC = document.getElementById('prorrogar-data-label'); if (_dlC) _dlC.innerHTML = 'Data prevista <span style="color:var(--accent);">*</span>';
-  if (input) input.min = '';
   document.getElementById('prorrogar-modal').dataset.analiseMode = '';
   document.getElementById('prorrogar-modal').dataset.cocMode = '1';
   document.getElementById('prorrogar-modal').style.display = 'flex';
@@ -2402,6 +2401,8 @@ async function saveProrrogacao() {
   if (!novaData) { showComercialToast('Selecione uma data válida.', 'error'); return; }
   // Modo COC: salvar diretamente na cocLista
   if (document.getElementById('prorrogar-modal')?.dataset?.cocMode === '1') {
+    const hojeCoc = new Date().toISOString().slice(0, 10);
+    if (novaData < hojeCoc) { showComercialToast('A data não pode ser anterior a hoje.', 'error'); return; }
     document.getElementById('prorrogar-modal').dataset.cocMode = '';
     const obra2 = _obras.find(o => o.id === _cocActionObraId); if (!obra2) return;
     const etapas2 = JSON.parse(JSON.stringify(obra2.etapas));

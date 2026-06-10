@@ -1,7 +1,11 @@
 // ===== FIREBASE — Inicialização e conexão =====
 
-const _isTestEnv = window.location.hostname === 'localhost'
-  || window.location.hostname === '127.0.0.1';
+// Ambiente de teste: localhost OU qualquer host do GitHub
+// (Pages *.github.io, Codespaces *.github.dev, github.com, raw.githubusercontent.com)
+const _fbHost = window.location.hostname;
+const _isTestEnv = _fbHost === 'localhost'
+  || _fbHost === '127.0.0.1'
+  || _fbHost.includes('github');
 
 // Produção — chamados-p
 const _configProd = {
@@ -25,7 +29,7 @@ const _configDev = {
 
 const firebaseConfig = _isTestEnv ? _configDev : _configProd;
 
-console.log(`[Firebase] Ambiente: ${_isTestEnv ? '🧪 Desenvolvimento (chamados-dev)' : '🚀 Produção (chamados-p)'}`);
+console.log(`[Firebase] Ambiente: ${_isTestEnv ? '🧪 Desenvolvimento (chamados-dev)' : '🚀 Produção (chamados-p)'} · host: ${_fbHost || '(file)'}`);
 
 firebase.initializeApp(firebaseConfig);
 
