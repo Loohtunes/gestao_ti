@@ -190,6 +190,15 @@ function _migrateObraToV3(obra) {
 }
 
 
+function _migrateObraToV10(obra) {
+  // Marca o stub `coc` em Documentações com isCocLista (não deve contar como doc).
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  if (etapas.documentacoes && etapas.documentacoes.subEtapas && etapas.documentacoes.subEtapas.coc) {
+    etapas.documentacoes.subEtapas.coc.isCocLista = true;
+  }
+  return { etapas };
+}
+
 function _migrateObraToV9(obra) {
   // Multi-atribuição: responsavel (texto) → responsaveis (lista).
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
@@ -340,6 +349,7 @@ function initObraEtapas(dataFechamento) {
       const isFirstSub = isFirst && idx === 0;
       etapas[etapaId].subEtapas[sub.id] = {
         status: isFirstSub ? 'active' : 'pending',
+        isCocLista: !!sub.isCocLista,
         dataInicio: isFirstSub ? dataFechamento : null,
         dataLimite: isFirstSub && sub.dias ? addDiasUteis(dataFechamento, sub.dias) : null,
         dataConclusao: null,
@@ -384,7 +394,7 @@ function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 
 async function migrateObras() {
   try {
@@ -405,6 +415,7 @@ async function migrateObras() {
         if (ver < 7) migrated = { ...migrated, ..._migrateObraToV7(migrated) };
         if (ver < 8) migrated = { ...migrated, ..._migrateObraToV8(migrated) };
         if (ver < 9) migrated = { ...migrated, ..._migrateObraToV9(migrated) };
+        if (ver < 10) migrated = { ...migrated, ..._migrateObraToV10(migrated) };
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch (e) {
@@ -826,7 +837,7 @@ function renderObras() {
         if (obra.concluida || eStatus === 'done') {
           dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
           info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídas</span>`;
-        } else if (cocItems.length === 0) {
+        } else if (cocItems.length === 0 && done === 0) {
           dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
           info = `<span style="font-size:0.65rem;color:var(--muted);">Não iniciada</span>`;
         } else if (nAtras > 0) {
@@ -1217,14 +1228,14 @@ function renderObraModal(obra) {
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
         !subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
         (canProrrogar || (subCfg.isAnalise && subStatus !== 'done' && !obra.concluida)) ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-        `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>`,
+        (subStatus !== 'done' && subStatus !== 'cancelado' && !obra.concluida) ? `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>` : '',
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
         (subCfg.isCancelavel && subStatus !== 'done' && subStatus !== 'cancelado' && !obra.concluida) ? `<button class="acao-item motivo" data-action="cancelar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Cancelar</button>` : '',
         (subCfg.isCancelavel && subStatus === 'cancelado' && !obra.concluida) ? `<button class="acao-item concluir" data-action="reativar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reativar</button>` : '',
       ].filter(Boolean).join('');
-      const _reabrirDrop = (podeEditarComercial() && !isIndependenteSub) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
-      const actions = obra.concluida ? '' : (subStatus === 'done' && !isIndependenteSub) ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
+      const _reabrirDrop = podeEditarComercial() ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
+      const actions = obra.concluida ? '' : (subStatus === 'done') ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
       return `<div class="sub-etapa-item">
         <div class="sub-etapa-icon ${iconCls}" ${iconCls === 'active' ? `style="background:${cor};border-color:${cor};"` : iconCls === 'atrasada' ? 'style="background:#ef4444;border-color:#ef4444;"' : ''}>${statusIcon}</div>
         <div class="sub-etapa-content">
@@ -1618,21 +1629,13 @@ function _renderCocLista(obra, etapaId, subId) {
     </div>`;
   }).join('');
 
-  const addBtn = !canAct ? '' : (cocLista.length === 0
-    ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
-      <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
-        style="font-size:0.72rem;padding:0.3rem 1rem;display:inline-flex;align-items:center;gap:0.4rem;">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Iniciar Documentações (1ª COC)
-      </button>
-    </div>`
-    : `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
-      <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
-        style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        COC
-      </button>
-    </div>`);
+  const addBtn = (canAct && cocLista.length > 0) ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+    <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
+      style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      COC
+    </button>
+  </div>` : '';
 
   return `${itemsHtml}${addBtn}`;
 }
@@ -1655,6 +1658,7 @@ async function _saveAddCoc() {
   const nome = document.getElementById('add-coc-nome').value.trim();
   const data = document.getElementById('add-coc-data').value || null;
   if (!nome) { showComercialToast('Informe o nome da COC.', 'error'); return; }
+  if (!data) { showComercialToast('Informe a data prevista da COC.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const _eraVaziaCoc = !etapas[etapaId].cocLista || etapas[etapaId].cocLista.length === 0;
@@ -2415,6 +2419,7 @@ async function iniciarEtapa(obraId, etapaId) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const cfg = ETAPAS_CONFIG[etapaId];
+  if (cfg.isIndependente) { _openAddCocModal(obraId, etapaId); return; }
   etapas[etapaId].ativa = true;
   etapas[etapaId].status = 'active';
   // Etapas com lista — adicionar primeiro item
@@ -2522,7 +2527,7 @@ function openProrrogarModal(obraId, etapaId, subId, itemId) {
   if (title) title.textContent = `${_freeMode ? (_dataAtual ? 'Editar data' : 'Definir data') : 'Prorrogar'} — ${cfg.nome} · ${subCfg?.nome || ''}`;
   const amanha = new Date(); amanha.setDate(amanha.getDate() + 1);
   const input = document.getElementById('prorrogar-data-input');
-  if (input) { input.min = _freeMode ? '' : amanha.toISOString().slice(0, 10); input.value = _dataAtual || ''; }
+  if (input) { input.min = _freeMode ? new Date().toISOString().slice(0, 10) : amanha.toISOString().slice(0, 10); input.value = _dataAtual || ''; }
   const info2 = document.getElementById('prorrogar-modal-info');
   if (info2) {
     if (_freeMode) {
@@ -2563,6 +2568,8 @@ async function saveProrrogacao() {
     const etapasA = JSON.parse(JSON.stringify(obraA.etapas));
     const refA = _findSubRef(etapasA, _prorrogarEtapaId, _prorrogarSubId, _prorrogarItemId);
     if (!refA) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
+    const _hojeP = new Date().toISOString().slice(0, 10);
+    if (novaData < _hojeP) { showComercialToast('A data não pode ser anterior a hoje.', 'error'); return; }
     refA.sub.dataLimite = novaData; refA.sub.dataPrevista = null;
     await db.collection('obras').doc(_prorrogarObraId).update({ etapas: etapasA });
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
@@ -2873,7 +2880,7 @@ async function reabrirSubEtapa(obraId, etapaId, subId, itemId) {
   subsObj[subId].status = 'active';
   subsObj[subId].dataConclusao = null;
   subsObj[subId].concluidoPor = null;
-  for (let i = idx + 1; i < tpl.length; i++) {
+  if (!cfg.isIndependente) for (let i = idx + 1; i < tpl.length; i++) {
     const sid = tpl[i].id;
     if (!subsObj[sid] || subsObj[sid].bloqueada) continue;
     subsObj[sid].status = 'pending';
