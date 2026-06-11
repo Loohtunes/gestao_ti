@@ -68,9 +68,9 @@ const ETAPAS_CONFIG = {
     isIndependente: true,
     subEtapas: [
       { id: 'coc', nome: 'COC', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true, isCocLista: true },
-      { id: 'art', nome: 'ART', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
-      { id: 'cno_sfobras', nome: 'CNO/SFOBRAS', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
-      { id: 'serasa', nome: 'Serasa', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true },
+      { id: 'art', nome: 'ART', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true, isCancelavel: true },
+      { id: 'cno_sfobras', nome: 'CNO/SFOBRAS', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true, isCancelavel: true },
+      { id: 'serasa', nome: 'Serasa', dias: 0, refEtapa: null, refSub: null, isNovaDataZero: false, dateLivre: true, isAnalise: true, isIndependente: true, isCancelavel: true },
     ]
   },
   aditivos: {
@@ -565,7 +565,7 @@ function _refAtraso(sub, item) {
   return sub.dataLimite || sub.dataPrevista || (sub.status === 'active' && item ? item.dataPrevista : null) || null;
 }
 function _vencido(ref, status, hoje) {
-  return status !== 'done' && status !== 'pulada' && !!ref && ref < hoje;
+  return status !== 'done' && status !== 'pulada' && status !== 'cancelado' && !!ref && ref < hoje;
 }
 
 function hasEtapaAtrasadaPorId(obra, etapaId) {
@@ -616,7 +616,7 @@ function getCorStripe(obra) {
   let temAtraso = false, temVencendo = false;
   // Avalia uma sub-etapa/item genérico a partir de status + data de referência
   const avaliar = (status, ref) => {
-    if (status === 'done' || status === 'pulada') return;
+    if (status === 'done' || status === 'pulada' || status === 'cancelado') return;
     if (!ref) return;
     if (ref < hoje) temAtraso = true;
     else if (ref >= hoje && ref <= d7s) temVencendo = true;
@@ -697,7 +697,7 @@ function renderObras() {
       return ETAPAS_ORDER.some(etapaId => {
         const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa) return false;
         if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(s => s.status !== 'done' && _temResp(s, alvo)));
-        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && _temResp(sub, alvo));
+        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && sub.status !== 'cancelado' && _temResp(sub, alvo));
       });
     });
   }
@@ -816,12 +816,12 @@ function renderObras() {
         const subVals = Object.values(eData.subEtapas || {}).filter(s => !s.isCocLista);
         const cocItems = (eData.cocLista || []);
         const done = subVals.filter(s => s.status === 'done').length + cocItems.filter(ci => ci.status === 'done').length;
-        const total = subVals.length + (cocItems.length || 0);
+        const total = subVals.filter(s => s.status !== 'cancelado').length + (cocItems.length || 0);
         const daqui7doc = new Date(); daqui7doc.setDate(daqui7doc.getDate() + 7);
         const daqui7docs = daqui7doc.toISOString().slice(0, 10);
-        const nAtras = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2).length
+        const nAtras = subVals.filter(s => s.status !== 'done' && s.status !== 'cancelado' && s.dataLimite && s.dataLimite < hoje2).length
           + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista < hoje2).length;
-        const nVenc = subVals.filter(s => s.status !== 'done' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7docs).length
+        const nVenc = subVals.filter(s => s.status !== 'done' && s.status !== 'cancelado' && s.dataLimite && s.dataLimite >= hoje2 && s.dataLimite <= daqui7docs).length
           + cocItems.filter(ci => ci.status !== 'done' && ci.dataPrevista && ci.dataPrevista >= hoje2 && ci.dataPrevista <= daqui7docs).length;
         if (obra.concluida || eStatus === 'done') {
           dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
@@ -1172,8 +1172,9 @@ function renderObraModal(obra) {
       if (!subData) return '';
 
       let dataInfo = '';
-      // Sub-etapa Em Análise: mostrar "A X dias nessa sub-etapa"
-      if (subCfg.isAnalise && subStatus === 'active' && subData.dataInicio) {
+      if (subStatus === 'cancelado') {
+        dataInfo = `<span class="sub-data" style="color:var(--muted);">⊘ Cancelado${subData.motivoCancelamento ? ' · ' + subData.motivoCancelamento : ''}</span>`;
+      } else if (subCfg.isAnalise && subStatus === 'active' && subData.dataInicio) {
         const ini = new Date(subData.dataInicio + 'T12:00:00');
         const agora = new Date(); agora.setHours(0, 0, 0, 0);
         const dias = Math.floor((agora - ini) / (1000 * 60 * 60 * 24));
@@ -1193,7 +1194,7 @@ function renderObraModal(obra) {
       } else if (subCfg.dateLivre || subCfg.isNovaDataZero) {
         dataInfo = `<span class="sub-data" style="color:var(--muted);">Data livre</span>`;
       }
-      const statusIcon = subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
+      const statusIcon = subStatus === 'cancelado' ? '⊘' : subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
       const iconCls = subStatus === 'done' ? 'done' : atrasada ? 'atrasada' : subStatus === 'active' ? 'active' : 'pending';
       const motivoBadge = subData.motivoAtraso ? `<div class="sub-motivo-atraso">📌 ${subData.motivoAtraso}</div>` : '';
 
@@ -1219,13 +1220,15 @@ function renderObraModal(obra) {
         `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>`,
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
+        (subCfg.isCancelavel && subStatus !== 'done' && subStatus !== 'cancelado' && !obra.concluida) ? `<button class="acao-item motivo" data-action="cancelar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Cancelar</button>` : '',
+        (subCfg.isCancelavel && subStatus === 'cancelado' && !obra.concluida) ? `<button class="acao-item concluir" data-action="reativar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reativar</button>` : '',
       ].filter(Boolean).join('');
       const _reabrirDrop = (podeEditarComercial() && !isIndependenteSub) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
       const actions = obra.concluida ? '' : (subStatus === 'done' && !isIndependenteSub) ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
       return `<div class="sub-etapa-item">
         <div class="sub-etapa-icon ${iconCls}" ${iconCls === 'active' ? `style="background:${cor};border-color:${cor};"` : iconCls === 'atrasada' ? 'style="background:#ef4444;border-color:#ef4444;"' : ''}>${statusIcon}</div>
         <div class="sub-etapa-content">
-          <div class="sub-etapa-nome">${subCfg.nome}${atrasada ? ' <span class="sub-atraso-label">ATRASADO</span>' : ''}${respBadge}</div>
+          <div class="sub-etapa-nome"${subStatus === 'cancelado' ? ' style="opacity:0.55;text-decoration:line-through;"' : ''}>${subCfg.nome}${atrasada ? ' <span class="sub-atraso-label">ATRASADO</span>' : ''}${subStatus === 'cancelado' ? '' : respBadge}</div>
           <div class="sub-etapa-meta">${dataInfo}</div>
           ${motivoBadge}
           ${subRevHtml}
@@ -1339,6 +1342,46 @@ async function saveConclData() {
 
 // ── Aprovado / Recusado ───────────────────────────────────────────────────────
 let _arObraId = null, _arEtapaId = null, _arSubId = null;
+
+let _cancelDocObraId = null, _cancelDocEtapaId = null, _cancelDocSubId = null;
+function _openCancelarDocModal(obraId, etapaId, subId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  _cancelDocObraId = obraId; _cancelDocEtapaId = etapaId; _cancelDocSubId = subId;
+  const inp = document.getElementById('cancelar-doc-motivo'); if (inp) inp.value = '';
+  document.getElementById('cancelar-doc-modal').style.display = 'flex';
+}
+function _closeCancelarDocModal() {
+  document.getElementById('cancelar-doc-modal').style.display = 'none';
+  _cancelDocObraId = _cancelDocEtapaId = _cancelDocSubId = null;
+}
+async function _saveCancelarDoc() {
+  const motivo = document.getElementById('cancelar-doc-motivo')?.value.trim();
+  if (!motivo) { showComercialToast('Informe o motivo do cancelamento.', 'error'); return; }
+  const obra = _obras.find(o => o.id === _cancelDocObraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const sub = etapas[_cancelDocEtapaId] && etapas[_cancelDocEtapaId].subEtapas && etapas[_cancelDocEtapaId].subEtapas[_cancelDocSubId];
+  if (!sub) return;
+  sub.status = 'cancelado';
+  sub.motivoCancelamento = motivo;
+  sub.dataCancelamento = new Date().toISOString().slice(0, 10);
+  sub.canceladoPor = currentUser?.username || null;
+  await db.collection('obras').doc(_cancelDocObraId).update({ etapas });
+  _audit(_cancelDocObraId, 'cancelamento', `Documentação cancelada (${_cancelDocSubId}): "${motivo}"`);
+  showComercialToast('Documentação cancelada.', 'success');
+  _closeCancelarDocModal();
+}
+async function _reativarDoc(obraId, etapaId, subId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const sub = etapas[etapaId] && etapas[etapaId].subEtapas && etapas[etapaId].subEtapas[subId];
+  if (!sub) return;
+  sub.status = 'active';
+  delete sub.motivoCancelamento; delete sub.dataCancelamento; delete sub.canceladoPor;
+  await db.collection('obras').doc(obraId).update({ etapas });
+  _audit(obraId, 'cancelamento', `Documentação reativada (${subId})`);
+  showComercialToast('Documentação reativada.', 'success');
+}
 
 function processarAprovacaoRecusa(obraId, etapaId, subId, tipo) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -2119,7 +2162,7 @@ function _contarTarefasAtribuidas(obra) {
       });
       // Outras sub-etapas de documentações
       Object.values(e.subEtapas || {}).forEach(s => {
-        if (!s.isCocLista && s.status !== 'done' && _temResp(s, me)) count++;
+        if (!s.isCocLista && s.status !== 'done' && s.status !== 'cancelado' && _temResp(s, me)) count++;
       });
     } else {
       Object.values(e.subEtapas || {}).forEach(s => {
@@ -2187,6 +2230,8 @@ function _initAcaoDelegate() {
       case 'aprovado': processarAprovacaoRecusa(obraId, etapaId, subId, 'aprovado'); break;
       case 'recusado': processarAprovacaoRecusa(obraId, etapaId, subId, 'recusado'); break;
       case 'iniciar-sub': iniciarSubEtapa(obraId, etapaId, subId); break;
+      case 'cancelar-doc': _openCancelarDocModal(obraId, etapaId, subId); break;
+      case 'reativar-doc': _reativarDoc(obraId, etapaId, subId); break;
       case 'reabrir-sub': reabrirSubEtapa(obraId, etapaId, subId, itemId); break;
       case 'retro-concluir': openConcluirRetroModal(obraId, etapaId, subId, itemId); break;
       case 'retro-reabrir': reabrirSubRetro(obraId, etapaId, subId, itemId); break;

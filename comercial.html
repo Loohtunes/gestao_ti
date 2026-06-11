@@ -964,6 +964,29 @@
     </div>
   </div>
 
+  <!-- ══ MODAL CANCELAR DOCUMENTAÇÃO ══ -->
+  <div id="cancelar-doc-modal"
+    style="display:none;position:fixed;inset:0;z-index: 1080;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;"
+    onclick="if(event.target===this)_closeCancelarDocModal()">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(460px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div style="font-size:0.9rem;font-weight:700;">Cancelar documentação</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <label class="form-label">Motivo do cancelamento <span style="color:var(--accent);">*</span></label>
+        <textarea id="cancelar-doc-motivo" class="form-input" rows="3"
+          placeholder="Descreva o motivo do cancelamento..."
+          style="width:100%;margin-top:0.4rem;resize:none;"></textarea>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" onclick="_closeCancelarDocModal()">Voltar</button>
+        <button class="btn-primary" onclick="_saveCancelarDoc()"
+          style="background:#ef4444;border-color:#ef4444;">Cancelar documentação</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ MODAL OBSERVAÇÃO ══ -->
   <div id="obs-modal"
     style="display:none;position:fixed;inset:0;z-index: 1080;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;"
