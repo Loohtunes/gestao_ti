@@ -28,6 +28,12 @@ function isDiaUtil(date) {
   return !FERIADOS_BR.includes(mmdd);
 }
 
+function addDiasCorridos(dataStr, dias) {
+  if (!dataStr) return null;
+  const d = new Date(dataStr + 'T12:00:00');
+  d.setDate(d.getDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
 function addDiasUteis(dataStr, dias) {
   if (!dataStr || dias === 0) return dataStr || null;
   const d = new Date(dataStr + 'T12:00:00');
@@ -77,6 +83,8 @@ const ETAPAS_CONFIG = {
       { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
       { id: 'carta_aprovacao', nome: 'Aprovação da Carta Aditiva', dias: 3, dateLivre: false, isAprovacaoRecusa: true },
       { id: 'carta_assinatura', nome: 'Assinatura da Carta Aditiva', dias: 2, dateLivre: false, isAprovacaoRecusa: true, podeEncerrar: true },
+      { id: 'termo_elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
+      { id: 'termo_analise', nome: 'Em Análise', dias: 0, dateLivre: true },
       { id: 'termo_envio', nome: 'Envio do Termo Aditivo', dias: 3, dateLivre: false },
       { id: 'termo_assinatura', nome: 'Assinatura do Termo Aditivo', dias: 5, dateLivre: false, isAprovacaoRecusa: true },
     ]
@@ -106,6 +114,35 @@ function criarItemLista(etapaId, titulo, dataPrevista) {
     subEtapas[sub.id] = { status: i === 0 ? 'active' : 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
   });
   return { id: `${etapaId}_${Date.now()}`, titulo, dataPrevista: dataPrevista || null, status: 'active', subEtapas };
+}
+
+
+// ── Responsáveis (multi-atribuição) ─────────────────────────────
+function _getResponsaveis(o) {
+  if (!o) return [];
+  if (Array.isArray(o.responsaveis)) return o.responsaveis.filter(Boolean);
+  if (o.responsavel) return [o.responsavel];
+  return [];
+}
+function _temResp(o, u) { return !!u && _getResponsaveis(o).includes(u); }
+function _respBtnLabel(o) {
+  const a = _getResponsaveis(o);
+  if (!a.length) return 'Atribuir';
+  if (a.length === 1) return a[0];
+  return a.length + ' pessoas';
+}
+function _respBadges(o, fs, alvo) {
+  const arr = _getResponsaveis(o);
+  if (!arr.length) return '';
+  fs = fs || '0.62rem';
+  const me = currentUser?.username;
+  const destaque = alvo || (typeof _filtroUsuarioPendencia !== 'undefined' ? _filtroUsuarioPendencia : null) || me;
+  const icoP = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const icoU = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  return arr.map(r => (r === destaque)
+    ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:${fs};font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);">${icoP} ${r === me ? 'Você' : r}</span>`
+    : `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:${fs};font-weight:600;padding:0.1rem 0.45rem;font-family:var(--font-mono);">${icoU} ${r}</span>`
+  ).join(' ');
 }
 
 
@@ -152,6 +189,62 @@ function _migrateObraToV3(obra) {
   return { etapas };
 }
 
+
+function _migrateObraToV9(obra) {
+  // Multi-atribuição: responsavel (texto) → responsaveis (lista).
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  const conv = (o) => {
+    if (!o) return;
+    if (!Array.isArray(o.responsaveis)) o.responsaveis = o.responsavel ? [o.responsavel] : [];
+    if ('responsavel' in o) delete o.responsavel;
+  };
+  Object.values(etapas).forEach(e => {
+    if (!e) return;
+    if (Array.isArray(e.lista)) e.lista.forEach(item => Object.values(item.subEtapas || {}).forEach(conv));
+    if (Array.isArray(e.cocLista)) e.cocLista.forEach(conv);
+    if (e.subEtapas) Object.values(e.subEtapas).forEach(conv);
+  });
+  return { etapas };
+}
+
+function _migrateObraToV8(obra) {
+  // Aditivos: adiciona "Elaboração" (termo_elaboracao) e "Em Análise" (termo_analise) ANTES de termo_envio.
+  // Item já concluído → subs novas concluídas automaticamente; item em andamento → subs pendentes
+  // e a sub ativa é re-derivada para a 1ª não finalizada (ações liberadas, sequência consistente).
+  const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
+  const hoje = new Date().toISOString().slice(0, 10);
+  const ordem = ['comparativo_recebimento', 'elaboracao', 'analise_comparativo', 'carta_envio', 'carta_aprovacao', 'carta_assinatura', 'termo_elaboracao', 'termo_analise', 'termo_envio', 'termo_assinatura'];
+  const novos = ['termo_elaboracao', 'termo_analise'];
+  (etapas.aditivos?.lista || []).forEach(item => {
+    if (!item.subEtapas) return;
+    const itemConcluido = item.status === 'done'
+      || item.subEtapas.termo_envio?.status === 'done'
+      || item.subEtapas.termo_assinatura?.status === 'done';
+    novos.forEach(id => {
+      if (item.subEtapas[id]) return;
+      if (itemConcluido) {
+        item.subEtapas[id] = { status: 'done', autoConcluida: true, dataInicio: null, dataLimite: null, dataConclusao: item.dataConclusao || hoje, motivoAtraso: null, revisoes: [], observacoes: [] };
+      } else {
+        item.subEtapas[id] = { status: 'pending', dataInicio: null, dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [] };
+      }
+    });
+    if (!itemConcluido) {
+      let achouAtiva = false;
+      ordem.forEach(id => {
+        const s = item.subEtapas[id];
+        if (!s) return;
+        if (s.status === 'done' || s.status === 'pulada' || s.bloqueada) return;
+        if (!achouAtiva) {
+          if (s.status !== 'active') { s.status = 'active'; if (!s.dataInicio) s.dataInicio = hoje; }
+          achouAtiva = true;
+        } else if (s.status === 'active') {
+          s.status = 'pending';
+        }
+      });
+    }
+  });
+  return { etapas };
+}
 
 function _migrateObraToV7(obra) {
   // Insere as sub-etapas novas (Em aprovação / Em Análise) nas obras existentes,
@@ -291,7 +384,7 @@ function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 9;
 
 async function migrateObras() {
   try {
@@ -310,6 +403,8 @@ async function migrateObras() {
         if (ver < 5) migrated = { ...migrated, ..._migrateObraToV5(migrated) };
         if (ver < 6) migrated = { ...migrated, ..._migrateObraToV6(migrated) };
         if (ver < 7) migrated = { ...migrated, ..._migrateObraToV7(migrated) };
+        if (ver < 8) migrated = { ...migrated, ..._migrateObraToV8(migrated) };
+        if (ver < 9) migrated = { ...migrated, ..._migrateObraToV9(migrated) };
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch (e) {
@@ -601,8 +696,8 @@ function renderObras() {
       if (obra.concluida) return false;
       return ETAPAS_ORDER.some(etapaId => {
         const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa) return false;
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(s => s.status !== 'done' && s.responsavel === alvo));
-        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && sub.responsavel === alvo);
+        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(s => s.status !== 'done' && _temResp(s, alvo)));
+        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && _temResp(sub, alvo));
       });
     });
   }
@@ -731,6 +826,9 @@ function renderObras() {
         if (obra.concluida || eStatus === 'done') {
           dot = '✓'; dotStyle = 'background:#22c55e;border-color:#22c55e;color:#fff;';
           info = `<span style="color:#22c55e;font-size:0.65rem;">${done}/${total} concluídas</span>`;
+        } else if (cocItems.length === 0) {
+          dot = '·'; dotStyle = 'background:var(--surface3);border-color:var(--border2);color:var(--muted);';
+          info = `<span style="font-size:0.65rem;color:var(--muted);">Não iniciada</span>`;
         } else if (nAtras > 0) {
           dot = '!'; dotStyle = 'background:#ef4444;border-color:#ef4444;color:#fff;';
           info = `<span style="color:#ef4444;font-size:0.65rem;font-weight:700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> ${nAtras} ${nAtras > 1 ? 'Itens Vencidos' : 'Item Vencido'}</span>`;
@@ -1049,16 +1147,8 @@ function renderObraModal(obra) {
       const subRevisoes = (subData.revisoes || []);
       const subDotStyle = atrasada ? `style="background:#ef4444;border-color:#ef4444;"` : subStatus === 'done' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : subStatus === 'active' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : '';
 
-      // Badge responsável na sub-etapa
-      const _alvoDestaque = _filtroUsuarioPendencia || currentUser?.username;
-      const _ehDestaque = subData.responsavel === _alvoDestaque;
-      const _labelBadge = subData.responsavel === currentUser?.username ? 'Você' : subData.responsavel;
-      // Ocultar badge quando sub-etapa está concluída
-      const respBadge = subData.responsavel && subStatus !== 'done'
-        ? _ehDestaque
-          ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.62rem;font-weight:700;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${_labelBadge}</span>`
-          : `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.62rem;font-weight:600;padding:0.1rem 0.45rem;font-family:var(--font-mono);"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${subData.responsavel}</span>`
-        : '';
+      // Badge responsável na sub-etapa (multi-atribuição)
+      const respBadge = subStatus !== 'done' ? _respBadges(subData, '0.62rem', (typeof _filtroUsuarioPendencia !== 'undefined' ? _filtroUsuarioPendencia : null) || currentUser?.username) : '';
       // COC com lista dinâmica — não precisa de subData
       if (subCfg.isCocLista) {
         const cocLst = eData.cocLista || [];
@@ -1087,7 +1177,8 @@ function renderObraModal(obra) {
         const ini = new Date(subData.dataInicio + 'T12:00:00');
         const agora = new Date(); agora.setHours(0, 0, 0, 0);
         const dias = Math.floor((agora - ini) / (1000 * 60 * 60 * 24));
-        const prevStr = subData.dataPrevista ? new Date(subData.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+        const _refPrev = subData.dataLimite || subData.dataPrevista;
+        const prevStr = _refPrev ? new Date(_refPrev + 'T12:00:00').toLocaleDateString('pt-BR') : '';
         dataInfo = `<span class="sub-data" style="color:#8b5cf6;font-weight:700;display:flex;align-items:center;gap:0.4rem;">
           🕐 A ${dias} dia${dias !== 1 ? 's' : ''} nesta sub-etapa
           ${prevStr ? `<span style="font-size:0.65rem;color:var(--muted);font-weight:400;">· Previsto: ${prevStr}</span>` : ''}
@@ -1118,14 +1209,14 @@ function renderObraModal(obra) {
       </div>`: '';
 
       const dropId = `acao-sub-${etapaId}-${subCfg.id}`;
-      const resp = subData.responsavel || '';
+      const resp = _getResponsaveis(subData).join(',');
       const _menuItems = [
         canIniciarSub ? `<button class="acao-item concluir" data-action="iniciar-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : '',
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>` : '',
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
         !subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
         (canProrrogar || (subCfg.isAnalise && subStatus !== 'done' && !obra.concluida)) ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-        `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${resp || 'Atribuir'}</button>`,
+        `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>`,
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
       ].filter(Boolean).join('');
@@ -1305,7 +1396,7 @@ async function saveRecusaLista() {
     item.subEtapas[s.id].status = i === 0 ? 'active' : 'pending';
     delete item.subEtapas[s.id].bloqueada; // revisão valida a sub-etapa retroativa
     item.subEtapas[s.id].dataConclusao = null; item.subEtapas[s.id].motivoAtraso = null;
-    item.subEtapas[s.id].responsavel = null; // Limpar atribuição na revisão
+    item.subEtapas[s.id].responsaveis = []; // Limpar atribuição na revisão
     if (i === 0) item.subEtapas[s.id].dataInicio = hoje;
     else { item.subEtapas[s.id].dataInicio = null; item.subEtapas[s.id].dataLimite = null; }
   });
@@ -1447,7 +1538,7 @@ function _renderCocLista(obra, etapaId, subId) {
         ${cocStatus === 'pending' ? `<button class="acao-item concluir" data-action="coc-iniciar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Iniciar</button>` : ''}
         ${cocActive ? `<button class="acao-item concluir" data-action="coc-concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : ''}
         ${cocActive ? `<button class="acao-item" data-action="coc-prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : ''}
-        <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${item.responsavel || ''}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${item.responsavel || 'Atribuir'}</button>
+        <button class="acao-item" data-action="coc-atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" data-resp="${_getResponsaveis(item).join(',')}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(item)}</button>
         <button class="acao-item" data-action="coc-obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>
         ${podeEditarComercial() ? `<button class="acao-item" data-action="coc-editar" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>` : ''}
         ${podeEditarComercial() ? `<button class="acao-item" data-action="coc-excluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-coc="${idx}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Excluir</button>` : ''}
@@ -1465,10 +1556,7 @@ function _renderCocLista(obra, etapaId, subId) {
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
         <span style="font-size:0.8rem;font-weight:700;color:${isDone ? '#22c55e' : '#f97316'};flex:1;">${isDone ? '✓ ' : ''} ${item.nome}</span>
         ${dtConc}${!isDone ? dtPrev : ''}
-        ${item.responsavel && !isDone ? item.responsavel === currentUser?.username
-        ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">📍 Você</span>`
-        : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);flex-shrink:0;">👤 ${item.responsavel}</span>`
-        : ''}
+        ${!isDone ? _respBadges(item, '0.6rem') : ''}
         ${btnAcoes}${delBtn}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
@@ -1487,13 +1575,21 @@ function _renderCocLista(obra, etapaId, subId) {
     </div>`;
   }).join('');
 
-  const addBtn = canAct ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
-    <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
-      style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      COC
-    </button>
-  </div>` : '';
+  const addBtn = !canAct ? '' : (cocLista.length === 0
+    ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+      <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
+        style="font-size:0.72rem;padding:0.3rem 1rem;display:inline-flex;align-items:center;gap:0.4rem;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Iniciar Documentações (1ª COC)
+      </button>
+    </div>`
+    : `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+      <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
+        style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        COC
+      </button>
+    </div>`);
 
   return `${itemsHtml}${addBtn}`;
 }
@@ -1518,10 +1614,23 @@ async function _saveAddCoc() {
   if (!nome) { showComercialToast('Informe o nome da COC.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const _eraVaziaCoc = !etapas[etapaId].cocLista || etapas[etapaId].cocLista.length === 0;
   if (!etapas[etapaId].cocLista) etapas[etapaId].cocLista = [];
   etapas[etapaId].cocLista.push({ nome, dataPrevista: data, status: 'active', dataConclusao: null });
   // Se etapa ainda não foi iniciada, iniciar
   if (etapas[etapaId].status === 'pending') etapas[etapaId].status = 'active';
+  // 1ª COC: ancora as demais documentações em +14 dias corridos a partir da data prevista da COC
+  if (_eraVaziaCoc && data) {
+    const _venc = addDiasCorridos(data, 14);
+    ['art', 'cno_sfobras', 'serasa'].forEach(_id => {
+      const _sd = etapas[etapaId].subEtapas && etapas[etapaId].subEtapas[_id];
+      if (_sd && _sd.status !== 'done' && _sd.status !== 'cancelado') {
+        _sd.status = 'active';
+        if (!_sd.dataLimite) _sd.dataLimite = _venc;
+        if (!_sd.dataPrevista) _sd.dataPrevista = _venc;
+      }
+    });
+  }
   await db.collection('obras').doc(obraId).update({ etapas });
   _audit(obraId, 'aditivo_add', `COC adicionada: "${nome}"`);
   showComercialToast(`COC "${nome}" adicionada! ✅`, 'success');
@@ -1610,11 +1719,7 @@ async function _atribuirCocItem(obraId, etapaId, idx) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   _cocActionObraId = obraId; _cocActionEtapaId = etapaId; _cocActionIdx = idx;
   const item = _obras.find(o => o.id === obraId)?.etapas?.[etapaId]?.cocLista?.[idx];
-  const allUsers = typeof users !== 'undefined' ? users : [];
-  const lista = allUsers.filter(u => u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('atribuivelComercial'));
-  const usrList = lista;
-  const sel = document.getElementById('atrib-usuario-sel');
-  if (sel) { sel.innerHTML = usrList.map(u => `<option value="${u.username}"${u.username === item?.responsavel ? ' selected' : ''}>${u.username}</option>`).join(''); }
+  _preencherAtribLista(_getResponsaveis(item));
   const titleEl = document.getElementById('atrib-modal-title');
   if (titleEl) titleEl.textContent = `Atribuir — COC · ${item?.nome || ''}`;
   const justWrap = document.getElementById('atrib-justificativa-wrap');
@@ -1812,12 +1917,11 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const dotSymbol = subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
       const dropId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
       const canConc = subStatus !== 'done' && !obra.concluida;
-      const resp = sub.responsavel;
 
       const _reabrirDropLista = (podeEditarComercial() && subStatus === 'done' && !obra.concluida) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
       const acoesDropdown = !obra.concluida && subStatus !== 'done' ? (() => {
         const _dId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
-        const _resp = sub.responsavel || '';
+        const _resp = _getResponsaveis(sub).join(',');
         const _items = [
           subStatus === 'active' && subCfg.podeEncerrar ? `<button class="acao-item" data-action="encerrar-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#f59e0b;font-weight:600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 8 12 12 16"/><line x1="16" y1="12" x2="8" y2="12"/></svg> Encerrar Aditivo</button>` : '',
           subStatus === 'active' && !subCfg.isAprovacaoRecusa ? `<button class="acao-item concluir" data-action="concluir-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
@@ -1825,7 +1929,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
           subStatus === 'active' && subCfg.isAprovacaoRecusa ? `<button class="acao-item motivo" data-action="recusado-lista" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
 
           subStatus === 'active' ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-          `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_resp || 'Atribuir'}</button>`,
+          `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}" data-resp="${_resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(sub)}</button>`,
           `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-item="${item.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         ].join('');
         return `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${_dId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${_dId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_items}</div></div>`;
@@ -1833,11 +1937,8 @@ function renderListaEtapa(obra, etapaId, hoje) {
 
       return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.3rem 0;border-bottom:1px solid var(--border2);">
         <span style="width:16px;height:16px;border-radius:50%;background:${dotColor};color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;flex-shrink:0;">${dotSymbol}</span>
-        <span style="flex:1;font-size:0.78rem;">${subCfg.nome}</span>
-        ${sub.responsavel ? sub.responsavel === currentUser?.username
-          ? `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:5px;font-size:0.6rem;font-weight:700;padding:0.1rem 0.4rem;font-family:var(--font-mono);">📍 Você</span>`
-          : `<span style="display:inline-flex;align-items:center;gap:0.2rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:0.6rem;font-weight:600;padding:0.1rem 0.4rem;font-family:var(--font-mono);">👤 ${sub.responsavel}</span>`
-          : ''}
+        <span style="flex:1;font-size:0.78rem;">${subCfg.nome}${sub.autoConcluida ? ' <span style="font-size:0.55rem;font-weight:700;color:var(--muted);padding:0.05rem 0.35rem;border-radius:4px;font-family:var(--font-mono);border:1px solid var(--border2);vertical-align:middle;">CONCLUÍDA AUTOMATICAMENTE</span>' : ''}</span>
+        ${_respBadges(sub, '0.6rem')}
         <div style="display:flex;align-items:center;gap:0.4rem;">${dataInfo}${acoesDropdown}</div>
       </div>`;
     }).join('');
@@ -1893,12 +1994,12 @@ function contarMinhasPendencias(obra) {
     if (cfg.isLista) {
       (e.lista || []).forEach(item => {
         Object.values(item.subEtapas || {}).forEach(s => {
-          if (s.status !== 'done' && s.responsavel === currentUser?.username) count++;
+          if (s.status !== 'done' && _temResp(s, currentUser?.username)) count++;
         });
       });
     } else {
       Object.values(e.subEtapas || {}).forEach(s => {
-        if (s.status !== 'done' && s.responsavel === currentUser?.username) count++;
+        if (s.status !== 'done' && _temResp(s, currentUser?.username)) count++;
       });
     }
   });
@@ -2008,21 +2109,21 @@ function _contarTarefasAtribuidas(obra) {
       (e.lista || []).forEach(item => {
         if (item.status === 'done') return;
         Object.values(item.subEtapas || {}).forEach(s => {
-          if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
+          if (s.status !== 'done' && s.status !== 'pulada' && _temResp(s, me)) count++;
         });
       });
     } else if (cfg.isIndependente) {
       // COC
       (e.cocLista || []).forEach(coc => {
-        if (coc.status !== 'done' && coc.responsavel === me) count++;
+        if (coc.status !== 'done' && _temResp(coc, me)) count++;
       });
       // Outras sub-etapas de documentações
       Object.values(e.subEtapas || {}).forEach(s => {
-        if (!s.isCocLista && s.status !== 'done' && s.responsavel === me) count++;
+        if (!s.isCocLista && s.status !== 'done' && _temResp(s, me)) count++;
       });
     } else {
       Object.values(e.subEtapas || {}).forEach(s => {
-        if (s.status !== 'done' && s.status !== 'pulada' && s.responsavel === me) count++;
+        if (s.status !== 'done' && s.status !== 'pulada' && _temResp(s, me)) count++;
       });
     }
   });
@@ -2856,7 +2957,7 @@ function exportarObraPDF(obraId) {
             }
             return '—';
           })();
-          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtInicio2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtConcl2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtPrev2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2 ? '#ef4444' : '#6b7280'}">${dias2}</td></tr>`;
+          return `<tr><td style="padding:4px 8px 4px 32px;color:${corSt2};font-weight:600;">${st2}</td><td style="padding:4px 8px;">${sub.nome}${tipo2}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${_getResponsaveis(s).join(', ') || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtInicio2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtConcl2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtPrev2}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;color:${atrasada2 ? '#ef4444' : '#6b7280'}">${dias2}</td></tr>`;
         }).join('');
         return `<tr style="background:#f0f9ff;"><td colspan="7" style="padding:5px 8px 5px 20px;font-weight:700;color:${cfg.cor};">${item.titulo}${dtPrev ? ` — ${dtPrev}` : ''}${dtConc ? ` — ${dtConc}` : ''}</td></tr>${subsItem}`;
       }).join('');
@@ -2878,7 +2979,7 @@ function exportarObraPDF(obraId) {
           const dtCocPrev = cItem.dataPrevista ? new Date(cItem.dataPrevista + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
           const dtCocAtraso = (cItem.status === 'done' && cItem.dataConclusao && cItem.dataPrevista && cItem.dataConclusao > cItem.dataPrevista) ? `${Math.ceil((new Date(cItem.dataConclusao + 'T12:00:00') - new Date(cItem.dataPrevista + 'T12:00:00')) / (1000 * 60 * 60 * 24))} dias` : '—';
           const bg = ci % 2 === 0 ? '#fff9f0' : '#fff';
-          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome || 'COC ' + (ci + 1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${cItem.responsavel || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocInicio}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocPrev}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocAtraso}</td></tr>`;
+          return `<tr style="background:${bg};"><td style="padding:4px 8px 4px 20px;color:${corCoc};font-weight:600;">${stCoc}</td><td style="padding:4px 8px;">${cItem.nome || 'COC ' + (ci + 1)}</td><td style="padding:4px 8px;font-size:10px;color:#6b7280;">${_getResponsaveis(cItem).join(', ') || '—'}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocInicio}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCoc}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocPrev}</td><td style="padding:4px 8px;font-family:monospace;font-size:10px;">${dtCocAtraso}</td></tr>`;
         }).join('');
       }
       const s = e.subEtapas?.[sub.id]; if (!s) return '';
@@ -2910,7 +3011,7 @@ function exportarObraPDF(obraId) {
       return `<tr>
         <td style="padding:4px 8px 4px 20px;color:${corSt};font-weight:600;white-space:nowrap;">${st}</td>
         <td style="padding:4px 8px;">${sub.nome}${tipo}</td>
-        <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${s.responsavel || '—'}</td>
+        <td style="padding:4px 8px;font-size:10px;color:#6b7280;">${_getResponsaveis(s).join(', ') || '—'}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtInicio}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtConcl}</td>
         <td style="padding:4px 8px;font-family:monospace;font-size:10px;color:#6b7280;">${dtPrev}</td>
@@ -2993,8 +3094,8 @@ function openRelatorioModal() {
     ETAPAS_ORDER.forEach(etapaId => {
       const e = obra.etapas?.[etapaId]; if (!e?.ativa) return;
       const cfg = ETAPAS_CONFIG[etapaId];
-      if (cfg.isLista) (e.lista || []).forEach(item => Object.values(item.subEtapas || {}).forEach(s => { if (s.responsavel) resps.add(s.responsavel); }));
-      else Object.values(e.subEtapas || {}).forEach(s => { if (s.responsavel) resps.add(s.responsavel); });
+      if (cfg.isLista) (e.lista || []).forEach(item => Object.values(item.subEtapas || {}).forEach(s => _getResponsaveis(s).forEach(r => resps.add(r))));
+      else Object.values(e.subEtapas || {}).forEach(s => _getResponsaveis(s).forEach(r => resps.add(r)));
     });
   });
   const opts = '<option value="">Todos</option>' + [...resps].sort().map(r => `<option value="${r}">${r}</option>`).join('');
@@ -3062,7 +3163,7 @@ function _gerarDadosRelatorio() {
             linhas.push({
               numero: obra.numero || obra.id.slice(-6), nome: obra.nome,
               representante: obra.representante || '—',
-              responsavel: sub.responsavel || '—',
+              responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
               etapa: `${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
               subEtapa: subCfg.nome,
               status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
@@ -3103,7 +3204,7 @@ function _gerarDadosRelatorio() {
           numero: obra.numero || obra.id.slice(-6),
           nome: obra.nome,
           representante: obra.representante || '—',
-          responsavel: sub.responsavel || '—',
+          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
           etapa: NOMES_ETAPA[etapaId],
           subEtapa: subCfg.nome,
           status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
@@ -3377,6 +3478,35 @@ function closeHistoricoModal() { document.getElementById('historico-modal').styl
 
 let _atribObraId = null, _atribEtapaId = null, _atribSubId = null, _atribModo = null;
 let _atribItemId = null;
+let _atribOrdem = [];
+const _ATRIB_MAX = 2;
+function _atribEnforceMax(chk) {
+  if (chk.checked) {
+    if (!_atribOrdem.includes(chk.value)) _atribOrdem.push(chk.value);
+    let marcados = Array.from(document.querySelectorAll('#atrib-usuario-list .atrib-chk:checked'));
+    while (marcados.length > _ATRIB_MAX) {
+      const antigo = _atribOrdem.shift();
+      if (antigo === chk.value) { _atribOrdem.push(antigo); continue; }
+      const el = Array.from(document.querySelectorAll('#atrib-usuario-list .atrib-chk')).find(c => c.value === antigo);
+      if (el) el.checked = false; else break;
+      marcados = Array.from(document.querySelectorAll('#atrib-usuario-list .atrib-chk:checked'));
+    }
+  } else {
+    _atribOrdem = _atribOrdem.filter(v => v !== chk.value);
+  }
+}
+function _preencherAtribLista(selec) {
+  const box = document.getElementById('atrib-usuario-list');
+  if (!box) return;
+  const allUsers = typeof users !== 'undefined' ? users : [];
+  const lista = allUsers.filter(u => u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('atribuivelComercial'));
+  const sel = new Set(selec || []);
+  _atribOrdem = (selec || []).slice();
+  box.innerHTML = lista.map(u => `<label class="atrib-row">
+      <span>${u.username}${u.username === currentUser?.username ? ' <span style="color:var(--muted);font-size:0.72rem;">(você)</span>' : ''}</span>
+      <span class="atrib-toggle"><input type="checkbox" class="atrib-chk" value="${u.username}"${sel.has(u.username) ? ' checked' : ''} onchange="_atribEnforceMax(this)"><span class="atrib-toggle-slider"></span></span>
+    </label>`).join('') || '<div style="color:var(--muted);font-size:0.8rem;">Nenhum usuário atribuível disponível.</div>';
+}
 function openAtribuirModal(obraId, etapaId, subId, modo, itemId) {
   _atribItemId = itemId || null;
   _atribObraId = obraId; _atribEtapaId = etapaId; _atribSubId = subId; _atribModo = modo || 'atribuir';
@@ -3385,45 +3515,40 @@ function openAtribuirModal(obraId, etapaId, subId, modo, itemId) {
   document.getElementById('atrib-modal-title').textContent = (_atribModo === 'reatribuir' ? 'Reatribuir' : 'Atribuir') + ` — ${cfg.nome} · ${subCfg?.nome || subId}`;
   const jw = document.getElementById('atrib-justificativa-wrap'); if (jw) jw.style.display = _atribModo === 'reatribuir' ? 'block' : 'none';
   const je = document.getElementById('atrib-justificativa'); if (je) je.value = '';
-  const sel = document.getElementById('atrib-usuario-sel');
-  const allUsers = typeof users !== 'undefined' ? users : [];
-  const usrs = allUsers.filter(u => u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('atribuivelComercial'));
-  const lista = usrs;
-  sel.innerHTML = `<option value="">Selecione o responsável...</option>` + lista.map(u => `<option value="${u.username}">${u.username}${u.username === currentUser?.username ? ' (você)' : ''}</option>`).join('');
   const obra = _obras.find(o => o.id === obraId);
   const ref = obra ? _findSubRef(obra.etapas || {}, etapaId, subId, _atribItemId) : null;
-  if (ref?.sub?.responsavel) sel.value = ref.sub.responsavel;
+  _preencherAtribLista(_getResponsaveis(ref?.sub));
   document.getElementById('atrib-modal').style.display = 'flex';
 }
 function closeAtribuirModal() { document.getElementById('atrib-modal').style.display = 'none'; _atribObraId = _atribEtapaId = _atribSubId = _atribModo = null; }
 async function saveAtribuicao() {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  const usuario = document.getElementById('atrib-usuario-sel')?.value;
-  if (!usuario) { showComercialToast('Selecione um responsável.', 'error'); return; }
+  const selecionados = Array.from(document.querySelectorAll('#atrib-usuario-list .atrib-chk:checked')).map(c => c.value);
+  const _lbl = selecionados.length ? selecionados.join(', ') : 'ninguém';
   // Modo COC: salvar diretamente na cocLista
   if (document.getElementById('atrib-modal')?.dataset?.cocMode === '1') {
     document.getElementById('atrib-modal').dataset.cocMode = '';
     const obra3 = _obras.find(o => o.id === _cocActionObraId); if (!obra3) return;
     const etapas3 = JSON.parse(JSON.stringify(obra3.etapas));
-    etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].responsavel = usuario;
+    etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].responsaveis = selecionados; delete etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].responsavel;
     await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas3 });
-    _audit(_cocActionObraId, 'atribuicao', `COC "${etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].nome}": atribuído a "${usuario}"`);
-    closeAtribuirModal(); showComercialToast(`Atribuído para ${usuario}! ✅`, 'success'); return;
+    _audit(_cocActionObraId, 'atribuicao', `COC "${etapas3[_cocActionEtapaId].cocLista[_cocActionIdx].nome}": atribuído a "${_lbl}"`);
+    closeAtribuirModal(); showComercialToast(selecionados.length ? `Atribuído para ${_lbl}! ✅` : 'Atribuição removida.', 'success'); return;
   }
   if (_atribModo === 'reatribuir') { const j = document.getElementById('atrib-justificativa')?.value.trim(); if (!j) { showComercialToast('Informe a justificativa.', 'error'); return; } }
   const obra = _obras.find(o => o.id === _atribObraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const ref = _findSubRef(etapas, _atribEtapaId, _atribSubId, _atribItemId);
   if (!ref) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
-  const anterior = ref.sub.responsavel || null;
-  ref.sub.responsavel = usuario;
+  const anterior = _getResponsaveis(ref.sub).join(', ') || null;
+  ref.sub.responsaveis = selecionados; delete ref.sub.responsavel;
   if (!ref.sub.historicoAtribuicao) ref.sub.historicoAtribuicao = [];
-  ref.sub.historicoAtribuicao.push({ de: anterior || currentUser.username, para: usuario, data: new Date().toISOString().slice(0, 10), justificativa: _atribModo === 'reatribuir' ? (document.getElementById('atrib-justificativa')?.value.trim() || null) : null, por: currentUser.username });
+  ref.sub.historicoAtribuicao.push({ de: anterior || currentUser.username, para: _lbl, data: new Date().toISOString().slice(0, 10), justificativa: _atribModo === 'reatribuir' ? (document.getElementById('atrib-justificativa')?.value.trim() || null) : null, por: currentUser.username });
   const _cfgAt = ETAPAS_CONFIG[_atribEtapaId];
   const _snAt = (_cfgAt.subEtapas || _cfgAt.subEtapasTemplate || []).find(s => s.id === _atribSubId)?.nome || _atribSubId;
-  _audit(_atribObraId, 'atribuicao', `${_cfgAt.nome} · ${_snAt}: atribuído a "${usuario}"${anterior ? ' (antes: "' + anterior + '")' : ''}`);
+  _audit(_atribObraId, 'atribuicao', `${_cfgAt.nome} · ${_snAt}: atribuído a "${_lbl}"${anterior ? ' (antes: "' + anterior + '")' : ''}`);
   await db.collection('obras').doc(_atribObraId).update({ etapas });
-  showComercialToast(`Atribuído para ${usuario}! ✅`, 'success');
+  showComercialToast(selecionados.length ? `Atribuído para ${_lbl}! ✅` : 'Atribuição removida.', 'success');
   closeAtribuirModal();
 }
 
@@ -3442,7 +3567,7 @@ function exportarRelatorioPendencias() {
       if (!e?.ativa) return;
       const processSub = (sub, subNome, titulo, item) => {
         // Apenas etapas em andamento (exclui não iniciadas/pendentes e concluídas)
-        if (sub.status !== 'active' || !sub.responsavel) return;
+        if (sub.status !== 'active' || !_getResponsaveis(sub).length) return;
         const ref = sub.dataLimite || sub.dataPrevista || (item ? item.dataPrevista : null);
         rows.push({
           numero: obra.numero || obra.id.slice(-6),
@@ -3450,7 +3575,7 @@ function exportarRelatorioPendencias() {
           representante: obra.representante || '—',
           etapa: titulo ? `${cfg.nome} — ${titulo}` : cfg.nome,
           subEtapa: subNome,
-          responsavel: sub.responsavel,
+          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
           status: ref && ref < hoje ? 'Atrasada' : 'Em andamento',
           dataLimite: ref ? new Date(ref + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
         });
@@ -3464,7 +3589,7 @@ function exportarRelatorioPendencias() {
       }
     });
   });
-  let rowsFiltrados = respFiltro ? rows.filter(r => r.responsavel === respFiltro) : rows;
+  let rowsFiltrados = respFiltro ? rows.filter(r => (r.responsaveis || []).includes(respFiltro)) : rows;
   if (!rowsFiltrados.length) { showComercialToast('Nenhuma pendência encontrada.', 'success'); return; }
   const rowsFinal = rowsFiltrados;
   if (!rows.length) { showComercialToast('Nenhuma pendência encontrada.', 'success'); return; }

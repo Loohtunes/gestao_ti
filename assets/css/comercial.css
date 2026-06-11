@@ -1159,3 +1159,68 @@ body.dark-mode .acao-item.concluir:hover {
 body.dark-mode .acao-item.revisao:hover {
   background: #78350f22;
 }
+
+/* Toggle de atribuição (padrão access-toggle do sistema) */
+.atrib-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.atrib-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.atrib-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.atrib-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background: var(--muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.atrib-toggle input:checked+.atrib-toggle-slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.atrib-toggle input:checked+.atrib-toggle-slider::before {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.atrib-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.84rem;
+  background: var(--surface2);
+  transition: border-color 0.15s;
+}
+
+.atrib-row:hover {
+  border-color: var(--accent);
+}
