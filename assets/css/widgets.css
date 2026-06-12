@@ -680,6 +680,95 @@
   transform: scale(1.15);
 }
 
+/* ── Mini-card de obra fixada (Bloco 5) ───────────────────────────────────── */
+.cpain-obra-card {
+  position: absolute;
+  width: 188px;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  box-shadow: 0 3px 12px #00000028;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text);
+}
+
+.cpain-obra-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cpain-obra-head[data-drag="1"] {
+  cursor: grab;
+}
+
+.cpain-obra-head[data-drag="1"]:active {
+  cursor: grabbing;
+}
+
+.cpain-obra-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.cpain-obra-head button {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 1;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.cpain-obra-head button:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.cpain-obra-nome {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.cpain-obra-etapas {
+  font-size: 0.66rem;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  line-height: 1.3;
+}
+
+.cpain-obra-abrir {
+  margin-top: 0.15rem;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-display);
+}
+
+.cpain-obra-abrir:hover {
+  text-decoration: underline;
+}
+
 
 /* ── Painel T.I ───────────────────────────────────────────────────────────── */
 .tipain-grid {

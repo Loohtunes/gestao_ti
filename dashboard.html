@@ -371,6 +371,7 @@
     const CORES_AVISO = ['#ffd43b', '#ff922b', '#ff6b6b', '#f06595', '#9775fa', '#4dabf7', '#ced4da'];
     const AVISO_CANVAS_W = 960, AVISO_CANVAS_H = 640;
     let _avisosTime = {}, _avisosPessoal = {}, _unsubAT = null, _unsubAP = null, _avisoBusy = false, _avisoPending = false;
+    let _dashObras = [];
     function _ehGestorComercial() {
       const u = currentUser; if (!u) return false;
       return !!(u.isSuperAdmin || u.role === 'superAdmin' || (u.acessos || []).includes('adminComercial'));
@@ -414,6 +415,7 @@
       if (!all.length) { board.innerHTML = `<div class="cpain-board-canvas" id="cpain-canvas"><div class="cpain-board-vazio">Sem avisos ainda. Clique em "+ Aviso" para começar.</div></div>`; return; }
       const me = currentUser?.username, gestor = _ehGestorComercial();
       board.innerHTML = `<div class="cpain-board-canvas" id="cpain-canvas">` + all.map(a => {
+        if (a.type === 'obra') return _renderObraCard(a, me);
         const canEdit = a.autor === me;
         const canMover = a.escopo === 'time' ? true : (a.autor === me);
         const canDel = a.escopo === 'pessoal' ? a.autor === me : gestor;
@@ -431,6 +433,7 @@
         </div>`;
       }).join('') + `</div>`;
       board.querySelectorAll('.cpain-postit').forEach(el => _bindPostit(el));
+      board.querySelectorAll('.cpain-obra-card').forEach(el => _bindObraCard(el));
     }
     function _bindPostit(el) {
       const id = el.dataset.id;
@@ -473,6 +476,59 @@
         if (!confirm('Excluir este aviso?')) return;
         try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
       });
+    }
+    function _etapasAtivasTxt(obraId) {
+      const o = _dashObras.find(x => x.id === obraId);
+      if (!o || !o.etapas) return '—';
+      if (o.concluida) return 'Concluída';
+      const ativas = Object.keys(o.etapas).filter(k => { const e = o.etapas[k]; return e && e.ativa && e.status === 'active'; }).map(k => ETAPA_LABELS[k] || k);
+      return ativas.length ? ativas.join(', ') : 'Sem etapa ativa';
+    }
+    function _renderObraCard(a, me) {
+      const canDel = a.autor === me;
+      const num = a.numero ? `#${_escAviso(String(a.numero))}` : '#—';
+      const etapas = _etapasAtivasTxt(a.obraId);
+      return `<div class="cpain-obra-card" data-id="${a.id}" data-obra="${_escAviso(a.obraId || '')}" style="left:${a.x || 16}px;top:${a.y || 16}px;border-left:4px solid ${a.cor || '#3b82f6'};">
+          <div class="cpain-obra-head" data-drag="1">
+            <span class="cpain-obra-num">${num}</span>
+            ${canDel ? `<button data-act="del" title="Desfixar">\u00d7</button>` : ''}
+          </div>
+          <div class="cpain-obra-nome" title="${_escAviso(a.nome || '')}">${_escAviso(a.nome || '')}</div>
+          <div class="cpain-obra-etapas">${_escAviso(etapas)}</div>
+          <button class="cpain-obra-abrir" data-act="abrir">Abrir obra \u2192</button>
+        </div>`;
+    }
+    function _bindObraCard(el) {
+      const id = el.dataset.id;
+      const head = el.querySelector('.cpain-obra-head');
+      if (head) {
+        head.addEventListener('mousedown', (e) => {
+          if (e.target.closest('button')) return;
+          e.preventDefault(); _avisoBusy = true;
+          const offX = e.clientX - el.offsetLeft, offY = e.clientY - el.offsetTop;
+          const move = (ev) => {
+            let nx = ev.clientX - offX, ny = ev.clientY - offY;
+            nx = Math.max(0, Math.min(nx, AVISO_CANVAS_W - el.offsetWidth));
+            ny = Math.max(0, Math.min(ny, AVISO_CANVAS_H - el.offsetHeight));
+            el.style.left = nx + 'px'; el.style.top = ny + 'px';
+          };
+          const up = async () => {
+            document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up);
+            const nx = parseInt(el.style.left) || 0, ny = parseInt(el.style.top) || 0;
+            try { await db.collection('avisos').doc(id).update({ x: nx, y: ny, updatedAt: Date.now() }); } catch (err) { console.error(err); }
+            _avisoBusy = false; if (_avisoPending) { _avisoPending = false; _renderAvisos(); }
+          };
+          document.addEventListener('mousemove', move); document.addEventListener('mouseup', up);
+        });
+      }
+      const delBtn = el.querySelector('[data-act="del"]');
+      if (delBtn) delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!confirm('Remover esta obra do Quadro de Avisos?')) return;
+        try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
+      });
+      const abrir = el.querySelector('[data-act="abrir"]');
+      if (abrir) abrir.addEventListener('click', (e) => { e.stopPropagation(); const oid = el.dataset.obra; if (oid) window.location.href = `comercial.html?obra=${oid}`; });
     }
     function _abrirPaleta(el, id) {
       let pal = el.querySelector('.cpain-postit-cores');
@@ -572,6 +628,7 @@
         }).join('') + (extra > 0 ? `<div class="cpain-alerta-card cpain-alerta-mais" onclick="window.location.href='comercial.html'"><div class="cpain-alerta-mais-num">+${extra}</div><div class="cpain-alerta-mais-txt">ver todas no Controle de Obras</div></div>` : '');
       }
       _renderTarefas(obras, hoje, dHoje);
+      _dashObras = obras;
       _initAvisos();
     }
 

@@ -204,109 +204,30 @@
           </div>
         </div>
 
-        <!-- Filtros -->
-        <div class="comercial-filters">
-          <input type="text" placeholder="🔍 Buscar por nº, nome ou representante..."
-            oninput="setFiltroBusca(this.value)"
-            style="padding:0.45rem 0.75rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;min-width:260px;flex:1;">
-          <select onchange="setFiltroRep(this.value)">
-            <option value="">Todos os representantes</option>
-            <option value="Verdile">Verdile</option>
-            <option value="Ricardo">Ricardo</option>
-            <option value="Sebastião">Sebastião</option>
-            <option value="Ângelo">Ângelo</option>
-            <option value="Sérgio">Sérgio</option>
-            <option value="Matheus">Matheus</option>
-            <option value="Henrique">Henrique</option>
-            <option value="Flávio">Flávio</option>
-            <option value="Gazzo">Gazzo</option>
-          </select>
-          <select onchange="setFiltroEtapa(this.value)">
-            <option value="">Todas as etapas</option>
-            <option value="proposta">Proposta Consolidada</option>
-            <option value="contrato">Contrato</option>
-            <option value="documentacoes">Documentações</option>
-            <option value="aditivos">Aditivos / Termo</option>
-            <option value="medicao">Medição</option>
-            <option value="concluida">Concluída</option>
-          </select>
-          <select onchange="setFiltroEtapaAtraso(this.value)">
-            <option value="">Sem filtro de atraso</option>
-            <option value="proposta">Proposta atrasada</option>
-            <option value="contrato">Contrato atrasado</option>
-            <option value="documentacoes">Documentações atrasada</option>
-            <option value="aditivos">Aditivos atrasados</option>
-            <option value="medicao">Medição atrasada</option>
-          </select>
-          <!-- Botão Período -->
-          <div style="position:relative;">
-            <button id="btn-periodo" onclick="togglePeriodoDropdown()" class="btn-secondary"
-              style="white-space:nowrap;display:flex;align-items:center;gap:0.4rem;background:var(--surface);border-color:var(--border2);">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-              Período
-            </button>
-            <div id="periodo-dropdown"
-              style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px #00000018;padding:1rem;min-width:260px;flex-direction:column;gap:0.65rem;">
-              <div
-                style="font-size:0.7rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">
-                Pendências entre</div>
-              <div style="display:flex;flex-direction:column;gap:0.4rem;">
-                <div style="display:flex;flex-direction:column;gap:0.2rem;">
-                  <label style="font-size:0.72rem;color:var(--muted);">De</label>
-                  <input type="date" id="periodo-de" onchange="setFiltroPeriodoDe(this.value)"
-                    style="padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;width:100%;">
-                </div>
-                <div style="display:flex;flex-direction:column;gap:0.2rem;">
-                  <label style="font-size:0.72rem;color:var(--muted);">Até</label>
-                  <input type="date" id="periodo-ate" onchange="setFiltroPeriodoAte(this.value)"
-                    style="padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;width:100%;">
-                </div>
-              </div>
-              <button onclick="limparPeriodo()"
-                style="width:100%;padding:0.35rem;font-size:0.75rem;background:none;border:1px solid var(--border2);border-radius:6px;cursor:pointer;color:var(--muted);font-family:var(--font-display);"
-                onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-                onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'">
-                Limpar
-              </button>
-            </div>
-          </div>
-          <!-- Botão Pendências -->
-          <div style="position:relative;">
-            <button id="btn-minhas-pendencias" onclick="toggleMinhasPendencias()" class="btn-secondary"
-              style="white-space:nowrap;display:flex;align-items:center;gap:0.4rem;background:var(--surface);border-color:var(--border2);">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 11l3 3L22 4" />
-                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-              </svg>
-              Pendências
-            </button>
-            <div id="pendencias-dropdown"
-              style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px #00000018;padding:1rem;min-width:260px;flex-direction:column;gap:0.65rem;">
-              <div id="pendencia-user-wrap" style="display:none;flex-direction:column;gap:0.5rem;">
-                <div
-                  style="font-size:0.7rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;">
-                  Ver pendências de</div>
-                <select id="pendencia-user-sel"
-                  style="width:100%;padding:0.4rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);outline:none;"></select>
-              </div>
-              <button onclick="aplicarPendencias()"
-                style="width:100%;padding:0.55rem;font-size:0.82rem;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:7px;cursor:pointer;font-family:var(--font-display);">
-                Ver Pendências
-              </button>
-            </div>
-          </div>
-          <select onchange="setOrdenacao(this.value)"
-            style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
+        <!-- Bloco 4: Barra de filtros (botão único) -->
+        <div class="comercial-filters-bar">
+          <button id="btn-filtros" class="btn-filtros" onclick="toggleFiltrosPanel()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            Filtros
+            <span id="filtros-count" class="filtros-count" style="display:none;">0</span>
+          </button>
+          <button id="btn-limpar-filtros" class="btn-limpar-filtros" onclick="limparTodosFiltros()"
+            style="display:none;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            Limpar tudo
+          </button>
+          <select onchange="setOrdenacao(this.value)" class="filtros-ordenacao" style="margin-left:auto;">
             <option value="recente">Mais recente</option>
             <option value="num-asc">Nº crescente</option>
             <option value="num-desc">Nº decrescente</option>
           </select>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
             <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards
               por página</label>
             <select id="per-page-select" onchange="setObrasPorPagina(this.value)"
@@ -316,6 +237,85 @@
               <option value="24">24</option>
               <option value="48">48</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Bloco 4: Painel lateral de filtros -->
+        <div id="filtros-panel" class="filtros-panel">
+          <div class="filtros-panel-header">
+            <span>Filtros</span>
+            <button class="filtros-panel-close" onclick="fecharFiltrosPanel()" aria-label="Fechar">&times;</button>
+          </div>
+          <div class="filtros-panel-body">
+
+            <div class="filtro-grupo">
+              <label class="filtro-label">Palavra-chave</label>
+              <input type="text" class="filtro-input" placeholder="Nº, nome ou representante..."
+                oninput="_fSet('busca', this.value.toLowerCase().trim())">
+            </div>
+
+            <div class="filtro-grupo">
+              <label class="filtro-label">Representante</label>
+              <div class="filtro-rep-toggles">
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Verdile', this.classList.contains('ativo'))">Verdile</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Ricardo', this.classList.contains('ativo'))">Ricardo</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Sebastião', this.classList.contains('ativo'))">Sebastião</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Ângelo', this.classList.contains('ativo'))">Ângelo</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Sérgio', this.classList.contains('ativo'))">Sérgio</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Matheus', this.classList.contains('ativo'))">Matheus</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Henrique', this.classList.contains('ativo'))">Henrique</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Flávio', this.classList.contains('ativo'))">Flávio</button>
+                <button type="button" class="filtro-rep-toggle"
+                  onclick="this.classList.toggle('ativo'); _fToggleRep('Gazzo', this.classList.contains('ativo'))">Gazzo</button>
+              </div>
+            </div>
+
+            <div class="filtro-grupo">
+              <label class="filtro-label">Período (etapas)</label>
+              <div class="filtro-periodo">
+                <input type="date" class="filtro-input" onchange="_fSet('periodoDe', this.value)" aria-label="De">
+                <input type="date" class="filtro-input" onchange="_fSet('periodoAte', this.value)" aria-label="Até">
+              </div>
+            </div>
+
+            <div class="filtro-grupo">
+              <label class="filtro-label">Atribuição</label>
+              <label class="filtro-check"><input type="checkbox" id="flt-atrib-mine"
+                  onchange="_setAtrib('mine', this.checked)"> Atribuídas a mim</label>
+              <label class="filtro-check"><input type="checkbox" id="flt-atrib-none"
+                  onchange="_setAtrib('none', this.checked)"> Sem atribuição</label>
+              <div id="filtro-atrib-user-wrap" style="display:none;margin-top:0.5rem;">
+                <label class="filtro-label" style="margin-bottom:0.25rem;">Atribuídas a (gestor)</label>
+                <select id="filtro-atrib-user" class="filtro-input" onchange="_fSet('atribUser', this.value)"></select>
+              </div>
+            </div>
+
+            <div class="filtro-grupo">
+              <label class="filtro-label">Filtro das Etapas</label>
+              <select class="filtro-input" onchange="_fSet('etapaStEtapa', this.value)" style="margin-bottom:0.45rem;">
+                <option value="">Etapa iniciada (qualquer)</option>
+                <option value="proposta">Proposta Consolidada</option>
+                <option value="contrato">Contrato</option>
+                <option value="documentacoes">Documentações</option>
+                <option value="aditivos">Aditivos / Termo</option>
+                <option value="medicao">Medição</option>
+              </select>
+              <select class="filtro-input" onchange="_fSet('etapaStVal', this.value)">
+                <option value="">Qualquer status</option>
+                <option value="atrasada">Atrasada</option>
+                <option value="perto_vencer">Perto de vencer (7 dias)</option>
+                <option value="concluida">Concluída</option>
+              </select>
+            </div>
+
           </div>
         </div>
 

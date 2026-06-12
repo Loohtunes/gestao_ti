@@ -107,6 +107,14 @@ const REPRESENTANTES = ['Verdile', 'Ricardo', 'Sebastião', 'Ângelo', 'Sérgio'
 
 
 // ── Helper lista aditivos/medições ───────────────────────────────────────────
+function _toRomano(num) {
+  num = parseInt(num) || 0;
+  if (num < 1) return String(num);
+  const mapa = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+  let r = '';
+  for (const [v, s] of mapa) { while (num >= v) { r += s; num -= v; } }
+  return r;
+}
 function criarItemLista(etapaId, titulo, dataPrevista) {
   const cfg = ETAPAS_CONFIG[etapaId];
   const subEtapas = {};
@@ -378,6 +386,153 @@ let _filtroPeriodoDe = '', _filtroPeriodoAte = '';
 let _filtroMinhasPendencias = false;
 let _currentObraId = null; // ID da obra aberta no modal
 let _filtroUsuarioPendencia = ''; // Para visualização do gestor
+// ── Bloco 4: Filtros consolidados (painel lateral) ───────────────────────────
+const _F = { busca: '', reps: [], atrib: '', atribUser: '', periodoDe: '', periodoAte: '', etapaStEtapa: '', etapaStVal: '' };
+function _fSet(k, v) { _F[k] = v; _paginaAtual = 0; _afterFiltro(); }
+function _fToggle(k, v, on) { const a = _F[k]; const i = a.indexOf(v); if (on && i < 0) a.push(v); if (!on && i >= 0) a.splice(i, 1); _paginaAtual = 0; _afterFiltro(); }
+function _fToggleRep(rep, on) { const i = _F.reps.indexOf(rep); if (on && i < 0) _F.reps.push(rep); if (!on && i >= 0) _F.reps.splice(i, 1); _paginaAtual = 0; _afterFiltro(); }
+function _afterFiltro() { renderObras(); _atualizarBotaoFiltros(); }
+function _contarFiltrosAtivos() {
+  let n = 0;
+  if (_F.busca) n++; if (_F.reps.length) n++; if (_F.atrib) n++; if (_F.atribUser) n++;
+  if (_F.periodoDe || _F.periodoAte) n++;
+  if (_F.etapaStEtapa) n++; if (_F.etapaStVal) n++;
+  return n;
+}
+function _atualizarBotaoFiltros() {
+  const n = _contarFiltrosAtivos();
+  const badge = document.getElementById('filtros-count');
+  if (badge) { badge.textContent = n; badge.style.display = n ? 'inline-flex' : 'none'; }
+  const limpar = document.getElementById('btn-limpar-filtros');
+  if (limpar) limpar.style.display = n ? 'inline-flex' : 'none';
+}
+function toggleFiltrosPanel() { _preencherFiltroUsuarios(); const p = document.getElementById('filtros-panel'); if (p) p.classList.toggle('aberto'); }
+function _setAtrib(which, on) {
+  if (on) { _F.atrib = which; const other = which === 'mine' ? 'flt-atrib-none' : 'flt-atrib-mine'; const el = document.getElementById(other); if (el) el.checked = false; }
+  else if (_F.atrib === which) { _F.atrib = ''; }
+  _paginaAtual = 0; _afterFiltro();
+}
+function _preencherFiltroUsuarios() {
+  const sel = document.getElementById('filtro-atrib-user'); const wrap = document.getElementById('filtro-atrib-user-wrap'); if (!sel || !wrap) return;
+  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
+  if (!isGestor) { wrap.style.display = 'none'; return; }
+  const lista = (typeof users !== 'undefined' ? users : []).filter(u => u.isSuperAdmin || (u.acessos || []).includes('adminComercial') || (u.acessos || []).includes('comercial'));
+  sel.innerHTML = '<option value="">Qualquer pessoa</option>' + lista.map(u => `<option value="${u.username}"${u.username === _F.atribUser ? ' selected' : ''}>${u.username}${u.username === (currentUser && currentUser.username) ? ' (você)' : ''}</option>`).join('');
+  wrap.style.display = 'block';
+}
+function fecharFiltrosPanel() { const p = document.getElementById('filtros-panel'); if (p) p.classList.remove('aberto'); }
+function limparTodosFiltros() {
+  Object.assign(_F, { busca: '', reps: [], atrib: '', atribUser: '', periodoDe: '', periodoAte: '', etapaStEtapa: '', etapaStVal: '' });
+  const panel = document.getElementById('filtros-panel');
+  if (panel) {
+    panel.querySelectorAll('input[type=text], input[type=date], select').forEach(el => { el.value = ''; });
+    panel.querySelectorAll('input[type=checkbox]').forEach(el => { el.checked = false; });
+    panel.querySelectorAll('.filtro-rep-toggle.ativo').forEach(el => el.classList.remove('ativo'));
+  }
+  _paginaAtual = 0; _afterFiltro();
+}
+// Helpers de predicado
+function _obraTemRespAtivo(o, user) {
+  if (!user || !o.etapas) return false;
+  return ETAPAS_ORDER.some(id => {
+    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return false;
+    if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _temResp(x, user)));
+    return Object.values(e.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _temResp(x, user));
+  });
+}
+function _obraTemQualquerResp(o) {
+  if (!o.etapas) return false;
+  return ETAPAS_ORDER.some(id => {
+    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return false;
+    if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _getResponsaveis(x).length));
+    return Object.values(e.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _getResponsaveis(x).length);
+  });
+}
+function _obraSemaforo(o) {
+  if (o.concluida) return 'concluida';
+  if (hasSubEtapaAtrasada(o)) return 'atrasada';
+  if (_obraTemVencendo(o, 7)) return 'vencendo';
+  return 'em_dia';
+}
+function _obraTemVencendo(o, dias) {
+  if (!o.etapas || o.concluida) return false;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const lim = new Date(); lim.setDate(lim.getDate() + dias); const limStr = lim.toISOString().slice(0, 10);
+  const chk = (ref, st) => ref && st !== 'done' && st !== 'pulada' && st !== 'cancelado' && ref >= hoje && ref <= limStr;
+  return ETAPAS_ORDER.some(id => {
+    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return false;
+    if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => chk(_refAtraso(x, it), x.status)));
+    return Object.values(e.subEtapas || {}).some(x => !x.isCocLista && chk(x.dataLimite || x.dataPrevista, x.status)) || (e.cocLista || []).some(ci => chk(ci.dataPrevista, ci.status));
+  });
+}
+function _obraEntregaMatch(o, buckets) {
+  if (!o.etapas) return false;
+  const hoje = new Date().toISOString().slice(0, 10);
+  const d1 = new Date(); d1.setDate(d1.getDate() + 1); const s1 = d1.toISOString().slice(0, 10);
+  const d7 = new Date(); d7.setDate(d7.getDate() + 7); const s7 = d7.toISOString().slice(0, 10);
+  const d30 = new Date(); d30.setDate(d30.getDate() + 30); const s30 = d30.toISOString().slice(0, 10);
+  let temPrazo = false, semData = false;
+  const refs = [];
+  ETAPAS_ORDER.forEach(id => {
+    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return;
+    const push = (ref, st) => { if (st === 'done' || st === 'pulada' || st === 'cancelado') return; temPrazo = temPrazo || !!ref; if (!ref) semData = true; if (ref) refs.push(ref); };
+    if (cfg.isLista) (e.lista || []).forEach(it => Object.values(it.subEtapas || {}).forEach(x => push(_refAtraso(x, it), x.status)));
+    else { Object.values(e.subEtapas || {}).forEach(x => { if (!x.isCocLista) push(x.dataLimite || x.dataPrevista, x.status); }); (e.cocLista || []).forEach(ci => push(ci.dataPrevista, ci.status)); }
+  });
+  return buckets.some(b => {
+    if (b === 'sem_data') return semData;
+    if (b === 'atraso') return refs.some(r => r < hoje);
+    if (b === '1d') return refs.some(r => r >= hoje && r <= s1);
+    if (b === '7d') return refs.some(r => r >= hoje && r <= s7);
+    if (b === '30d') return refs.some(r => r >= hoje && r <= s30);
+    return false;
+  });
+}
+function _etapaStatusMatch(o, etapaId, val) {
+  const e = o.etapas && o.etapas[etapaId]; if (!e) return false;
+  if (val === 'concluida') return e.status === 'done';
+  if (val === 'atrasada') return hasEtapaAtrasadaPorId(o, etapaId);
+  if (val === 'perto_vencer') {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const lim = new Date(); lim.setDate(lim.getDate() + 7); const limStr = lim.toISOString().slice(0, 10);
+    if (!e.ativa) return false;
+    const chk = (ref, st) => ref && st !== 'done' && st !== 'pulada' && st !== 'cancelado' && ref >= hoje && ref <= limStr;
+    const cfg = ETAPAS_CONFIG[etapaId];
+    if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => chk(_refAtraso(x, it), x.status)));
+    return Object.values(e.subEtapas || {}).some(x => !x.isCocLista && chk(x.dataLimite || x.dataPrevista, x.status)) || (e.cocLista || []).some(ci => chk(ci.dataPrevista, ci.status));
+  }
+  return false;
+}
+function _coletarDatasEtapas(o) {
+  const datas = [];
+  if (!o.etapas) return datas;
+  const add = (d) => { if (d) datas.push(d); };
+  const pushSub = (s) => { if (!s) return; add(s.dataConclusao); add(s.dataLimite || s.dataPrevista); };
+  ETAPAS_ORDER.forEach(id => {
+    const e = o.etapas[id]; if (!e) return;
+    if (Array.isArray(e.lista)) e.lista.forEach(item => { add(item.dataConclusao); add(item.dataPrevista); Object.values(item.subEtapas || {}).forEach(pushSub); });
+    Object.values(e.subEtapas || {}).forEach(pushSub);
+    (e.cocLista || []).forEach(ci => { add(ci.dataConclusao); add(ci.dataPrevista); });
+  });
+  return datas;
+}
+function _obraTemDataNoPeriodo(o, de, ate) {
+  return _coletarDatasEtapas(o).some(d => (!de || d >= de) && (!ate || d <= ate));
+}
+function _obraPassaFiltros(o) {
+  if (_F.busca) { const b = _F.busca; if (!(String(o.numero || '').toLowerCase().includes(b) || (o.nome || '').toLowerCase().includes(b) || (o.representante || '').toLowerCase().includes(b))) return false; }
+  if (_F.reps.length && !_F.reps.includes(o.representante)) return false;
+  if ((_F.periodoDe || _F.periodoAte) && !_obraTemDataNoPeriodo(o, _F.periodoDe, _F.periodoAte)) return false;
+  if (_F.atrib === 'mine' && !_obraTemRespAtivo(o, currentUser && currentUser.username)) return false;
+  if (_F.atrib === 'none' && _obraTemQualquerResp(o)) return false;
+  if (_F.atribUser && !_obraTemRespAtivo(o, _F.atribUser)) return false;
+  if (_F.etapaStEtapa) { const e = o.etapas && o.etapas[_F.etapaStEtapa]; if (!(e && (e.status === 'active' || e.status === 'done'))) return false; }
+  if (_F.etapaStVal) {
+    if (_F.etapaStEtapa) { if (!_etapaStatusMatch(o, _F.etapaStEtapa, _F.etapaStVal)) return false; }
+    else if (!ETAPAS_ORDER.some(id => { const e = o.etapas && o.etapas[id]; return e && (e.status === 'active' || e.status === 'done') && _etapaStatusMatch(o, id, _F.etapaStVal); })) return false;
+  }
+  return true;
+}
 let _paginaAtual = 0;
 let _obrasPorPagina = parseInt(localStorage.getItem('comercial-per-page') || '12');
 
@@ -658,64 +813,11 @@ function renderObras() {
   const el = document.getElementById('obras-grid');
   if (!el) return;
 
-  // Aplicar filtros
-  let lista = [..._obras];
-  if (_filtroRep) lista = lista.filter(o => o.representante === _filtroRep);
-  if (_filtroEtapa) lista = lista.filter(o => getEtapaAtualId(o) === _filtroEtapa);
-  if (_filtroDataDe || _filtroDataAte) {
-    lista = lista.filter(obra => {
-      return ETAPAS_ORDER.some(etapaId => {
-        const e = obra.etapas?.[etapaId]; if (!e?.ativa) return false;
-        const cfg = ETAPAS_CONFIG[etapaId];
-        const checkSub = sub => {
-          if (!sub || sub.status === 'done' || !sub.dataLimite) return false;
-          if (_filtroDataDe && sub.dataLimite < _filtroDataDe) return false;
-          if (_filtroDataAte && sub.dataLimite > _filtroDataAte) return false;
-          return true;
-        };
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(checkSub));
-        return Object.values(e.subEtapas || {}).some(checkSub);
-      });
-    });
-  }
-  if (_filtroEtapaAtraso) lista = lista.filter(o => hasEtapaAtrasadaPorId(o, _filtroEtapaAtraso));
+  // Aplicar filtros (Bloco 4 — predicado consolidado)
+  let lista = _obras.filter(_obraPassaFiltros);
   // Ordenação
   if (_ordenacao === 'num-asc') lista = [...lista].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
   if (_ordenacao === 'num-desc') lista = [...lista].sort((a, b) => (parseInt(b.numero) || 0) - (parseInt(a.numero) || 0));
-  // Filtro por período — obras com sub-etapas pendentes com dataLimite no intervalo
-  if (_filtroPeriodoDe || _filtroPeriodoAte) {
-    lista = lista.filter(obra => {
-      if (obra.concluida) return false;
-      return ETAPAS_ORDER.some(etapaId => {
-        const e = obra.etapas?.[etapaId];
-        const cfg = ETAPAS_CONFIG[etapaId];
-        if (!e?.ativa) return false;
-        const checkSub = sub => {
-          if (sub.status === 'done' || !sub.dataLimite) return false;
-          if (_filtroPeriodoDe && sub.dataLimite < _filtroPeriodoDe) return false;
-          if (_filtroPeriodoAte && sub.dataLimite > _filtroPeriodoAte) return false;
-          return true;
-        };
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(checkSub));
-        return Object.values(e.subEtapas || {}).some(checkSub);
-      });
-    });
-  }
-  if (_filtroMinhasPendencias) {
-    const alvo = _filtroUsuarioPendencia || currentUser?.username;
-    lista = lista.filter(obra => {
-      if (obra.concluida) return false;
-      return ETAPAS_ORDER.some(etapaId => {
-        const e = obra.etapas?.[etapaId]; const cfg = ETAPAS_CONFIG[etapaId]; if (!e?.ativa) return false;
-        if (cfg.isLista) return (e.lista || []).some(item => Object.values(item.subEtapas || {}).some(s => s.status !== 'done' && _temResp(s, alvo)));
-        return Object.values(e.subEtapas || {}).some(sub => sub.status !== 'done' && sub.status !== 'cancelado' && _temResp(sub, alvo));
-      });
-    });
-  }
-  if (_filtroBusca) lista = lista.filter(o =>
-    String(o.numero || '').toLowerCase().includes(_filtroBusca) ||
-    (o.nome || '').toLowerCase().includes(_filtroBusca) ||
-    (o.representante || '').toLowerCase().includes(_filtroBusca));
 
   const total = lista.length;
   const totalPags = Math.max(1, Math.ceil(total / _obrasPorPagina));
@@ -730,7 +832,7 @@ function renderObras() {
   if (!total) {
     el.innerHTML = `<div class="obras-empty">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-      <h3>${_filtroRep || _filtroEtapa || _filtroDataDe || _filtroDataAte ? 'Nenhuma obra com esses filtros' : 'Nenhuma obra cadastrada'}</h3>
+      <h3>${_contarFiltrosAtivos() ? 'Nenhuma obra com esses filtros' : 'Nenhuma obra cadastrada'}</h3>
       <span style="font-size:0.78rem;">Clique em "+ Nova Obra" para começar</span>
     </div>`;
     _renderPaginacao(0, 0, 0);
@@ -956,13 +1058,22 @@ function renderObras() {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante || '—'}
         </div>
-        <button onclick="event.stopPropagation();exportarObraPDF('${obra.id}')"
-          title="Exportar PDF da obra"
-          style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
-          onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444';"
-          onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF
-        </button>
+        <div style="display:flex;align-items:center;gap:0.3rem;">
+          <button onclick="event.stopPropagation();fixarObraNoQuadro('${obra.id}')"
+            title="Fixar no Quadro de Avisos"
+            style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
+            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';"
+            onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/></svg>Fixar
+          </button>
+          <button onclick="event.stopPropagation();exportarObraPDF('${obra.id}')"
+            title="Exportar PDF da obra"
+            style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
+            onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444';"
+            onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF
+          </button>
+        </div>
       </div>
       <div class="card-etapas-grid">${etapaLinhas}</div>
       <div class="obra-prazo ${prazoInfo.cls}">
@@ -1808,9 +1919,10 @@ function openAddItemModal(obraId, etapaId) {
   const cfg = ETAPAS_CONFIG[etapaId];
   const obra = _obras.find(o => o.id === obraId);
   const n = (obra?.etapas?.[etapaId]?.lista?.length || 0) + 1;
-  const label = cfg.nome === 'Aditivos / Termo' ? 'Aditivo' : 'Medição';
+  const _isAditivo = cfg.nome === 'Aditivos / Termo';
+  const label = _isAditivo ? 'Aditivo' : 'Medição';
   document.getElementById('add-item-title').textContent = `Adicionar ${label}`;
-  document.getElementById('add-item-nome').value = `${label} ${n}`;
+  document.getElementById('add-item-nome').value = `${label} ${_isAditivo ? _toRomano(n) : n}`;
   document.getElementById('add-item-data').value = '';
   document.getElementById('add-item-modal').style.display = 'flex';
 }
@@ -2093,6 +2205,11 @@ function _marcarHistoricoVisto(obra) {
 
 
 // ── Auditoria — registro imutável em subcoleção ───────────────────────────────
+function _nomeSubProrroga(etapaId, subId) {
+  const cfg = ETAPAS_CONFIG[etapaId] || {};
+  const sc = (cfg.subEtapas || cfg.subEtapasTemplate || []).find(s => s.id === subId);
+  return `${cfg.nome || etapaId} · ${sc?.nome || subId}`;
+}
 async function _audit(obraId, tipo, descricao, extra) {
   try {
     const entrada = {
@@ -2557,8 +2674,11 @@ async function saveProrrogacao() {
     document.getElementById('prorrogar-modal').dataset.cocMode = '';
     const obra2 = _obras.find(o => o.id === _cocActionObraId); if (!obra2) return;
     const etapas2 = JSON.parse(JSON.stringify(obra2.etapas));
-    etapas2[_cocActionEtapaId].cocLista[_cocActionIdx].dataPrevista = novaData;
+    const _cocP = etapas2[_cocActionEtapaId].cocLista[_cocActionIdx];
+    const _antigaCocP = _cocP.dataPrevista || '—';
+    _cocP.dataPrevista = novaData;
     await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas2 });
+    _audit(_cocActionObraId, 'prorrogacao', `COC · ${_cocP.nome || ''}: data prevista ${_antigaCocP} → ${novaData}`);
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
   }
   // Modo data-prevista (subs isAnalise / Documentações): edita dataPrevista, sem justificativa
@@ -2570,8 +2690,10 @@ async function saveProrrogacao() {
     if (!refA) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
     const _hojeP = new Date().toISOString().slice(0, 10);
     if (novaData < _hojeP) { showComercialToast('A data não pode ser anterior a hoje.', 'error'); return; }
+    const _antigaA = refA.sub.dataLimite || refA.sub.dataPrevista || '—';
     refA.sub.dataLimite = novaData; refA.sub.dataPrevista = null;
     await db.collection('obras').doc(_prorrogarObraId).update({ etapas: etapasA });
+    _audit(_prorrogarObraId, 'prorrogacao', `${_nomeSubProrroga(_prorrogarEtapaId, _prorrogarSubId)}: data prevista ${_antigaA} → ${novaData}`);
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
   }
   const justProrroga = document.getElementById('prorrogar-justificativa')?.value.trim();
@@ -2582,12 +2704,14 @@ async function saveProrrogacao() {
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const ref = _findSubRef(etapas, _prorrogarEtapaId, _prorrogarSubId, _prorrogarItemId);
   if (!ref) { showComercialToast('Sub-etapa não encontrada.', 'error'); return; }
+  const _antigaLim = ref.sub.dataLimite || '—';
   ref.sub.dataLimite = novaData;
   ref.sub.prorrogadoPor = currentUser.username;
   ref.sub.prorrogadoEm = hoje;
   ref.sub.diasProrrogados = (ref.sub.diasProrrogados || 0) + 1;
   ref.sub.prorrogacaoJustificativa = justProrroga;
   await db.collection('obras').doc(_prorrogarObraId).update({ etapas });
+  _audit(_prorrogarObraId, 'prorrogacao', `${_nomeSubProrroga(_prorrogarEtapaId, _prorrogarSubId)}: prazo ${_antigaLim} → ${novaData}. Motivo: "${justProrroga}"`);
   showComercialToast(`Prazo atualizado para ${new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR')}! ✅`, 'success');
   closeProrrogarModal();
 }
@@ -2905,7 +3029,9 @@ function openConcluirRetroModal(obraId, etapaId, subId, itemId) {
   const tpl = (cfg && (cfg.subEtapasTemplate || cfg.subEtapas)) || [];
   const nome = (tpl.find(s => s.id === subId) || {}).nome || subId;
   document.getElementById('retro-concluir-title').textContent = 'Concluir: ' + nome;
-  document.getElementById('retro-concluir-data').value = new Date().toISOString().slice(0, 10);
+  const _rIn = document.getElementById('retro-concluir-data');
+  const _rHoje = new Date(), _rMin = new Date(_rHoje); _rMin.setDate(_rMin.getDate() - 7);
+  if (_rIn) { _rIn.max = _rHoje.toISOString().slice(0, 10); _rIn.min = _rMin.toISOString().slice(0, 10); _rIn.value = _rHoje.toISOString().slice(0, 10); }
   document.getElementById('retro-concluir-obs').value = '';
   document.getElementById('retro-concluir-modal').style.display = 'flex';
 }
@@ -2951,6 +3077,28 @@ async function reabrirSubRetro(obraId, etapaId, subId, itemId) {
 }
 
 // ── PDF individual da obra ────────────────────────────────────────────────────
+async function fixarObraNoQuadro(obraId) {
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  const me = currentUser && currentUser.username; if (!me) { showComercialToast('Faça login para fixar obras.', 'error'); return; }
+  try {
+    const snap = await db.collection('avisos').where('obraId', '==', obraId).get();
+    const meus = snap.docs.filter(d => { const x = d.data(); return x.type === 'obra' && x.autor === me; });
+    if (meus.length) {
+      await Promise.all(meus.map(d => d.ref.delete()));
+      showComercialToast('Obra removida do Quadro de Avisos.', 'success');
+      return;
+    }
+    const total = (await db.collection('avisos').where('autor', '==', me).get()).size;
+    await db.collection('avisos').add({
+      type: 'obra', obraId, numero: o.numero || '', nome: o.nome || '',
+      cor: getCorStripe(o), escopo: 'pessoal', autor: me,
+      x: 16 + (total % 6) * 26, y: 16 + (total % 6) * 26,
+      createdAt: Date.now(), updatedAt: Date.now()
+    });
+    showComercialToast('Obra fixada no seu Quadro de Avisos! 📌', 'success');
+  } catch (e) { console.error('[fixar obra]', e); showComercialToast('Erro ao fixar a obra.', 'error'); }
+}
+
 function exportarObraPDF(obraId) {
   const obra = _obras.find(o => o.id === obraId);
   if (!obra) return;
@@ -3039,6 +3187,7 @@ function exportarObraPDF(obraId) {
       const atrasada = s.status !== 'done' && refData && refData < hoje2;
       let st, corSt;
       if (s.status === 'done') { st = '✓ Concluída'; corSt = '#22c55e'; }
+      else if (s.status === 'cancelado') { st = '⊘ Cancelada'; corSt = '#9ca3af'; }
       else if (atrasada) { st = '⚠ Atrasada'; corSt = '#ef4444'; }
       else if (s.status === 'active') { st = '► Em andamento'; corSt = cfg.cor; }
       else { st = '○ Pendente'; corSt = '#9ca3af'; }
@@ -3194,8 +3343,10 @@ function _gerarDadosRelatorio() {
             const sub = item.subEtapas?.[subCfg.id];
             if (!sub) return;
             if (sub.status === 'pending' || sub.status === 'pulada') return;
+            const cancelada = sub.status === 'cancelado';
+            if (cancelada && !incluirTodas) return;
             const concluida = sub.status === 'done';
-            const atrasada = !concluida && sub.dataLimite && sub.dataLimite < hoje;
+            const atrasada = !cancelada && !concluida && sub.dataLimite && sub.dataLimite < hoje;
             const vencendo = !concluida && sub.dataLimite && !atrasada && (() => {
               const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
               return Math.ceil((d - ag) / (1000 * 60 * 60 * 24)) <= 3;
@@ -3218,7 +3369,7 @@ function _gerarDadosRelatorio() {
               responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
               etapa: `${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
               subEtapa: subCfg.nome,
-              status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
+              status: cancelada ? 'Cancelada' : concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
               dataInicio: sub.dataInicio ? new Date(sub.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
               dataConclusao: sub.dataConclusao ? new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
               dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
@@ -3234,8 +3385,10 @@ function _gerarDadosRelatorio() {
         const sub = e.subEtapas?.[subCfg.id];
         if (!sub) return;
         if (sub.status === 'pending' || sub.status === 'pulada') return;
+        const cancelada = sub.status === 'cancelado';
+        if (cancelada && !incluirTodas) return;
         const concluida = sub.status === 'done';
-        const atrasada = !concluida && sub.dataLimite && sub.dataLimite < hoje;
+        const atrasada = !cancelada && !concluida && sub.dataLimite && sub.dataLimite < hoje;
         const vencendo = !concluida && sub.dataLimite && !atrasada && (() => {
           const d = new Date(sub.dataLimite + 'T12:00:00'), ag = new Date(); ag.setHours(0, 0, 0, 0);
           return Math.ceil((d - ag) / (1000 * 60 * 60 * 24)) <= 3;
@@ -3259,7 +3412,7 @@ function _gerarDadosRelatorio() {
           responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
           etapa: NOMES_ETAPA[etapaId],
           subEtapa: subCfg.nome,
-          status: concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
+          status: cancelada ? 'Cancelada' : concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
           dataInicio: sub.dataInicio ? new Date(sub.dataInicio + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
           dataConclusao: sub.dataConclusao ? new Date(sub.dataConclusao + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
           dataLimite: sub.dataLimite ? new Date(sub.dataLimite + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
@@ -3312,7 +3465,7 @@ function exportarRelatorioPDF() {
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
   const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   const rows = linhas.map((l, ri) => {
-    const bg = l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : ri % 2 === 0 ? '#ffffff' : '#f9fafb';
+    const bg = l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : l.status === 'Cancelada' ? '#f3f4f6' : ri % 2 === 0 ? '#ffffff' : '#f9fafb';
     const td = `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
     const tdRed = l.status === 'Em atraso' && l.diasAtraso && l.diasAtraso !== '—'
       ? `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};color:#dc2626;font-weight:700;"`
@@ -3324,7 +3477,7 @@ function exportarRelatorioPDF() {
       <td ${td}>${l.responsavel || '—'}</td>
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
-      <td ${td}><span class="badge ${l.status === 'Em atraso' ? 'red' : l.status === 'Perto de vencer' ? 'amber' : l.status === 'Concluída' ? 'green' : 'blue'}">${l.status}</span></td>
+      <td ${td}><span class="badge ${l.status === 'Em atraso' ? 'red' : l.status === 'Perto de vencer' ? 'amber' : l.status === 'Concluída' ? 'green' : l.status === 'Cancelada' ? 'gray' : 'blue'}">${l.status}</span></td>
       <td ${td}>${l.dataInicio || '—'}</td>
       <td ${td}>${l.dataConclusao || '—'}</td>
       <td ${td}>${l.dataLimite}</td>
@@ -3347,6 +3500,7 @@ function exportarRelatorioPDF() {
       .amber{background:#fef3c7;color:#92400e;}
       .blue{background:#dbeafe;color:#1e40af;}
       .green{background:#dcfce7;color:#166534;}
+      .gray{background:#f3f4f6;color:#6b7280;}
       .footer{margin-top:20px;font-size:9px;color:#9ca3af;text-align:center;}
     </style></head><body>
     <div class="header">
