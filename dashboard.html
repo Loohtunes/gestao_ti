@@ -370,7 +370,7 @@
     // ===== Quadro de Avisos (post-its persistidos, tempo real) =====
     const CORES_AVISO = ['#ffd43b', '#ff922b', '#ff6b6b', '#f06595', '#9775fa', '#4dabf7', '#ced4da'];
     const AVISO_CANVAS_W = 960, AVISO_CANVAS_H = 640;
-    let _avisosTime = {}, _avisosPessoal = {}, _unsubAT = null, _unsubAP = null, _avisoBusy = false, _avisoPending = false;
+    let _avisosTime = {}, _avisosPessoal = {}, _unsubAT = null, _unsubAP = null, _avisoBusy = false, _avisoPending = false, _avisoZ = 100;
     let _dashObras = [];
     function _ehGestorComercial() {
       const u = currentUser; if (!u) return false;
@@ -411,7 +411,7 @@
     function _renderAvisos() {
       if (_avisoBusy) { _avisoPending = true; return; }
       const board = document.getElementById('cpain-board'); if (!board) return;
-      const all = Object.values(_avisosTime).concat(Object.values(_avisosPessoal));
+      const all = Object.values(_avisosTime).concat(Object.values(_avisosPessoal)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
       if (!all.length) { board.innerHTML = `<div class="cpain-board-canvas" id="cpain-canvas"><div class="cpain-board-vazio">Sem avisos ainda. Clique em "+ Aviso" para começar.</div></div>`; return; }
       const me = currentUser?.username, gestor = _ehGestorComercial();
       board.innerHTML = `<div class="cpain-board-canvas" id="cpain-canvas">` + all.map(a => {
@@ -442,7 +442,7 @@
       if (head && head.dataset.drag === '1') {
         head.addEventListener('mousedown', (e) => {
           if (e.target.closest('button')) return;
-          e.preventDefault(); _avisoBusy = true;
+          e.preventDefault(); _avisoBusy = true; el.style.zIndex = ++_avisoZ;
           const offX = e.clientX - el.offsetLeft, offY = e.clientY - el.offsetTop;
           const move = (ev) => {
             let nx = ev.clientX - offX, ny = ev.clientY - offY;
@@ -484,17 +484,58 @@
       const ativas = Object.keys(o.etapas).filter(k => { const e = o.etapas[k]; return e && e.ativa && e.status === 'active'; }).map(k => ETAPA_LABELS[k] || k);
       return ativas.length ? ativas.join(', ') : 'Sem etapa ativa';
     }
+    function _statusEtapaObra(o, etapaKey, hoje) {
+      const e = o.etapas[etapaKey];
+      if (!e || !e.ativa || e.status === 'pulada') return null;
+      if (e.status === 'done') return 'done';
+      if (_etapaEmAtraso(e, hoje)) return 'atrasada';
+      const _lim = (() => { const x = new Date(hoje + 'T12:00:00'); x.setDate(x.getDate() + 7); return x.toISOString().slice(0, 10); })();
+      const refs = [];
+      if (Array.isArray(e.lista)) {
+        e.lista.forEach(item => {
+          if (item.status === 'done' || item.status === 'pulada') return;
+          if (item.dataPrevista) refs.push(item.dataPrevista);
+          Object.values(item.subEtapas || {}).forEach(s => { const r = _refAtrasoSub(s, item); if (r && s.status !== 'done' && s.status !== 'pulada') refs.push(r); });
+        });
+      } else {
+        Object.values(e.subEtapas || {}).forEach(s => { if (s.isCocLista) return; const r = s.dataLimite || s.dataPrevista; if (r && s.status !== 'done' && s.status !== 'pulada') refs.push(r); });
+        (e.cocLista || []).forEach(ci => { if (ci.status === 'done' || ci.status === 'pulada') return; if (ci.dataPrevista) refs.push(ci.dataPrevista); });
+      }
+      if (refs.some(r => r >= hoje && r <= _lim)) return 'perto';
+      if (e.status === 'active') return 'prazo';
+      return 'pendente';
+    }
+    const _ETAPA_ST_ICO = {
+      done: { cor: '#22c55e', svg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>' },
+      prazo: { cor: '#22c55e', svg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>' },
+      perto: { cor: '#f59e0b', svg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 7 12 12 15 14"/></svg>' },
+      atrasada: { cor: '#ef4444', svg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' },
+      pendente: { cor: '#9ca3af', svg: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"><circle cx="12" cy="12" r="9"/></svg>' }
+    };
+    function _etapasObraHtml(obraId) {
+      const o = _dashObras.find(x => x.id === obraId);
+      if (!o || !o.etapas) return '<div class="cpain-obra-etapas-vazio">—</div>';
+      if (o.concluida) return `<div class="cpain-et-row" style="color:#22c55e;"><span class="cpain-et-ico" style="color:#22c55e;">${_ETAPA_ST_ICO.done.svg}</span><span>Obra concluída</span></div>`;
+      const hoje = new Date().toISOString().slice(0, 10);
+      const rows = ['proposta', 'contrato', 'documentacoes', 'aditivos', 'medicao']
+        .filter(k => { const e = o.etapas[k]; return e && e.ativa && e.status !== 'pulada'; })
+        .map(k => {
+          const st = _statusEtapaObra(o, k, hoje) || 'pendente';
+          const ic = _ETAPA_ST_ICO[st];
+          return `<div class="cpain-et-row"><span class="cpain-et-ico" style="color:${ic.cor};">${ic.svg}</span><span>${ETAPA_LABELS[k] || k}</span></div>`;
+        });
+      return rows.length ? rows.join('') : '<div class="cpain-obra-etapas-vazio">Sem etapa ativa</div>';
+    }
     function _renderObraCard(a, me) {
       const canDel = a.autor === me;
       const num = a.numero ? `#${_escAviso(String(a.numero))}` : '#—';
-      const etapas = _etapasAtivasTxt(a.obraId);
       return `<div class="cpain-obra-card" data-id="${a.id}" data-obra="${_escAviso(a.obraId || '')}" style="left:${a.x || 16}px;top:${a.y || 16}px;border-left:4px solid ${a.cor || '#3b82f6'};">
           <div class="cpain-obra-head" data-drag="1">
             <span class="cpain-obra-num">${num}</span>
             ${canDel ? `<button data-act="del" title="Desfixar">\u00d7</button>` : ''}
           </div>
           <div class="cpain-obra-nome" title="${_escAviso(a.nome || '')}">${_escAviso(a.nome || '')}</div>
-          <div class="cpain-obra-etapas">${_escAviso(etapas)}</div>
+          <div class="cpain-obra-etapas">${_etapasObraHtml(a.obraId)}</div>
           <button class="cpain-obra-abrir" data-act="abrir">Abrir obra \u2192</button>
         </div>`;
     }
@@ -504,7 +545,7 @@
       if (head) {
         head.addEventListener('mousedown', (e) => {
           if (e.target.closest('button')) return;
-          e.preventDefault(); _avisoBusy = true;
+          e.preventDefault(); _avisoBusy = true; el.style.zIndex = ++_avisoZ;
           const offX = e.clientX - el.offsetLeft, offY = e.clientY - el.offsetTop;
           const move = (ev) => {
             let nx = ev.clientX - offX, ny = ev.clientY - offY;

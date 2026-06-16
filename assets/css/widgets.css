@@ -711,9 +711,13 @@
 
 .cpain-obra-num {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--accent);
+  background: var(--surface2);
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
 }
 
 .cpain-obra-head button {
@@ -746,10 +750,31 @@
 }
 
 .cpain-obra-etapas {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0.1rem 0;
+}
+
+.cpain-et-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.cpain-et-ico {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cpain-obra-etapas-vazio {
   font-size: 0.66rem;
   color: var(--muted);
   font-family: var(--font-mono);
-  line-height: 1.3;
 }
 
 .cpain-obra-abrir {

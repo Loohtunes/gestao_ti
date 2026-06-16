@@ -380,6 +380,7 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras = [], _obraAtual = null, _filtroRep = '', _filtroEtapa = '', _unsubObras = null;
+let _unsubFixadas = null; const _obrasFixadas = new Set();
 let _filtroDataDe = '', _filtroDataAte = '', _filtroEtapaAtraso = '', _filtroBusca = '';
 let _ordenacao = 'recente';
 let _filtroPeriodoDe = '', _filtroPeriodoAte = '';
@@ -642,8 +643,40 @@ function _migrateObraToV2(obra) {
   };
 }
 
+function _fixarBtnInner(fixado) {
+  return (fixado
+    ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/></svg>Fixado'
+    : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/></svg>Fixar');
+}
+function _fixarBtnStyle(fixado) {
+  return `background:${fixado ? 'var(--accent)' : 'none'};border:1px solid ${fixado ? 'var(--accent)' : 'var(--border2)'};border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:${fixado ? '#fff' : 'var(--muted)'};display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;`;
+}
+function _refreshFixarBtns() {
+  document.querySelectorAll('[data-fixar]').forEach(btn => {
+    const f = _obrasFixadas.has(btn.getAttribute('data-fixar'));
+    btn.innerHTML = _fixarBtnInner(f);
+    btn.title = f ? 'Remover do Quadro de Avisos' : 'Fixar no Quadro de Avisos';
+    btn.setAttribute('style', _fixarBtnStyle(f));
+    if (f) { btn.onmouseover = null; btn.onmouseout = null; }
+    else {
+      btn.onmouseover = function () { this.style.borderColor = 'var(--accent)'; this.style.color = 'var(--accent)'; };
+      btn.onmouseout = function () { this.style.borderColor = 'var(--border2)'; this.style.color = 'var(--muted)'; };
+    }
+  });
+}
+function _initFixadasListener() {
+  if (_unsubFixadas) { _unsubFixadas(); _unsubFixadas = null; }
+  const me = currentUser && currentUser.username;
+  if (!me) return;
+  _unsubFixadas = db.collection('avisos').where('autor', '==', me).onSnapshot(snap => {
+    _obrasFixadas.clear();
+    snap.forEach(d => { const x = d.data(); if (x.type === 'obra' && x.obraId) _obrasFixadas.add(x.obraId); });
+    _refreshFixarBtns();
+  }, e => console.error('[fixadas]', e));
+}
 function initComercial() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
+  _initFixadasListener();
 
   // 1. Carga imediata via get() — garante que obras aparecem mesmo se onSnapshot demorar
   db.collection('obras').get()
@@ -1068,13 +1101,10 @@ function renderObras() {
           <span style="color:var(--muted);margin-right:0.2rem;">Representante:</span>${obra.representante || '—'}
         </div>
         <div style="display:flex;align-items:center;gap:0.3rem;">
-          <button onclick="event.stopPropagation();fixarObraNoQuadro('${obra.id}')"
-            title="Fixar no Quadro de Avisos"
-            style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
-            onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';"
-            onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24z"/></svg>Fixar
-          </button>
+          <button data-fixar="${obra.id}" onclick="event.stopPropagation();fixarObraNoQuadro('${obra.id}')"
+            title="${_obrasFixadas.has(obra.id) ? 'Remover do Quadro de Avisos' : 'Fixar no Quadro de Avisos'}"
+            style="${_fixarBtnStyle(_obrasFixadas.has(obra.id))}"
+            ${_obrasFixadas.has(obra.id) ? '' : `onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)';"`}>${_fixarBtnInner(_obrasFixadas.has(obra.id))}</button>
           <button onclick="event.stopPropagation();exportarObraPDF('${obra.id}')"
             title="Exportar PDF da obra"
             style="background:none;border:1px solid var(--border2);border-radius:5px;padding:0.15rem 0.4rem;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:0.25rem;font-size:0.68rem;transition:all 0.15s;"
@@ -4191,6 +4221,7 @@ function _initComercialModulo() {
 }
 function _teardownComercialModulo() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
+  if (_unsubFixadas) { _unsubFixadas(); _unsubFixadas = null; }
 }
 if (window.AppShell) {
   window.AppShell.register('comercial.html', 'comercial', _initComercialModulo, _teardownComercialModulo);
