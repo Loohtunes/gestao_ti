@@ -421,6 +421,14 @@ function _preencherFiltroUsuarios() {
   wrap.style.display = 'block';
 }
 function fecharFiltrosPanel() { const p = document.getElementById('filtros-panel'); if (p) p.classList.remove('aberto'); }
+function _filtroCliqueFora(e) {
+  const p = document.getElementById('filtros-panel');
+  if (!p || !p.classList.contains('aberto')) return;
+  if (p.contains(e.target)) return;
+  if (e.target.closest && (e.target.closest('#btn-filtros') || e.target.closest('#btn-limpar-filtros'))) return;
+  p.classList.remove('aberto');
+}
+document.addEventListener('mousedown', _filtroCliqueFora);
 function limparTodosFiltros() {
   Object.assign(_F, { busca: '', reps: [], atrib: '', atribUser: '', periodoDe: '', periodoAte: '', etapaStEtapa: '', etapaStVal: '' });
   const panel = document.getElementById('filtros-panel');
@@ -490,7 +498,8 @@ function _obraEntregaMatch(o, buckets) {
 }
 function _etapaStatusMatch(o, etapaId, val) {
   const e = o.etapas && o.etapas[etapaId]; if (!e) return false;
-  if (val === 'concluida') return e.status === 'done';
+  if (val === 'concluida') return o.concluida || e.status === 'done';
+  if (o.concluida) return false;
   if (val === 'atrasada') return hasEtapaAtrasadaPorId(o, etapaId);
   if (val === 'perto_vencer') {
     const hoje = new Date().toISOString().slice(0, 10);
@@ -526,10 +535,10 @@ function _obraPassaFiltros(o) {
   if (_F.atrib === 'mine' && !_obraTemRespAtivo(o, currentUser && currentUser.username)) return false;
   if (_F.atrib === 'none' && _obraTemQualquerResp(o)) return false;
   if (_F.atribUser && !_obraTemRespAtivo(o, _F.atribUser)) return false;
-  if (_F.etapaStEtapa) { const e = o.etapas && o.etapas[_F.etapaStEtapa]; if (!(e && (e.status === 'active' || e.status === 'done'))) return false; }
+  if (_F.etapaStEtapa) { const e = o.etapas && o.etapas[_F.etapaStEtapa]; if (!(e && (o.concluida || e.status === 'active' || e.status === 'done'))) return false; }
   if (_F.etapaStVal) {
     if (_F.etapaStEtapa) { if (!_etapaStatusMatch(o, _F.etapaStEtapa, _F.etapaStVal)) return false; }
-    else if (!ETAPAS_ORDER.some(id => { const e = o.etapas && o.etapas[id]; return e && (e.status === 'active' || e.status === 'done') && _etapaStatusMatch(o, id, _F.etapaStVal); })) return false;
+    else if (!ETAPAS_ORDER.some(id => { const e = o.etapas && o.etapas[id]; return e && (o.concluida || e.status === 'active' || e.status === 'done') && _etapaStatusMatch(o, id, _F.etapaStVal); })) return false;
   }
   return true;
 }
@@ -1525,7 +1534,8 @@ function closeRecusaModal() { document.getElementById('recusa-modal').style.disp
 async function processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, tipo) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   if (tipo === 'aprovado') {
-    await _concluirSubDeLista(obraId, etapaId, itemId, subId, 'Aprovado');
+    openConcluirRetroModal(obraId, etapaId, subId, itemId);
+    if (_retroRef) _retroRef.aprovacaoLista = true;
   } else {
     const obra = _obras.find(o => o.id === obraId);
     const lista = obra?.etapas?.[etapaId]?.lista || [];
@@ -1716,13 +1726,14 @@ function _renderCocLista(obra, etapaId, subId) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     </button>` : '';
 
+    const btnReabrir = (canAct && isDone) ? `<button onclick="event.stopPropagation();_reabrirCocItem('${obra.id}','${etapaId}',${idx})" title="Reabrir COC" style="font-size:0.68rem;padding:0.15rem 0.45rem;background:var(--surface2);border:1px solid var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.2rem;border-radius:6px;cursor:pointer;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg> Reabrir</button>` : '';
     return `<div style="border:1px solid var(--border2);border-radius:8px;margin-top:0.5rem;">
       <div onclick="_toggleCocItem('${toggleId}')"
         style="display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;cursor:pointer;background:var(--surface2);">
         <span style="font-size:0.8rem;font-weight:700;color:${isDone ? '#22c55e' : '#f97316'};flex:1;">${isDone ? '✓ ' : ''} ${item.nome}</span>
         ${dtConc}${!isDone ? dtPrev : ''}
         ${!isDone ? _respBadges(item, '0.6rem') : ''}
-        ${btnAcoes}${delBtn}
+        ${btnAcoes}${btnReabrir}${delBtn}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div id="${toggleId}" style="display:none;padding:0.5rem 0.75rem;font-size:0.78rem;color:var(--muted);">
@@ -1793,6 +1804,24 @@ async function _saveAddCoc() {
   _audit(obraId, 'aditivo_add', `COC adicionada: "${nome}"`);
   showComercialToast(`COC "${nome}" adicionada! ✅`, 'success');
   _closeAddCocModal();
+}
+async function _reabrirCocItem(obraId, etapaId, idx) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const etapas = JSON.parse(JSON.stringify(obra.etapas));
+  const item = etapas[etapaId].cocLista?.[idx]; if (!item) return;
+  item.status = 'active';
+  item.dataConclusao = null;
+  item.concluidoPor = null;
+  if (!etapas[etapaId].subEtapas) etapas[etapaId].subEtapas = {};
+  if (!etapas[etapaId].subEtapas.coc) etapas[etapaId].subEtapas.coc = { status: 'pending', dataLimite: null, dataConclusao: null };
+  const allCocDone = (etapas[etapaId].cocLista || []).length > 0 && (etapas[etapaId].cocLista || []).every(i => i.status === 'done');
+  etapas[etapaId].subEtapas.coc.status = allCocDone ? 'done' : 'active';
+  if (!allCocDone) etapas[etapaId].subEtapas.coc.dataConclusao = null;
+  if (etapas[etapaId].status === 'done') etapas[etapaId].status = 'active';
+  await db.collection('obras').doc(obraId).update({ etapas });
+  _audit(obraId, 'reabertura', `COC · ${item.nome || ''} reaberta`);
+  showComercialToast('COC reaberta! ↩', 'success');
 }
 async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -2251,12 +2280,22 @@ const _AUDIT_ICONS = {
   revisao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.2"/></svg>',
   recusa: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   prorrogacao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  cancelamento: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+  coc_edit: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v10"/><polyline points="14 2 14 8 20 8"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/></svg>',
+  coc_del: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+  item_edit: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  reabertura: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>',
+  reabrir_sub: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>',
+  retro_concluir: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>',
+  retro_reabrir: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>',
 };
 
 const _AUDIT_CORES = {
   edicao: '#3b82f6', atribuicao: '#8b5cf6', aditivo_add: '#ec4899', aditivo_del: '#6b7280',
   medicao_add: '#ec4899', medicao_del: '#6b7280', conclusao: '#22c55e',
   revisao: '#f59e0b', recusa: '#ef4444', prorrogacao: '#f97316',
+  cancelamento: '#ef4444', coc_edit: '#3b82f6', coc_del: '#6b7280', item_edit: '#3b82f6',
+  reabertura: '#14b8a6', reabrir_sub: '#14b8a6', retro_concluir: '#22c55e', retro_reabrir: '#f59e0b',
 };
 
 
@@ -2420,7 +2459,7 @@ async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
   await _concluirSubDeLista(obraId, etapaId, itemId, subId, null);
 }
 let _tipoConclItemId = null;
-async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom) {
+async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom, obsTxt) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = dataCustom || new Date().toISOString().slice(0, 10);
@@ -2430,6 +2469,7 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
   const sub = item.subEtapas[subId];
   sub.status = 'done'; sub.dataConclusao = hoje; sub.concluidoPor = currentUser.username;
   if (tipo) sub.tipoConclusao = tipo;
+  if (obsTxt) { if (!sub.observacoes) sub.observacoes = []; sub.observacoes.push({ texto: obsTxt, data: new Date().toISOString().slice(0, 10), hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), por: currentUser.username }); }
   // Ativar próxima sub-etapa
   const subArr = cfg.subEtapasTemplate || [];
   const idx = subArr.findIndex(s => s.id === subId);
@@ -2677,6 +2717,8 @@ async function saveProrrogacao() {
     const _cocP = etapas2[_cocActionEtapaId].cocLista[_cocActionIdx];
     const _antigaCocP = _cocP.dataPrevista || '—';
     _cocP.dataPrevista = novaData;
+    if (!_cocP.prorrogacoes) _cocP.prorrogacoes = [];
+    _cocP.prorrogacoes.push({ de: _antigaCocP, para: novaData, motivo: null, por: currentUser.username, em: hojeCoc });
     await db.collection('obras').doc(_cocActionObraId).update({ etapas: etapas2 });
     _audit(_cocActionObraId, 'prorrogacao', `COC · ${_cocP.nome || ''}: data prevista ${_antigaCocP} → ${novaData}`);
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
@@ -2692,6 +2734,8 @@ async function saveProrrogacao() {
     if (novaData < _hojeP) { showComercialToast('A data não pode ser anterior a hoje.', 'error'); return; }
     const _antigaA = refA.sub.dataLimite || refA.sub.dataPrevista || '—';
     refA.sub.dataLimite = novaData; refA.sub.dataPrevista = null;
+    if (!refA.sub.prorrogacoes) refA.sub.prorrogacoes = [];
+    refA.sub.prorrogacoes.push({ de: _antigaA, para: novaData, motivo: null, por: currentUser.username, em: _hojeP });
     await db.collection('obras').doc(_prorrogarObraId).update({ etapas: etapasA });
     _audit(_prorrogarObraId, 'prorrogacao', `${_nomeSubProrroga(_prorrogarEtapaId, _prorrogarSubId)}: data prevista ${_antigaA} → ${novaData}`);
     closeProrrogarModal(); showComercialToast('Data prevista atualizada! ✅', 'success'); return;
@@ -2710,6 +2754,8 @@ async function saveProrrogacao() {
   ref.sub.prorrogadoEm = hoje;
   ref.sub.diasProrrogados = (ref.sub.diasProrrogados || 0) + 1;
   ref.sub.prorrogacaoJustificativa = justProrroga;
+  if (!ref.sub.prorrogacoes) ref.sub.prorrogacoes = [];
+  ref.sub.prorrogacoes.push({ de: _antigaLim, para: novaData, motivo: justProrroga, por: currentUser.username, em: hoje });
   await db.collection('obras').doc(_prorrogarObraId).update({ etapas });
   _audit(_prorrogarObraId, 'prorrogacao', `${_nomeSubProrroga(_prorrogarEtapaId, _prorrogarSubId)}: prazo ${_antigaLim} → ${novaData}. Motivo: "${justProrroga}"`);
   showComercialToast(`Prazo atualizado para ${new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR')}! ✅`, 'success');
@@ -3042,6 +3088,11 @@ async function salvarConclusaoRetro() {
   if (!data) { showComercialToast('Informe a data de conclusão.', 'error'); return; }
   const obsTxt = document.getElementById('retro-concluir-obs').value.trim();
   const { obraId, etapaId, subId, itemId } = _retroRef;
+  if (_retroRef.aprovacaoLista) {
+    closeConcluirRetroModal();
+    await _concluirSubDeLista(obraId, etapaId, itemId, subId, 'Aprovado', data, obsTxt);
+    return;
+  }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   let subsObj;
@@ -3632,6 +3683,22 @@ function _renderAuditoriaAba(obraId, el) {
   }).join('') + '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:0.75rem;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Registro imutável — auditoria do sistema</div>';
 }
 
+function _prorrogItens(sd, label) {
+  const out = [];
+  (sd.prorrogacoes || []).forEach(p => out.push({
+    tipo: 'prorroga', badge: `⏱ Prorrogação · ${label}`,
+    texto: (p.motivo || 'Prazo ajustado') + ((p.de || p.para) ? ` (${p.de || '—'} → ${p.para || '—'})` : ''),
+    meta: `${(p.em || '').slice(0, 10)} — ${p.por || '—'}`
+  }));
+  if (!(sd.prorrogacoes || []).length && (sd.prorrogacaoJustificativa || sd.prorrogadoEm)) {
+    out.push({
+      tipo: 'prorroga', badge: `⏱ Prorrogação · ${label}`,
+      texto: sd.prorrogacaoJustificativa || 'Prazo prorrogado',
+      meta: `${sd.prorrogadoEm || '—'} — ${sd.prorrogadoPor || '—'}`
+    });
+  }
+  return out;
+}
 function _renderHistoricoAba(obra, el) {
   const NOMES = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
   let html = '';
@@ -3647,7 +3714,9 @@ function _renderHistoricoAba(obra, el) {
         const sd = e.subEtapas?.[sub.id];
         (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
         (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${sub.nome}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
+        if (sd) _prorrogItens(sd, sub.nome).forEach(x => itens.push(x));
       });
+      (e.cocLista || []).forEach(coc => _prorrogItens(coc, `COC · ${coc.nome || ''}`).forEach(x => itens.push(x)));
     } else {
       // Lista (aditivos/medicao)
       (e.lista || []).forEach(item => {
@@ -3655,6 +3724,7 @@ function _renderHistoricoAba(obra, el) {
           const sd = item.subEtapas?.[sub.id];
           (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${item.titulo} · ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
           (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${item.titulo}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
+          if (sd) _prorrogItens(sd, `${item.titulo} · ${sub.nome}`).forEach(x => itens.push(x));
         });
       });
     }
@@ -4113,5 +4183,17 @@ async function saveDataPrevista() {
   closeDataPrevistaModal();
 }
 
-document.addEventListener('DOMContentLoaded', _initComercialPage);
-document.addEventListener('DOMContentLoaded', _initAcaoDelegate);
+// ── Registro na app-shell (Etapa 2) com fallback standalone ──
+let _comAcaoDelegateBound = false;
+function _initComercialModulo() {
+  if (!_comAcaoDelegateBound) { _initAcaoDelegate(); _comAcaoDelegateBound = true; }
+  _initComercialPage();
+}
+function _teardownComercialModulo() {
+  if (_unsubObras) { _unsubObras(); _unsubObras = null; }
+}
+if (window.AppShell) {
+  window.AppShell.register('comercial.html', 'comercial', _initComercialModulo, _teardownComercialModulo);
+} else {
+  document.addEventListener('DOMContentLoaded', _initComercialModulo);
+}

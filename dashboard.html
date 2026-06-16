@@ -524,7 +524,6 @@
       const delBtn = el.querySelector('[data-act="del"]');
       if (delBtn) delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm('Remover esta obra do Quadro de Avisos?')) return;
         try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
       });
       const abrir = el.querySelector('[data-act="abrir"]');

@@ -1098,6 +1098,11 @@ body.dark-mode .sub-action-btn.prorrogar:hover {
   color: #92400e;
 }
 
+.hist-entry-badge.prorroga {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
 .hist-entry-meta {
   font-size: 0.65rem;
   color: var(--muted);
