@@ -193,7 +193,7 @@
               </svg>
               Relatório
             </button>
-            <button class="btn-primary" onclick="openNovaObraModal()"
+            <button class="btn-primary" id="btn-nova-obra" onclick="openNovaObraModal()"
               style="display:flex;align-items:center;gap:0.5rem;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -201,42 +201,75 @@
               </svg>
               Nova Obra
             </button>
+            <button class="btn-primary" id="btn-nova-caixa" onclick="openNovaCaixaModal()"
+              style="display:none;align-items:center;gap:0.5rem;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="5" x="2" y="3" rx="1" />
+                <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+                <path d="M10 12h4" />
+              </svg>
+              Nova Caixa
+            </button>
           </div>
         </div>
 
         <!-- Bloco 4: Barra de filtros (botão único) -->
         <div class="comercial-filters-bar">
-          <button id="btn-filtros" class="btn-filtros" onclick="toggleFiltrosPanel()">
+          <div class="view-seg" id="comercial-view-seg">
+            <button class="active" data-view="ativas" onclick="setComercialView('ativas')">Ativas</button>
+            <button data-view="concluidos" onclick="setComercialView('concluidos')">Concluídos</button>
+          </div>
+          <button id="btn-arquivo-morto" class="btn-arquivo-morto" onclick="setComercialView('arquivo')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              <rect width="20" height="5" x="2" y="3" rx="1" />
+              <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+              <path d="M10 12h4" />
             </svg>
-            Filtros
-            <span id="filtros-count" class="filtros-count" style="display:none;">0</span>
+            Arquivo Morto
           </button>
-          <button id="btn-limpar-filtros" class="btn-limpar-filtros" onclick="limparTodosFiltros()"
-            style="display:none;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            Limpar tudo
-          </button>
-          <select onchange="setOrdenacao(this.value)" class="filtros-ordenacao" style="margin-left:auto;">
-            <option value="recente">Mais recente</option>
-            <option value="num-asc">Nº crescente</option>
-            <option value="num-desc">Nº decrescente</option>
-          </select>
-          <div style="display:flex;align-items:center;gap:0.5rem;">
-            <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards
-              por página</label>
-            <select id="per-page-select" onchange="setObrasPorPagina(this.value)"
-              style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
-              <option value="6">6</option>
-              <option value="12" selected>12</option>
-              <option value="24">24</option>
-              <option value="48">48</option>
+          <div id="ctrl-arquivo" style="display:none;flex:1;justify-content:flex-end;">
+            <div class="arquivo-search">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <input id="arquivo-search-input" type="text" placeholder="Buscar caixa, obra ou cliente…"
+                oninput="_setBuscaArquivo(this.value)">
+            </div>
+          </div>
+          <div id="ctrl-normais" style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+            <button id="btn-filtros" class="btn-filtros" onclick="toggleFiltrosPanel()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+              </svg>
+              Filtros
+              <span id="filtros-count" class="filtros-count" style="display:none;">0</span>
+            </button>
+            <button id="btn-limpar-filtros" class="btn-limpar-filtros" onclick="limparTodosFiltros()"
+              style="display:none;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Limpar tudo
+            </button>
+            <select onchange="setOrdenacao(this.value)" class="filtros-ordenacao" style="margin-left:auto;">
+              <option value="recente">Mais recente</option>
+              <option value="num-asc">Nº crescente</option>
+              <option value="num-desc">Nº decrescente</option>
             </select>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards
+                por página</label>
+              <select id="per-page-select" onchange="setObrasPorPagina(this.value)"
+                style="padding:0.45rem 0.6rem;font-size:0.82rem;font-family:var(--font-display);background:var(--surface);border:1px solid var(--border2);border-radius:7px;color:var(--text);outline:none;">
+                <option value="6">6</option>
+                <option value="12" selected>12</option>
+                <option value="24">24</option>
+                <option value="48">48</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -525,6 +558,10 @@
           style="flex:1;padding:0.65rem 1rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:0.82rem;font-family:var(--font-display);font-weight:600;cursor:pointer;">
           📋 Pendências
         </button>
+        <button id="rel-tab-arquivo" onclick="_switchRelTab('arquivo')"
+          style="flex:1;padding:0.65rem 1rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:0.82rem;font-family:var(--font-display);font-weight:600;cursor:pointer;display:none;">
+          🗃️ Arquivo Morto
+        </button>
       </div>
       <!-- Aba Visão Geral -->
       <div id="rel-body-geral" style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:0.75rem;">
@@ -587,6 +624,32 @@
           </svg>
           Gerar Relatório de Pendências
         </button>
+      </div>
+      <!-- Aba Arquivo Morto -->
+      <div id="rel-body-arquivo" style="display:none;padding:1.25rem 1.5rem;flex-direction:column;gap:0.75rem;">
+        <div
+          style="font-size:0.72rem;color:var(--muted);padding:0.5rem 0.75rem;background:var(--surface2);border-radius:6px;">
+          Lista todas as obras arquivadas, agrupadas por caixa — com Nº da obra, obra, caixa e representante.
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.25rem;">
+          <button class="btn-secondary" onclick="exportarRelatorioArquivoXLS()"
+            style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Exportar XLS
+          </button>
+          <button class="btn-primary" onclick="exportarRelatorioArquivoPDF()"
+            style="flex:1;display:flex;align-items:center;justify-content:center;gap:0.4rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+            Gerar PDF
+          </button>
+        </div>
       </div>
       <div
         style="padding:0.75rem 1.5rem 1rem;border-top:1px solid var(--border2);display:flex;justify-content:flex-end;">
@@ -781,6 +844,170 @@
         <button class="btn-secondary" onclick="closeExcluirItemModal()">Cancelar</button>
         <button class="btn-primary" onclick="confirmarExcluir()"
           style="background:#ef4444;border-color:#ef4444;">Excluir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL NOVA CAIXA ══ -->
+  <div id="nova-caixa-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeNovaCaixaModal()">
+    <div class="cx-modal" style="width:min(420px,95vw);">
+      <div class="cx-modal-head">
+        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c79a5a" stroke-width="2">
+            <rect width="20" height="5" x="2" y="3" rx="1" />
+            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
+            <path d="M10 12h4" />
+          </svg> Nova caixa</h3><button class="cx-x" onclick="_closeNovaCaixaModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body">
+        <label style="font-size:0.8rem;color:var(--muted);">Número da caixa *</label>
+        <input class="cx-field" id="nova-caixa-num" placeholder="Ex: 15" style="margin-top:0.4rem;">
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-top:0.9rem;">Nome (opcional)</label>
+        <input class="cx-field" id="nova-caixa-nome" placeholder="Ex: Obras 2025" style="margin-top:0.4rem;">
+      </div>
+      <div class="cx-modal-foot"><button class="btn-secondary" onclick="_closeNovaCaixaModal()">Cancelar</button><button
+          class="btn-primary" onclick="_saveNovaCaixa()">Criar caixa</button></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL ARQUIVAR (Bloco 2) ══ -->
+  <div id="arquivar-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeArquivarModal()">
+    <div class="cx-modal" style="width:min(480px,95vw);">
+      <div class="cx-modal-head">
+        <h3>Arquivar obra <span id="arquivar-obra-num"
+            style="font-family:var(--font-mono);color:var(--accent);">#</span></h3><button class="cx-x"
+          onclick="_closeArquivarModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body">
+        <label class="cx-opt-row" id="arq-row-existente"
+          onclick="document.querySelector('input[name=arq-modo][value=existente]').checked=true;_arqUpdateModo();">
+          <input type="radio" name="arq-modo" value="existente" onchange="_arqUpdateModo()">
+          <div style="flex:1;">
+            <div class="cx-opt-lbl">Caixa existente</div>
+            <div class="cx-opt-hint">Adicionar a uma caixa que já existe.</div>
+            <select class="cx-field" id="arquivar-caixa-select" onclick="event.stopPropagation();"></select>
+          </div>
+        </label>
+        <label class="cx-opt-row" id="arq-row-nova"
+          onclick="document.querySelector('input[name=arq-modo][value=nova]').checked=true;_arqUpdateModo();">
+          <input type="radio" name="arq-modo" value="nova" onchange="_arqUpdateModo()">
+          <div style="flex:1;">
+            <div class="cx-opt-lbl">Nova caixa</div>
+            <div class="cx-opt-hint">Criar uma caixa nova (o número espelha a física).</div>
+            <div style="display:flex;gap:0.5rem;">
+              <input class="cx-field" id="arquivar-nova-num" placeholder="Nº (ex: 15)" style="width:120px;"
+                onclick="event.stopPropagation();">
+              <input class="cx-field" id="arquivar-nova-nome" placeholder="Nome (opcional)"
+                onclick="event.stopPropagation();">
+            </div>
+          </div>
+        </label>
+      </div>
+      <div class="cx-modal-foot"><button class="btn-secondary" onclick="_closeArquivarModal()">Cancelar</button><button
+          class="btn-primary" onclick="_confirmarArquivar()">Arquivar</button></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL CAIXA (Bloco 2) ══ -->
+  <div id="caixa-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeCaixaModal()">
+    <div class="cx-modal" style="width:min(680px,95vw);">
+      <div class="cx-modal-head">
+        <h3 id="caixa-modal-title"></h3><button class="cx-x" onclick="_closeCaixaModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body" id="caixa-modal-body"></div>
+      <div class="cx-modal-foot"><button class="btn-secondary" onclick="_closeCaixaModal()">Fechar</button></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL MOVER DE CAIXA (Bloco 2) ══ -->
+  <div id="mover-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeMoverModal()">
+    <div class="cx-modal" style="width:min(440px,95vw);">
+      <div class="cx-modal-head">
+        <h3>Mover <span id="mover-obra-num" style="font-family:var(--font-mono);color:var(--accent);">#</span> de caixa
+        </h3><button class="cx-x" onclick="_closeMoverModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body">
+        <label style="font-size:0.8rem;color:var(--muted);">Caixa de destino</label>
+        <select class="cx-field" id="mover-caixa-select" onchange="_movUpdateSel()" style="margin-top:0.4rem;"></select>
+        <div id="mover-nova-wrap" style="display:none;gap:0.5rem;margin-top:0.5rem;">
+          <input class="cx-field" id="mover-nova-num" placeholder="Nº (ex: 15)" style="width:120px;">
+          <input class="cx-field" id="mover-nova-nome" placeholder="Nome (opcional)">
+        </div>
+      </div>
+      <div class="cx-modal-foot"><button class="btn-secondary" onclick="_closeMoverModal()">Cancelar</button><button
+          class="btn-primary" onclick="_confirmarMover()">Mover</button></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL RESTAURAR (Bloco 3) ══ -->
+  <div id="restaurar-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeRestaurarModal()">
+    <div class="cx-modal" style="width:min(440px,95vw);">
+      <div class="cx-modal-head">
+        <h3>Restaurar <span id="restaurar-obra-num" style="font-family:var(--font-mono);color:var(--accent);">#</span>
+        </h3><button class="cx-x" onclick="_closeRestaurarModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body">
+        <label style="font-size:0.8rem;color:var(--muted);">Restaurar para a caixa</label>
+        <select class="cx-field" id="restaurar-caixa-select" onchange="_restUpdateSel()"
+          style="margin-top:0.4rem;"></select>
+        <div id="restaurar-nova-wrap" style="display:none;gap:0.5rem;margin-top:0.5rem;">
+          <input class="cx-field" id="restaurar-nova-num" placeholder="Nº (ex: 15)" style="width:120px;">
+          <input class="cx-field" id="restaurar-nova-nome" placeholder="Nome (opcional)">
+        </div>
+      </div>
+      <div class="cx-modal-foot"><button class="btn-secondary" onclick="_closeRestaurarModal()">Cancelar</button><button
+          class="btn-primary" onclick="_confirmarRestaurar()">Restaurar</button></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL EXCLUIR PERMANENTE (Bloco 3) ══ -->
+  <div id="excluirperm-modal" class="cx-modal-bg" onclick="if(event.target===this)_closeExcluirPermModal()">
+    <div class="cx-modal" style="width:min(440px,95vw);">
+      <div class="cx-modal-head">
+        <h3 style="color:#ef4444;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444"
+            stroke-width="2">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg> Excluir permanentemente</h3><button class="cx-x" onclick="_closeExcluirPermModal()">&times;</button>
+      </div>
+      <div class="cx-modal-body">
+        <div
+          style="background:#2a0808;border:1px solid #991b1b;border-radius:10px;padding:0.9rem 1rem;color:#fca5a5;font-size:0.82rem;display:flex;gap:0.6rem;align-items:flex-start;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            style="flex-shrink:0;">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+          <span>Esta ação é <b>irreversível</b>. A obra <span id="excluirperm-obra-num"
+              style="font-family:var(--font-mono);">#</span> e todo o histórico serão apagados de vez.</span>
+        </div>
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-top:0.9rem;">Digite <b
+            style="color:var(--text);">EXCLUIR</b> para confirmar</label>
+        <input class="cx-field" id="excluirperm-input" placeholder="EXCLUIR" style="margin-top:0.4rem;">
+      </div>
+      <div class="cx-modal-foot"><button class="btn-secondary"
+          onclick="_closeExcluirPermModal()">Cancelar</button><button class="btn-primary"
+          style="background:#ef4444;border-color:#ef4444;" onclick="_confirmarExcluirPerm()">Excluir de vez</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL CONFIRMAÇÃO GENÉRICO ══ -->
+  <div id="confirm-modal"
+    style="display:none;position:fixed;inset:0;z-index:1100;background:#00000055;backdrop-filter:blur(2px);align-items:center;justify-content:center;"
+    onclick="if(event.target===this)_confirmModalResolve(false)">
+    <div
+      style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:min(420px,92vw);box-shadow:0 20px 60px #00000030;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);">
+        <div id="confirm-modal-title" style="font-size:0.9rem;font-weight:700;color:var(--text);">Confirmar</div>
+      </div>
+      <div style="padding:1.25rem 1.5rem;">
+        <p id="confirm-modal-msg" style="font-size:0.85rem;margin:0;line-height:1.5;color:var(--text);"></p>
+      </div>
+      <div style="display:flex;gap:0.75rem;justify-content:flex-end;padding:0 1.5rem 1.25rem;">
+        <button class="btn-secondary" id="confirm-modal-cancel" onclick="_confirmModalResolve(false)">Cancelar</button>
+        <button class="btn-primary" id="confirm-modal-ok" onclick="_confirmModalResolve(true)">Confirmar</button>
       </div>
     </div>
   </div>

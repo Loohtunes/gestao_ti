@@ -1481,3 +1481,498 @@ body.dark-mode .acao-item.revisao:hover {
   border-radius: 50%;
   flex-shrink: 0;
 }
+
+/* ══ Bloco Arquivo Morto: seletor de views ══ */
+.comercial-filters-bar .view-seg {
+  display: inline-flex;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.comercial-filters-bar .view-seg button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s;
+}
+
+.comercial-filters-bar .view-seg button:hover {
+  color: var(--text);
+}
+
+.comercial-filters-bar .view-seg button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ══ Bloco Arquivo Morto (Bloco 2) ══ */
+.caixa-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  padding: 1.1rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.caixa-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.caixa-card .cx-ico {
+  color: #c79a5a;
+  margin-bottom: 0.6rem;
+  display: flex;
+}
+
+.caixa-card .caixa-num {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.caixa-card .caixa-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.caixa-card .caixa-nome {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 600;
+  margin-top: 0.3rem;
+}
+
+.caixa-card .caixa-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* mini-cards de obra dentro do modal da caixa */
+.obra-mini {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 0.65rem;
+}
+
+.obra-mini .stripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+}
+
+.obra-mini .obra-num {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--surface3);
+  padding: 1px 7px;
+  border-radius: 6px;
+}
+
+.obra-mini-top {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.obra-mini-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cx-mini-btn {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text);
+  transition: all 0.15s;
+}
+
+.cx-mini-btn:hover {
+  background: var(--surface3);
+}
+
+.cx-mini-btn.danger {
+  color: #ef4444;
+  border-color: #ef444455;
+}
+
+.cx-mini-btn.danger:hover {
+  background: #ef444415;
+}
+
+/* modais cx-* */
+.cx-modal-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #00000077;
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  z-index: 1080;
+  padding: 1rem;
+}
+
+.cx-modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  width: min(680px, 95vw);
+  max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px #00000050;
+}
+
+.cx-modal-head {
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cx-modal-head h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text);
+}
+
+.cx-modal-body {
+  padding: 1.2rem 1.4rem;
+  overflow-y: auto;
+}
+
+.cx-modal-foot {
+  padding: 0.9rem 1.4rem;
+  border-top: 1px solid var(--border2);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.cx-x {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.cx-x:hover {
+  color: var(--text);
+}
+
+.cx-opt-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  margin-bottom: 0.7rem;
+  cursor: pointer;
+}
+
+.cx-opt-row.sel {
+  border-color: var(--accent);
+}
+
+.cx-opt-row input[type=radio] {
+  margin-top: 0.2rem;
+  accent-color: var(--accent);
+}
+
+.cx-opt-lbl {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.cx-opt-hint {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+  margin-bottom: 0.4rem;
+}
+
+.cx-field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.cx-field:focus {
+  border-color: var(--accent);
+}
+
+/* ══ Arquivo Morto — refinamento (botão exclusivo + busca + preview de obras) ══ */
+.btn-arquivo-morto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-arquivo-morto:hover {
+  border-color: #c79a5a;
+  color: #c79a5a;
+}
+
+.btn-arquivo-morto.active {
+  background: #c79a5a;
+  border-color: #c79a5a;
+  color: #1a1a14;
+}
+
+.arquivo-search {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 9px;
+  padding: 0.45rem 0.8rem;
+  color: var(--muted);
+  min-width: 280px;
+}
+
+.arquivo-search:focus-within {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.arquivo-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+/* card da caixa com preview de obras */
+.caixa-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.caixa-card-top .cx-ico {
+  margin-bottom: 0;
+  flex-shrink: 0;
+}
+
+.caixa-card-top .caixa-meta {
+  margin-top: 0;
+  margin-left: auto;
+  flex-shrink: 0;
+  background: var(--surface2);
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+}
+
+.caixa-card .caixa-nome {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.caixa-obras-list {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border2);
+  max-height: 132px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-right: 4px;
+}
+
+.caixa-obra-item {
+  font-size: 0.74rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 1px 0;
+}
+
+.caixa-obra-item .caixa-obra-num {
+  font-family: var(--font-mono);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.caixa-obra-item.match {
+  color: var(--text);
+  background: #f59e0b22;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.caixa-obras-vazia {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border2);
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.caixa-obras-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.caixa-obras-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.caixa-obras-list::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 3px;
+}
+
+.caixa-obras-list::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* ══ Bloco 3: Lixeira ══ */
+.caixa-lixeira {
+  border-style: dashed;
+  border-color: #99344a55;
+}
+
+.caixa-lixeira .caixa-lixeira-meta {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed #99344a44;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.lixeira-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.lixeira-card .lixeira-stripe {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #ef4444;
+}
+
+.lixeira-card .obra-num {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: var(--surface2);
+  padding: 1px 8px;
+  border-radius: 7px;
+}
+
+.lixeira-nome {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0.5rem 0 0.1rem;
+}
+
+.lixeira-cliente {
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.lixeira-badge {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #2a0808;
+  color: #fca5a5;
+  border: 1px solid #991b1b;
+  margin-top: 0.6rem;
+}
+
+.lixeira-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+  flex-wrap: wrap;
+}

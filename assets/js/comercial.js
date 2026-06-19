@@ -381,6 +381,7 @@ function calcDataLimite(subConfig, etapasData, dataFechamento) {
 // ── Estado ────────────────────────────────────────────────────────────────────
 let _obras = [], _obraAtual = null, _filtroRep = '', _filtroEtapa = '', _unsubObras = null;
 let _unsubFixadas = null; const _obrasFixadas = new Set();
+let _unsubCaixas = null; let _caixas = []; let _caixaAtual = null; let _arquivarObraId = null; let _moverObraId = null; let _restaurarObraId = null; let _excluirPermId = null;
 let _filtroDataDe = '', _filtroDataAte = '', _filtroEtapaAtraso = '', _filtroBusca = '';
 let _ordenacao = 'recente';
 let _filtroPeriodoDe = '', _filtroPeriodoAte = '';
@@ -545,6 +546,22 @@ function _obraPassaFiltros(o) {
 }
 let _paginaAtual = 0;
 let _obrasPorPagina = parseInt(localStorage.getItem('comercial-per-page') || '12');
+let _view = 'ativas';
+let _buscaArquivo = '';
+function setComercialView(v) {
+  _view = v;
+  const inArq = (v === 'arquivo' || v === 'lixeira');
+  document.querySelectorAll('#comercial-view-seg button').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === v));
+  const am = document.getElementById('btn-arquivo-morto'); if (am) am.classList.toggle('active', inArq);
+  const cn = document.getElementById('ctrl-normais'); if (cn) cn.style.display = inArq ? 'none' : 'flex';
+  const ca = document.getElementById('ctrl-arquivo'); if (ca) ca.style.display = inArq ? 'flex' : 'none';
+  const bno = document.getElementById('btn-nova-obra'); if (bno) bno.style.display = inArq ? 'none' : 'flex';
+  const bnc = document.getElementById('btn-nova-caixa'); if (bnc) bnc.style.display = (v === 'arquivo') ? 'flex' : 'none';
+  if (inArq && typeof fecharFiltrosPanel === 'function') fecharFiltrosPanel();
+  _paginaAtual = 0;
+  renderObras();
+}
+function _setBuscaArquivo(v) { _buscaArquivo = (v || '').trim().toLowerCase(); if (_view === 'arquivo' || _view === 'lixeira') renderObras(); }
 
 function setFiltroRep(val) { _filtroRep = val; _paginaAtual = 0; renderObras(); }
 function setFiltroEtapa(val) { _filtroEtapa = val; _paginaAtual = 0; renderObras(); }
@@ -559,8 +576,15 @@ function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
 // ── Migração automática de schema ─────────────────────────────────────────────
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 
+function _migrateObraToV11(obra) {
+  const out = {};
+  if (obra.arquivada === undefined) out.arquivada = false;
+  if (obra.caixaId === undefined) out.caixaId = null;
+  if (obra.excluida === undefined) out.excluida = false;
+  return out;
+}
 async function migrateObras() {
   try {
     const snap = await db.collection('obras').get();
@@ -581,6 +605,7 @@ async function migrateObras() {
         if (ver < 8) migrated = { ...migrated, ..._migrateObraToV8(migrated) };
         if (ver < 9) migrated = { ...migrated, ..._migrateObraToV9(migrated) };
         if (ver < 10) migrated = { ...migrated, ..._migrateObraToV10(migrated) };
+        if (ver < 11) migrated = { ...migrated, ..._migrateObraToV11(migrated) };
         migrated._schemaVersion = SCHEMA_VERSION;
         await doc.ref.update(migrated);
       } catch (e) {
@@ -674,6 +699,14 @@ function _initFixadasListener() {
     _refreshFixarBtns();
   }, e => console.error('[fixadas]', e));
 }
+function _initCaixasListener() {
+  if (_unsubCaixas) { _unsubCaixas(); _unsubCaixas = null; }
+  _unsubCaixas = db.collection('caixas').onSnapshot(snap => {
+    _caixas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (_view === 'arquivo') { try { renderObras(); } catch (e) { } }
+    _refreshCaixaModalIfOpen();
+  }, e => console.error('[caixas]', e));
+}
 function _inconsistenciasFluxo(subEtapasObj, ordemSubs, etapaId, etapaNome, ctxLabel) {
   const out = [];
   let lastDoneIdx = -1;
@@ -736,6 +769,7 @@ function _subPosteriorConcluida(obra, etapaId, subId, itemId) {
 function initComercial() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
   _initFixadasListener();
+  _initCaixasListener();
 
   // 1. Carga imediata via get() — garante que obras aparecem mesmo se onSnapshot demorar
   db.collection('obras').get()
@@ -775,6 +809,7 @@ function initComercial() {
             return tb - ta;
           });
         try { renderObras(); } catch (e) { console.error('[renderObras snap]', e); }
+        try { _refreshCaixaModalIfOpen(); } catch (e) { }
         if (_obraAtual) {
           const obra = _obras.find(o => o.id === _obraAtual);
           if (obra) try { _saveAccordionState(); renderObraModal(obra); _restoreAccordionState(); } catch (e) { console.error('[renderObraModal]', e); }
@@ -913,9 +948,16 @@ function getCorStripe(obra) {
 function renderObras() {
   const el = document.getElementById('obras-grid');
   if (!el) return;
+  if (_view === 'arquivo') { _renderCaixasGrid(el); return; }
+  if (_view === 'lixeira') { _renderLixeira(el); return; }
 
   // Aplicar filtros (Bloco 4 — predicado consolidado)
-  let lista = _obras.filter(_obraPassaFiltros);
+  let lista = _obras.filter(_obraPassaFiltros).filter(o => {
+    if (o.excluida) return _view === 'lixeira';
+    if (o.arquivada) return _view === 'arquivo';
+    if (o.concluida) return _view === 'concluidos';
+    return _view === 'ativas';
+  });
   // Ordenação
   if (_ordenacao === 'num-asc') lista = [...lista].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
   if (_ordenacao === 'num-desc') lista = [...lista].sort((a, b) => (parseInt(b.numero) || 0) - (parseInt(a.numero) || 0));
@@ -1184,6 +1226,10 @@ function renderObras() {
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         ${prazoInfo.texto}
       </div>
+      ${_view === 'concluidos' ? `<div style="display:flex;gap:0.4rem;margin-top:0.7rem;">
+        <button class="btn-secondary" onclick="event.stopPropagation();reabrirObra('${obra.id}')" style="font-size:0.72rem;padding:0.3rem 0.7rem;display:inline-flex;align-items:center;gap:0.3rem;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>Reabrir</button>
+        <button class="btn-primary" onclick="event.stopPropagation();_arquivarObra('${obra.id}')" style="font-size:0.72rem;padding:0.3rem 0.7rem;display:inline-flex;align-items:center;gap:0.3rem;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>Arquivar</button>
+      </div>` : ''}
     </div>`;
   }).join('');
 
@@ -1259,7 +1305,7 @@ async function saveNovaObra() {
     const etapas = initObraEtapas(fechamento);
     await db.collection('obras').add({
       numero, nome, representante: rep, dataFechamento: fechamento,
-      prazoEstimado: prazo || null, concluida: false, etapas,
+      prazoEstimado: prazo || null, concluida: false, arquivada: false, caixaId: null, excluida: false, etapas,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(), createdBy: currentUser.username,
     });
     showComercialToast(`Obra #${numero} cadastrada! ✅`, 'success');
@@ -1525,7 +1571,10 @@ function _renderObraFooter(obra, canAdmin) {
   } else {
     footer.innerHTML = `
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}${histBtn}</div>
-      <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>`;
+      <div style="display:flex;gap:0.6rem;align-items:center;">
+        ${podeEditarComercial() ? `<button class="btn-primary" onclick="concluirObraManual('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Concluir obra</button>` : ''}
+        <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>
+      </div>`;
   }
 }
 
@@ -1858,7 +1907,7 @@ function _renderCocLista(obra, etapaId, subId) {
     </div>`;
   }).join('');
 
-  const addBtn = (canAct && cocLista.length > 0) ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+  const addBtn = canAct ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
     <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
       style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1866,7 +1915,8 @@ function _renderCocLista(obra, etapaId, subId) {
     </button>
   </div>` : '';
 
-  return `${itemsHtml}${addBtn}`;
+  const emptyHint = (cocLista.length === 0) ? `<div style="font-size:0.72rem;color:var(--muted);font-style:italic;text-align:center;padding:0.35rem 0 0.1rem;">Nenhuma COC adicionada ainda.</div>` : '';
+  return `${itemsHtml}${emptyHint}${addBtn}`;
 }
 
 function _openAddCocModal(obraId, etapaId) {
@@ -2396,6 +2446,10 @@ const _AUDIT_ICONS = {
   reabrir_sub: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>',
   retro_concluir: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>',
   retro_reabrir: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>',
+  arquivamento: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>',
+  movimentacao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>',
+  exclusao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  restauracao: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>',
 };
 
 const _AUDIT_CORES = {
@@ -2404,6 +2458,7 @@ const _AUDIT_CORES = {
   revisao: '#f59e0b', recusa: '#ef4444', prorrogacao: '#f97316',
   cancelamento: '#ef4444', coc_edit: '#3b82f6', coc_del: '#6b7280', item_edit: '#3b82f6',
   reabertura: '#14b8a6', reabrir_sub: '#14b8a6', retro_concluir: '#22c55e', retro_reabrir: '#f59e0b',
+  arquivamento: '#c79a5a', movimentacao: '#3b82f6', exclusao: '#ef4444', restauracao: '#22c55e',
 };
 
 
@@ -2684,7 +2739,17 @@ async function iniciarEtapa(obraId, etapaId) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const cfg = ETAPAS_CONFIG[etapaId];
-  if (cfg.isIndependente) { _openAddCocModal(obraId, etapaId); return; }
+  if (cfg.isIndependente) {
+    etapas[etapaId].ativa = true;
+    etapas[etapaId].status = 'active';
+    etapas[etapaId].puladaEm = null;
+    etapas[etapaId].puladaPor = null;
+    if (!etapas[etapaId].subEtapas) etapas[etapaId].subEtapas = {};
+    (cfg.subEtapas || []).forEach(sub => { if (!etapas[etapaId].subEtapas[sub.id]) etapas[etapaId].subEtapas[sub.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null, revisoes: [], observacoes: [], isCocLista: !!sub.isCocLista }; });
+    await db.collection('obras').doc(obraId).update({ etapas });
+    _openAddCocModal(obraId, etapaId);
+    return;
+  }
   etapas[etapaId].ativa = true;
   etapas[etapaId].status = 'active';
   // Etapas com lista — adicionar primeiro item
@@ -2722,9 +2787,25 @@ async function iniciarEtapa(obraId, etapaId) {
 }
 
 // ── Pular etapa ───────────────────────────────────────────────────────────────
+let _confirmResolve = null;
+function _showConfirm(title, message, opts) {
+  opts = opts || {};
+  const t = document.getElementById('confirm-modal-title'); if (t) t.textContent = title;
+  const m = document.getElementById('confirm-modal-msg'); if (m) m.textContent = message;
+  const ok = document.getElementById('confirm-modal-ok');
+  if (ok) { ok.textContent = opts.okText || 'Confirmar'; ok.style.background = opts.danger ? '#ef4444' : ''; ok.style.borderColor = opts.danger ? '#ef4444' : ''; }
+  const cx = document.getElementById('confirm-modal-cancel'); if (cx) cx.textContent = opts.cancelText || 'Cancelar';
+  const mod = document.getElementById('confirm-modal'); if (mod) mod.style.display = 'flex';
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+function _confirmModalResolve(val) {
+  const mod = document.getElementById('confirm-modal'); if (mod) mod.style.display = 'none';
+  if (_confirmResolve) { const r = _confirmResolve; _confirmResolve = null; r(val); }
+}
 async function pularEtapa(obraId, etapaId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  if (!confirm(`Pular a etapa "${ETAPAS_CONFIG[etapaId].nome}"? Ela ficará desabilitada e poderá ser reiniciada depois.`)) return;
+  const _ok = await _showConfirm('Pular etapa', `Pular a etapa "${ETAPAS_CONFIG[etapaId].nome}"? Ela ficará desabilitada e poderá ser reiniciada depois.`, { okText: 'Pular etapa' });
+  if (!_ok) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const hoje = new Date().toISOString().slice(0, 10);
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -3037,43 +3118,14 @@ async function excluirObra(obraId) {
 
 async function reabrirObra(obraId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  if (!confirm('Reabrir esta obra? Etapas subsequentes voltam para pendente.')) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  let reativarId = 'proposta';
-  ETAPAS_ORDER.forEach(id => { if (etapas[id]?.ativa && etapas[id]?.status === 'done') reativarId = id; });
-  let found = false;
-  ETAPAS_ORDER.forEach(id => {
-    const cfg = ETAPAS_CONFIG[id];
-    if (id === reativarId) {
-      found = true; etapas[id].status = 'active';
-      if (cfg.isLista) {
-        // Reabrir último item da lista
-        const lista = etapas[id].lista || [];
-        if (lista.length > 0) lista[lista.length - 1].status = 'active';
-      } else {
-        const subs = cfg.subEtapas || [];
-        let lastDone = null;
-        subs.forEach(s => { if (etapas[id].subEtapas?.[s.id]?.status === 'done') lastDone = s.id; });
-        if (lastDone && etapas[id].subEtapas[lastDone]) {
-          etapas[id].subEtapas[lastDone].status = 'active';
-          etapas[id].subEtapas[lastDone].dataConclusao = null;
-        }
-      }
-    } else if (found) {
-      etapas[id].status = 'pending';
-      if (cfg.isLista) {
-        (etapas[id].lista || []).forEach(item => { item.status = 'pending'; });
-      } else {
-        (cfg.subEtapas || []).forEach(s => {
-          if (etapas[id].subEtapas?.[s.id])
-            etapas[id].subEtapas[s.id] = { status: 'pending', dataLimite: null, dataConclusao: null, motivoAtraso: null };
-        });
-      }
-    }
-  });
-  await db.collection('obras').doc(obraId).update({ etapas, concluida: false, dataConclusao: null });
-  showComercialToast('Obra reaberta! ✅', 'success');
+  const _ok = await _showConfirm('Reabrir obra', `Reabrir a obra "${obra.numero}"? Ela voltará para o campo de obras ativas.`, { okText: 'Reabrir' });
+  if (!_ok) return;
+  try {
+    await db.collection('obras').doc(obraId).update({ concluida: false, dataConclusao: null, concluidaManual: false, arquivada: false, caixaId: null });
+    _audit(obraId, 'reabertura', 'Obra reaberta (progresso preservado)');
+    showComercialToast('Obra reaberta! ✅', 'success');
+  } catch (e) { console.error('[reabrir obra]', e); showComercialToast('Erro ao reabrir a obra.', 'error'); }
 }
 
 // ── Onda 2: Editar registro (COC / Aditivo / Medição) ───────────────────
@@ -3310,6 +3362,282 @@ async function fixarObraNoQuadro(obraId) {
   } catch (e) { console.error('[fixar obra]', e); showComercialToast('Erro ao fixar a obra.', 'error'); }
 }
 
+async function _desafixarObra(obraId) {
+  try {
+    const snap = await db.collection('avisos').where('obraId', '==', obraId).get();
+    const obraAvisos = snap.docs.filter(d => d.data().type === 'obra');
+    await Promise.all(obraAvisos.map(d => d.ref.delete()));
+  } catch (e) { console.warn('[desafixar obra]', e); }
+}
+async function concluirObraManual(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const ok = await _showConfirm('Concluir obra', `Concluir a obra "${obra.numero}"? Ela será movida para a aba de concluídos.`, { okText: 'Concluir obra' });
+  if (!ok) return;
+  const hoje = new Date().toISOString().slice(0, 10);
+  try {
+    await db.collection('obras').doc(obraId).update({ concluida: true, dataConclusao: hoje, concluidaManual: true });
+    await _desafixarObra(obraId);
+    _audit(obraId, 'conclusao', 'Obra concluída manualmente');
+    closeObraModal();
+    showComercialToast('Obra concluída! ✅', 'success');
+  } catch (e) { console.error('[concluir obra]', e); showComercialToast('Erro ao concluir a obra.', 'error'); }
+}
+// ── Bloco Arquivo Morto (Bloco 2) ─────────────────────────────────────────────
+function _obrasDaCaixa(caixaId) { return _obras.filter(o => o.caixaId === caixaId && o.arquivada && !o.excluida); }
+function _caixaSelectOptions(selectedId) {
+  return [..._caixas].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0)).map(cx => {
+    const n = _obrasDaCaixa(cx.id).length;
+    return `<option value="${cx.id}" ${cx.id === selectedId ? 'selected' : ''}>Nº ${cx.numero}${cx.nome ? ' — ' + cx.nome : ''} (${n} obra${n !== 1 ? 's' : ''})</option>`;
+  }).join('');
+}
+function _renderCaixasGrid(el) {
+  const pag = document.getElementById('obras-paginacao'); if (pag) pag.style.display = 'none';
+  const q = _buscaArquivo;
+  const _obraMatch = (o) => !q || (`${o.numero || ''}`.toLowerCase().includes(q) || `${o.nome || ''}`.toLowerCase().includes(q) || `${o.representante || ''}`.toLowerCase().includes(q));
+  const _caixaMatch = (cx) => !q || (`${cx.numero || ''}`.toLowerCase().includes(q) || `${cx.nome || ''}`.toLowerCase().includes(q));
+  let caixas = [..._caixas].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
+  if (q) caixas = caixas.filter(cx => _caixaMatch(cx) || _obrasDaCaixa(cx.id).some(_obraMatch));
+  const _nExcl = _obras.filter(o => o.excluida).length;
+  const _lixCard = !q ? `<div class="caixa-card caixa-lixeira" onclick="setComercialView('lixeira')">
+    <div class="caixa-card-top">
+      <div class="cx-ico" style="color:#ef4444;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></div>
+      <div style="min-width:0;"><span class="caixa-label">Recuperável</span><div class="caixa-num">Lixeira</div></div>
+    </div>
+    <div class="caixa-lixeira-meta">${_nExcl} obra${_nExcl !== 1 ? 's' : ''} excluída${_nExcl !== 1 ? 's' : ''}</div>
+  </div>` : '';
+  if (!caixas.length) {
+    if (_lixCard) { el.innerHTML = _lixCard; return; }
+    el.innerHTML = `<div class="obras-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><h3>${q ? 'Nada encontrado' : 'Nenhuma caixa ainda'}</h3><span style="font-size:0.8rem;">${q ? 'Nenhuma caixa ou obra corresponde à busca.' : 'Arquive uma obra concluída para criar a primeira caixa.'}</span></div>`;
+    return;
+  }
+  el.innerHTML = caixas.map(cx => {
+    const obras = _obrasDaCaixa(cx.id);
+    const lista = obras.length
+      ? `<div class="caixa-obras-list">${obras.map(o => `<div class="caixa-obra-item${q && _obraMatch(o) ? ' match' : ''}"><span class="caixa-obra-num">#${o.numero || ''}</span> ${o.nome || ''}</div>`).join('')}</div>`
+      : `<div class="caixa-obras-vazia">Caixa vazia</div>`;
+    return `<div class="caixa-card" onclick="_openCaixa('${cx.id}')">
+      <div class="caixa-card-top">
+        <div class="cx-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+        <div style="min-width:0;">
+          <span class="caixa-label">Caixa</span>
+          <div class="caixa-num">Nº ${cx.numero}</div>
+          ${cx.nome ? `<div class="caixa-nome">${cx.nome}</div>` : ''}
+        </div>
+        <div class="caixa-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> ${obras.length}</div>
+      </div>
+      ${lista}
+    </div>`;
+  }).join('') + _lixCard;
+}
+function _openCaixa(caixaId) {
+  if (!_caixas.find(c => c.id === caixaId)) return;
+  _caixaAtual = caixaId;
+  _renderCaixaModalBody();
+  document.getElementById('caixa-modal').style.display = 'flex';
+}
+function _closeCaixaModal() { const m = document.getElementById('caixa-modal'); if (m) m.style.display = 'none'; _caixaAtual = null; }
+function _refreshCaixaModalIfOpen() {
+  if (!_caixaAtual) return;
+  const m = document.getElementById('caixa-modal');
+  if (!m || m.style.display === 'none') return;
+  if (!_caixas.find(c => c.id === _caixaAtual)) { _closeCaixaModal(); return; }
+  _renderCaixaModalBody();
+}
+function _renderCaixaModalBody() {
+  const cx = _caixas.find(c => c.id === _caixaAtual); if (!cx) return;
+  document.getElementById('caixa-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c79a5a" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> Caixa Nº ${cx.numero}${cx.nome ? ` · <span style="color:var(--muted);font-weight:600;">${cx.nome}</span>` : ''}`;
+  const body = document.getElementById('caixa-modal-body');
+  const obras = _obrasDaCaixa(_caixaAtual);
+  if (!obras.length) { body.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem 0;">Caixa vazia.</div>`; return; }
+  const editable = podeEditarComercial();
+  const I_REAB = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>';
+  const I_MOV = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l-3 3 3 3"/><path d="M9 5l3-3 3 3"/><path d="M15 19l-3 3-3-3"/><path d="M19 9l3 3-3 3"/><path d="M2 12h20"/><path d="M12 2v20"/></svg>';
+  const I_HIST = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  const I_DEL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>';
+  body.innerHTML = obras.map(o => `<div class="obra-mini">
+    <div class="stripe" style="background:${getCorStripe(o)};"></div>
+    <div class="obra-mini-top"><span class="obra-num">#${o.numero || ''}</span><b style="font-size:0.88rem;">${o.nome || ''}</b><span style="font-size:0.74rem;color:var(--muted);">· ${o.representante || '—'}</span></div>
+    ${editable ? `<div class="obra-mini-actions">
+      <button class="cx-mini-btn" onclick="reabrirObra('${o.id}')">${I_REAB} Reabrir</button>
+      <button class="cx-mini-btn" onclick="_moverObra('${o.id}')">${I_MOV} Mover de caixa</button>
+      <button class="cx-mini-btn" onclick="openHistoricoModal('${o.id}')">${I_HIST} Histórico</button>
+      <button class="cx-mini-btn danger" onclick="_excluirObraSoft('${o.id}')">${I_DEL} Excluir</button>
+    </div>` : ''}
+  </div>`).join('');
+}
+function _arquivarObra(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  _arquivarObraId = obraId;
+  document.getElementById('arquivar-obra-num').textContent = '#' + (o.numero || '');
+  const sel = document.getElementById('arquivar-caixa-select');
+  sel.innerHTML = _caixas.length ? _caixaSelectOptions() : '<option value="">(nenhuma caixa ainda)</option>';
+  const temCaixas = _caixas.length > 0;
+  document.querySelector('input[name="arq-modo"][value="existente"]').checked = temCaixas;
+  document.querySelector('input[name="arq-modo"][value="nova"]').checked = !temCaixas;
+  document.getElementById('arquivar-nova-num').value = '';
+  document.getElementById('arquivar-nova-nome').value = '';
+  _arqUpdateModo();
+  document.getElementById('arquivar-modal').style.display = 'flex';
+}
+function _arqUpdateModo() {
+  const modo = (document.querySelector('input[name="arq-modo"]:checked') || {}).value;
+  const re = document.getElementById('arq-row-existente'); if (re) re.classList.toggle('sel', modo === 'existente');
+  const rn = document.getElementById('arq-row-nova'); if (rn) rn.classList.toggle('sel', modo === 'nova');
+}
+async function _confirmarArquivar() {
+  const obraId = _arquivarObraId; if (!obraId) return;
+  const modo = (document.querySelector('input[name="arq-modo"]:checked') || {}).value;
+  try {
+    let caixaId;
+    if (modo === 'nova') {
+      const numero = document.getElementById('arquivar-nova-num').value.trim();
+      const nome = document.getElementById('arquivar-nova-nome').value.trim();
+      if (!numero) { showComercialToast('Informe o número da caixa.', 'error'); return; }
+      const ref = await db.collection('caixas').add({ numero, nome: nome || '', criadaEm: Date.now(), criadaPor: currentUser.username });
+      caixaId = ref.id;
+    } else {
+      caixaId = document.getElementById('arquivar-caixa-select').value;
+      if (!caixaId) { showComercialToast('Selecione uma caixa.', 'error'); return; }
+    }
+    await db.collection('obras').doc(obraId).update({ arquivada: true, caixaId, arquivadaEm: new Date().toISOString().slice(0, 10), arquivadaPor: currentUser.username });
+    const cxNum = ([..._caixas].find(c => c.id === caixaId) || {}).numero || (modo === 'nova' ? document.getElementById('arquivar-nova-num').value.trim() : '?');
+    _audit(obraId, 'arquivamento', `Obra arquivada na Caixa Nº ${cxNum}`);
+    _closeArquivarModal();
+    showComercialToast('Obra arquivada! 📦', 'success');
+  } catch (e) { console.error('[arquivar]', e); showComercialToast('Erro ao arquivar a obra.', 'error'); }
+}
+function _closeArquivarModal() { const m = document.getElementById('arquivar-modal'); if (m) m.style.display = 'none'; _arquivarObraId = null; }
+function _moverObra(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  _moverObraId = obraId;
+  document.getElementById('mover-obra-num').textContent = '#' + (o.numero || '');
+  const sel = document.getElementById('mover-caixa-select');
+  sel.innerHTML = _caixaSelectOptions(o.caixaId) + '<option value="__nova__">+ Nova caixa…</option>';
+  document.getElementById('mover-nova-wrap').style.display = 'none';
+  document.getElementById('mover-nova-num').value = '';
+  document.getElementById('mover-nova-nome').value = '';
+  document.getElementById('mover-modal').style.display = 'flex';
+}
+function _movUpdateSel() {
+  const v = document.getElementById('mover-caixa-select').value;
+  document.getElementById('mover-nova-wrap').style.display = (v === '__nova__') ? 'flex' : 'none';
+}
+async function _confirmarMover() {
+  const obraId = _moverObraId; if (!obraId) return;
+  const v = document.getElementById('mover-caixa-select').value;
+  try {
+    let caixaId = v;
+    if (v === '__nova__') {
+      const numero = document.getElementById('mover-nova-num').value.trim();
+      const nome = document.getElementById('mover-nova-nome').value.trim();
+      if (!numero) { showComercialToast('Informe o número da nova caixa.', 'error'); return; }
+      const ref = await db.collection('caixas').add({ numero, nome: nome || '', criadaEm: Date.now(), criadaPor: currentUser.username });
+      caixaId = ref.id;
+    }
+    if (!caixaId) { showComercialToast('Selecione a caixa de destino.', 'error'); return; }
+    await db.collection('obras').doc(obraId).update({ caixaId });
+    const cxNum = ([..._caixas].find(c => c.id === caixaId) || {}).numero || (v === '__nova__' ? document.getElementById('mover-nova-num').value.trim() : '?');
+    _audit(obraId, 'movimentacao', `Obra movida para a Caixa Nº ${cxNum}`);
+    _closeMoverModal();
+    showComercialToast('Obra movida! 📦', 'success');
+  } catch (e) { console.error('[mover]', e); showComercialToast('Erro ao mover a obra.', 'error'); }
+}
+function _closeMoverModal() { const m = document.getElementById('mover-modal'); if (m) m.style.display = 'none'; _moverObraId = null; }
+async function _excluirObraSoft(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar.', 'error'); return; }
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  const ok = await _showConfirm('Excluir obra', `Excluir a obra "${o.numero}"? Ela vai para a Lixeira e pode ser restaurada depois.`, { okText: 'Mover para Lixeira', danger: true });
+  if (!ok) return;
+  try {
+    await db.collection('obras').doc(obraId).update({ excluida: true, excluidaEm: new Date().toISOString().slice(0, 10), excluidaPor: currentUser.username });
+    _audit(obraId, 'exclusao', 'Obra movida para a Lixeira');
+    showComercialToast('Obra movida para a Lixeira. 🗑️', 'success');
+  } catch (e) { console.error('[excluir soft]', e); showComercialToast('Erro ao excluir a obra.', 'error'); }
+}
+function _renderLixeira(el) {
+  const pag = document.getElementById('obras-paginacao'); if (pag) pag.style.display = 'none';
+  const q = _buscaArquivo;
+  const _match = (o) => !q || (`${o.numero || ''}`.toLowerCase().includes(q) || `${o.nome || ''}`.toLowerCase().includes(q) || `${o.representante || ''}`.toLowerCase().includes(q));
+  const obras = _obras.filter(o => o.excluida).filter(_match).sort((a, b) => `${b.excluidaEm || ''}`.localeCompare(`${a.excluidaEm || ''}`));
+  const voltar = `<div style="grid-column:1/-1;"><button class="cx-mini-btn" onclick="setComercialView('arquivo')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Voltar ao Arquivo Morto</button></div>`;
+  if (!obras.length) {
+    el.innerHTML = voltar + `<div class="obras-empty" style="grid-column:1/-1;"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.4"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><h3>${q ? 'Nada encontrado' : 'Lixeira vazia'}</h3><span style="font-size:0.8rem;">${q ? 'Nenhuma obra excluída corresponde à busca.' : 'Obras excluídas aparecem aqui e podem ser restauradas.'}</span></div>`;
+    return;
+  }
+  const editable = podeEditarComercial();
+  el.innerHTML = voltar + obras.map(o => {
+    let dataTxt = '';
+    if (o.excluidaEm) { try { dataTxt = '· ' + new Date(o.excluidaEm + 'T12:00:00').toLocaleDateString('pt-BR'); } catch (e) { } }
+    return `<div class="lixeira-card">
+      <div class="lixeira-stripe"></div>
+      <span class="obra-num">#${o.numero || ''}</span>
+      <div class="lixeira-nome">${o.nome || ''}</div>
+      <div class="lixeira-cliente">${o.representante || '—'}</div>
+      <div class="lixeira-badge"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> Excluída ${dataTxt} ${o.excluidaPor ? 'por ' + o.excluidaPor : ''}</div>
+      ${editable ? `<div class="lixeira-actions">
+        <button class="cx-mini-btn" onclick="_restaurarObra('${o.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Restaurar</button>
+        <button class="cx-mini-btn danger" onclick="_excluirObraPerm('${o.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> Excluir permanente</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+function _restaurarObra(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar.', 'error'); return; }
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  _restaurarObraId = obraId;
+  document.getElementById('restaurar-obra-num').textContent = '#' + (o.numero || '');
+  const sel = document.getElementById('restaurar-caixa-select');
+  sel.innerHTML = _caixaSelectOptions(o.caixaId) + '<option value="__nova__">+ Nova caixa…</option>';
+  if (!_caixas.length) sel.value = '__nova__';
+  document.getElementById('restaurar-nova-num').value = '';
+  document.getElementById('restaurar-nova-nome').value = '';
+  _restUpdateSel();
+  document.getElementById('restaurar-modal').style.display = 'flex';
+}
+function _restUpdateSel() { const v = document.getElementById('restaurar-caixa-select').value; document.getElementById('restaurar-nova-wrap').style.display = (v === '__nova__') ? 'flex' : 'none'; }
+async function _confirmarRestaurar() {
+  const obraId = _restaurarObraId; if (!obraId) return;
+  const v = document.getElementById('restaurar-caixa-select').value;
+  try {
+    let caixaId = v;
+    if (v === '__nova__') {
+      const numero = document.getElementById('restaurar-nova-num').value.trim();
+      const nome = document.getElementById('restaurar-nova-nome').value.trim();
+      if (!numero) { showComercialToast('Informe o número da nova caixa.', 'error'); return; }
+      const ref = await db.collection('caixas').add({ numero, nome: nome || '', criadaEm: Date.now(), criadaPor: currentUser.username });
+      caixaId = ref.id;
+    }
+    if (!caixaId) { showComercialToast('Selecione a caixa de destino.', 'error'); return; }
+    await db.collection('obras').doc(obraId).update({ excluida: false, excluidaEm: null, excluidaPor: null, arquivada: true, caixaId });
+    const cxNum = ([..._caixas].find(c => c.id === caixaId) || {}).numero || (v === '__nova__' ? document.getElementById('restaurar-nova-num').value.trim() : '?');
+    _audit(obraId, 'restauracao', `Obra restaurada na Caixa Nº ${cxNum}`);
+    _closeRestaurarModal();
+    showComercialToast('Obra restaurada! ♻️', 'success');
+  } catch (e) { console.error('[restaurar]', e); showComercialToast('Erro ao restaurar a obra.', 'error'); }
+}
+function _closeRestaurarModal() { const m = document.getElementById('restaurar-modal'); if (m) m.style.display = 'none'; _restaurarObraId = null; }
+function _excluirObraPerm(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar.', 'error'); return; }
+  const o = _obras.find(x => x.id === obraId); if (!o) return;
+  _excluirPermId = obraId;
+  document.getElementById('excluirperm-obra-num').textContent = '#' + (o.numero || '');
+  document.getElementById('excluirperm-input').value = '';
+  document.getElementById('excluirperm-modal').style.display = 'flex';
+}
+async function _confirmarExcluirPerm() {
+  const obraId = _excluirPermId; if (!obraId) return;
+  const val = (document.getElementById('excluirperm-input').value || '').trim();
+  if (val !== 'EXCLUIR') { showComercialToast('Digite EXCLUIR para confirmar.', 'error'); return; }
+  try {
+    await db.collection('obras').doc(obraId).delete();
+    _closeExcluirPermModal();
+    showComercialToast('Obra excluída permanentemente.', 'success');
+  } catch (e) { console.error('[excluir perm]', e); showComercialToast('Erro ao excluir a obra.', 'error'); }
+}
+function _closeExcluirPermModal() { const m = document.getElementById('excluirperm-modal'); if (m) m.style.display = 'none'; _excluirPermId = null; }
 function exportarObraPDF(obraId) {
   const obra = _obras.find(o => o.id === obraId);
   if (!obra) return;
@@ -3513,27 +3841,99 @@ function openRelatorioModal() {
   const opts = '<option value="">Todos</option>' + [...resps].sort().map(r => `<option value="${r}">${r}</option>`).join('');
   const sel = document.getElementById('rel-responsavel'); if (sel) sel.innerHTML = opts;
   const sel2 = document.getElementById('rel-responsavel-pend'); if (sel2) sel2.innerHTML = opts.replace('Todos', 'Todos os responsáveis');
+  const _isArq = (_view === 'arquivo' || _view === 'lixeira');
+  const _tg = document.getElementById('rel-tab-geral'); if (_tg) _tg.style.display = _isArq ? 'none' : '';
+  const _tp = document.getElementById('rel-tab-pend'); if (_tp) _tp.style.display = _isArq ? 'none' : '';
+  const _ta = document.getElementById('rel-tab-arquivo'); if (_ta) _ta.style.display = _isArq ? '' : 'none';
   document.getElementById('relatorio-modal').style.display = 'flex';
-  _switchRelTab('geral');
+  _switchRelTab(_isArq ? 'arquivo' : 'geral');
 }
 
 function _switchRelTab(tab) {
-  const t1 = document.getElementById('rel-tab-geral');
-  const t2 = document.getElementById('rel-tab-pend');
-  const b1 = document.getElementById('rel-body-geral');
-  const b2 = document.getElementById('rel-body-pend');
-  if (!t1 || !b1) return;
-  if (tab === 'geral') {
-    t1.style.borderBottom = '2px solid var(--accent)'; t1.style.color = 'var(--accent)';
-    t2.style.borderBottom = '2px solid transparent'; t2.style.color = 'var(--muted)';
-    b1.style.display = 'flex'; b2.style.display = 'none';
-  } else {
-    t2.style.borderBottom = '2px solid var(--accent)'; t2.style.color = 'var(--accent)';
-    t1.style.borderBottom = '2px solid transparent'; t1.style.color = 'var(--muted)';
-    b1.style.display = 'none'; b2.style.display = 'flex';
-  }
+  const tabs = { geral: 'rel-tab-geral', pend: 'rel-tab-pend', arquivo: 'rel-tab-arquivo' };
+  const bodies = { geral: 'rel-body-geral', pend: 'rel-body-pend', arquivo: 'rel-body-arquivo' };
+  Object.keys(tabs).forEach(k => {
+    const t = document.getElementById(tabs[k]); if (t) { const on = (k === tab); t.style.borderBottom = on ? '2px solid var(--accent)' : '2px solid transparent'; t.style.color = on ? 'var(--accent)' : 'var(--muted)'; }
+    const b = document.getElementById(bodies[k]); if (b) b.style.display = (k === tab) ? 'flex' : 'none';
+  });
 }
 function closeRelatorioModal() { document.getElementById('relatorio-modal').style.display = 'none'; }
+
+// ── Relatório do Arquivo Morto + Nova Caixa ───────────────────────────────────
+function _gerarDadosArquivo() {
+  const obras = _obras.filter(o => o.arquivada && !o.excluida);
+  const grupos = {};
+  obras.forEach(o => {
+    const key = o.caixaId || '__sem__';
+    if (!grupos[key]) grupos[key] = { caixa: _caixas.find(c => c.id === o.caixaId) || null, obras: [] };
+    grupos[key].obras.push(o);
+  });
+  const arr = Object.values(grupos);
+  arr.sort((a, b) => (parseInt(a.caixa && a.caixa.numero) || 99999) - (parseInt(b.caixa && b.caixa.numero) || 99999));
+  arr.forEach(g => g.obras.sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0)));
+  return arr;
+}
+function exportarRelatorioArquivoPDF() {
+  const grupos = _gerarDadosArquivo();
+  if (!grupos.length) { showComercialToast('Nenhuma obra arquivada para o relatório.', 'error'); return; }
+  const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const total = grupos.reduce((s, g) => s + g.obras.length, 0);
+  const secoes = grupos.map(g => {
+    const cxLabel = g.caixa ? `Caixa Nº ${g.caixa.numero}${g.caixa.nome ? ' — ' + g.caixa.nome : ''}` : 'Sem caixa';
+    const rows = g.obras.map((o, ri) => {
+      const bg = ri % 2 === 0 ? '#ffffff' : '#f9fafb';
+      const td = `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
+      return `<tr><td ${td}>#${o.numero || ''}</td><td ${td}><strong>${o.nome || ''}</strong></td><td ${td}>${o.representante || '—'}</td></tr>`;
+    }).join('');
+    return `<div class="caixa-sec"><h2>${cxLabel} <small>(${g.obras.length} obra${g.obras.length !== 1 ? 's' : ''})</small></h2><table><thead><tr><th>Nº</th><th>Obra</th><th>Representante</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório do Arquivo Morto — Premovale</title><style>body{font-family:Arial,sans-serif;font-size:11px;color:#1f2937;margin:0;padding:24px;}.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #c79a5a;padding-bottom:12px;margin-bottom:20px;}.header h1{font-size:16px;margin:0;color:#a87b3c;}.header span{font-size:10px;color:#6b7280;}.caixa-sec{margin-bottom:18px;page-break-inside:avoid;}.caixa-sec h2{font-size:12px;margin:0 0 6px;color:#1f2937;background:#f3ead9;border-left:3px solid #c79a5a;padding:5px 8px;}.caixa-sec h2 small{color:#9ca3af;font-weight:normal;}table{width:100%;border-collapse:collapse;margin-bottom:4px;}th{background:#f3f4f6;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e5e7eb;}td{padding:6px 8px;border-bottom:1px solid #e5e7eb;}.footer{margin-top:20px;font-size:9px;color:#9ca3af;text-align:center;}</style></head><body><div class="header"><h1>🗃️ Relatório do Arquivo Morto — Premovale</h1><span>Gerado em ${hoje}</span></div>${secoes}<div class="footer">Premovale T.I — ${grupos.length} caixa(s) • ${total} obra(s) • ${hoje}</div><script>window.onload=()=>{window.print();}<\/script></body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { showComercialToast('Permita pop-ups para gerar o PDF.', 'error'); return; }
+  w.document.write(html); w.document.close();
+  closeRelatorioModal();
+}
+function exportarRelatorioArquivoXLS() {
+  const grupos = _gerarDadosArquivo();
+  if (!grupos.length) { showComercialToast('Nenhuma obra arquivada para o relatório.', 'error'); return; }
+  try {
+    const escXml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const headerRow = ['Nº', 'Obra', 'Representante'].map(h => `<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${h}</th>`).join('');
+    const body = grupos.map(g => {
+      const cxLabel = g.caixa ? `Caixa Nº ${g.caixa.numero}${g.caixa.nome ? ' — ' + g.caixa.nome : ''}` : 'Sem caixa';
+      const head = `<tr><td colspan="3" style="background:#f3ead9;font-weight:bold;padding:6px 8px;border:1px solid #d1d5db;">${escXml(cxLabel)} (${g.obras.length})</td></tr>`;
+      const rows = g.obras.map(o => `<tr><td style="padding:5px 8px;border:1px solid #e5e7eb;">#${escXml(o.numero)}</td><td style="padding:5px 8px;border:1px solid #e5e7eb;">${escXml(o.nome)}</td><td style="padding:5px 8px;border:1px solid #e5e7eb;">${escXml(o.representante || '—')}</td></tr>`).join('');
+      return head + rows;
+    }).join('');
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Arquivo Morto</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><table><thead><tr>${headerRow}</tr></thead><tbody>${body}</tbody></table></body></html>`;
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `arquivo_morto_${new Date().toISOString().slice(0, 10)}.xls`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    closeRelatorioModal();
+    showComercialToast('XLS exportado! ✅', 'success');
+  } catch (e) { console.error('XLS arquivo error:', e); showComercialToast(`Erro: ${e.message}`, 'error'); }
+}
+function openNovaCaixaModal() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar.', 'error'); return; }
+  document.getElementById('nova-caixa-num').value = '';
+  document.getElementById('nova-caixa-nome').value = '';
+  document.getElementById('nova-caixa-modal').style.display = 'flex';
+}
+function _closeNovaCaixaModal() { const m = document.getElementById('nova-caixa-modal'); if (m) m.style.display = 'none'; }
+async function _saveNovaCaixa() {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar.', 'error'); return; }
+  const numero = document.getElementById('nova-caixa-num').value.trim();
+  const nome = document.getElementById('nova-caixa-nome').value.trim();
+  if (!numero) { showComercialToast('Informe o número da caixa.', 'error'); return; }
+  try {
+    await db.collection('caixas').add({ numero, nome: nome || '', criadaEm: Date.now(), criadaPor: currentUser.username });
+    _closeNovaCaixaModal();
+    showComercialToast('Caixa criada! 📦', 'success');
+  } catch (e) { console.error('[nova caixa]', e); showComercialToast('Erro ao criar a caixa.', 'error'); }
+}
 
 function _gerarDadosRelatorio() {
   const incluirTodas = document.getElementById('rel-todas')?.checked;
@@ -4352,6 +4752,7 @@ function _initComercialModulo() {
 function _teardownComercialModulo() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
   if (_unsubFixadas) { _unsubFixadas(); _unsubFixadas = null; }
+  if (_unsubCaixas) { _unsubCaixas(); _unsubCaixas = null; }
 }
 if (window.AppShell) {
   window.AppShell.register('comercial.html', 'comercial', _initComercialModulo, _teardownComercialModulo);
