@@ -1,8 +1,9 @@
 // ===== COMERCIAL v2 — Sub-etapas, Dias Úteis, Feriados =====
 
 // ── Logout (contexto Comercial — sem closeTicketDetail) ───────────────────────
-function performLogout() {
-  if (!confirm('Deseja realmente sair do sistema?')) return;
+async function performLogout() {
+  const _ok = await _showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' });
+  if (!_ok) return;
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   currentUser = null;
@@ -1104,7 +1105,7 @@ function renderObras() {
       }
       // Sub-etapas normais
       const subs = Object.values(eData.subEtapas || {});
-      const atras = subs.some(s => s.status !== 'done' && s.dataLimite && s.dataLimite < hoje2);
+      const atras = subs.some(s => s.status !== 'done' && s.status !== 'cancelado' && s.dataLimite && s.dataLimite < hoje2);
       const ultima = subs.findLast?.(s => s.status === 'active') || subs.find(s => s.status === 'active');
       const limite = ultima?.dataLimite;
       const concl = eData.status === 'done' ? subs.findLast?.(s => s.dataConclusao)?.dataConclusao : null;
@@ -1116,7 +1117,7 @@ function renderObras() {
         // Mostrar nome da sub-etapa vencida + prazo
         const subAtras = cfg2.subEtapas?.find(sc => {
           const sd = eData.subEtapas?.[sc.id];
-          return sd?.status !== 'done' && sd?.dataLimite && sd.dataLimite < hoje2;
+          return sd?.status !== 'done' && sd?.status !== 'cancelado' && sd?.dataLimite && sd.dataLimite < hoje2;
         });
         const sdAtras = subAtras ? eData.subEtapas?.[subAtras.id] : null;
         const nomeAtras = subAtras?.nome || '';
@@ -1409,7 +1410,7 @@ function renderObraModal(obra) {
       const subData = eData.subEtapas?.[subCfg.id] || {};
       const subStatus = subData.status || 'pending';
       const limite = subData.dataLimite || subData.dataPrevista;
-      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && limite && limite < hoje;
+      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && subStatus !== 'cancelado' && limite && limite < hoje;
       const isIndependenteSub = subCfg.isIndependente || cfg.isIndependente;
       const _furadaSub = (subStatus === 'pending' || subStatus === 'active') && !!_subPosteriorConcluida(obra, etapaId, subCfg.id, null);
       const canConcluir = (subStatus === 'active' || _furadaSub) && !obra.concluida;
@@ -2018,7 +2019,8 @@ async function _concluirCocItem(obraId, etapaId, idx, dataCustom) {
 }
 async function _deleteCocItem(obraId, etapaId, idx) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  if (!confirm('Excluir esta COC? Esta ação não pode ser desfeita.')) return;
+  const _ok = await _showConfirm('Excluir COC', 'Excluir esta COC? Esta ação não pode ser desfeita.', { okText: 'Excluir', danger: true });
+  if (!_ok) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const nome = etapas[etapaId].cocLista?.[idx]?.nome || '';
@@ -2241,7 +2243,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
         </div>`;
       }
       const _refSub = sub.dataLimite || sub.dataPrevista || (subStatus === 'active' ? item.dataPrevista : null);
-      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && _refSub && _refSub < hoje;
+      const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && subStatus !== 'cancelado' && _refSub && _refSub < hoje;
       const diasCount = sub.dataInicio ? Math.floor((new Date() - new Date(sub.dataInicio + 'T12:00:00')) / (1000 * 60 * 60 * 24)) : 0;
       let dataInfo = '';
       if (subCfg.isAnalise && subStatus === 'active' && sub.dataInicio) {
@@ -2340,12 +2342,12 @@ function contarMinhasPendencias(obra) {
     if (cfg.isLista) {
       (e.lista || []).forEach(item => {
         Object.values(item.subEtapas || {}).forEach(s => {
-          if (s.status !== 'done' && _temResp(s, currentUser?.username)) count++;
+          if (s.status !== 'done' && s.status !== 'cancelado' && _temResp(s, currentUser?.username)) count++;
         });
       });
     } else {
       Object.values(e.subEtapas || {}).forEach(s => {
-        if (s.status !== 'done' && _temResp(s, currentUser?.username)) count++;
+        if (s.status !== 'done' && s.status !== 'cancelado' && _temResp(s, currentUser?.username)) count++;
       });
     }
   });
@@ -3110,7 +3112,8 @@ async function saveEditarObra() {
 async function excluirObra(obraId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId);
-  if (!confirm(`Excluir "${obra?.nome}"? Não pode ser desfeita.`)) return;
+  const _ok = await _showConfirm('Excluir obra', `Excluir "${obra?.nome}"? Esta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true });
+  if (!_ok) return;
   await db.collection('obras').doc(obraId).delete();
   showComercialToast('Obra excluída.', 'success');
   closeObraModal();
@@ -3182,7 +3185,8 @@ async function excluirCocItem(obraId, etapaId, cocIdx) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const it = obra.etapas?.[etapaId]?.cocLista?.[cocIdx]; if (!it) return;
-  if (!confirm(`Excluir o COC "${it.nome || ''}"? Não pode ser desfeito.`)) return;
+  const _ok = await _showConfirm('Excluir COC', `Excluir o COC "${it.nome || ''}"? Esta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true });
+  if (!_ok) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   etapas[etapaId].cocLista.splice(cocIdx, 1);
   _audit(obraId, 'coc_del', `COC excluído: "${it.nome || ''}"`);
@@ -3193,7 +3197,8 @@ async function excluirCocItem(obraId, etapaId, cocIdx) {
 // ── Onda 2: Reabrir sub-etapa (volta p/ ativa; posteriores -> pendente) ─────
 async function reabrirSubEtapa(obraId, etapaId, subId, itemId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  if (!confirm('Reabrir esta sub-etapa? As sub-etapas posteriores voltam para pendente.')) return;
+  const _ok = await _showConfirm('Reabrir sub-etapa', 'Reabrir esta sub-etapa? As sub-etapas posteriores voltam para pendente.', { okText: 'Reabrir' });
+  if (!_ok) return;
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
   const cfg = ETAPAS_CONFIG[etapaId]; if (!cfg) return;
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
@@ -3675,7 +3680,7 @@ function exportarObraPDF(obraId) {
         const subsItem = (cfg.subEtapasTemplate || []).map(sub => {
           const s = item.subEtapas?.[sub.id]; if (!s) return '';
           const refData2 = s.dataLimite || (s.status === 'active' ? item.dataPrevista : null);
-          const atrasada2 = s.status !== 'done' && refData2 && refData2 < hoje2;
+          const atrasada2 = s.status !== 'done' && s.status !== 'cancelado' && refData2 && refData2 < hoje2;
           let st2, corSt2;
           if (s.status === 'done') { st2 = '✓ Concluída'; corSt2 = '#22c55e'; }
           else if (s.status === 'pulada') { st2 = '⏭ Pulada'; corSt2 = '#6b7280'; }
@@ -3723,7 +3728,7 @@ function exportarObraPDF(obraId) {
       }
       const s = e.subEtapas?.[sub.id]; if (!s) return '';
       const refData = s.dataLimite || s.dataPrevista;
-      const atrasada = s.status !== 'done' && refData && refData < hoje2;
+      const atrasada = s.status !== 'done' && s.status !== 'cancelado' && refData && refData < hoje2;
       let st, corSt;
       if (s.status === 'done') { st = '✓ Concluída'; corSt = '#22c55e'; }
       else if (s.status === 'cancelado') { st = '⊘ Cancelada'; corSt = '#9ca3af'; }
@@ -3844,14 +3849,15 @@ function openRelatorioModal() {
   const _isArq = (_view === 'arquivo' || _view === 'lixeira');
   const _tg = document.getElementById('rel-tab-geral'); if (_tg) _tg.style.display = _isArq ? 'none' : '';
   const _tp = document.getElementById('rel-tab-pend'); if (_tp) _tp.style.display = _isArq ? 'none' : '';
+  const _tr = document.getElementById('rel-tab-rep'); if (_tr) _tr.style.display = _isArq ? 'none' : '';
   const _ta = document.getElementById('rel-tab-arquivo'); if (_ta) _ta.style.display = _isArq ? '' : 'none';
   document.getElementById('relatorio-modal').style.display = 'flex';
   _switchRelTab(_isArq ? 'arquivo' : 'geral');
 }
 
 function _switchRelTab(tab) {
-  const tabs = { geral: 'rel-tab-geral', pend: 'rel-tab-pend', arquivo: 'rel-tab-arquivo' };
-  const bodies = { geral: 'rel-body-geral', pend: 'rel-body-pend', arquivo: 'rel-body-arquivo' };
+  const tabs = { geral: 'rel-tab-geral', pend: 'rel-tab-pend', rep: 'rel-tab-rep', arquivo: 'rel-tab-arquivo' };
+  const bodies = { geral: 'rel-body-geral', pend: 'rel-body-pend', rep: 'rel-body-rep', arquivo: 'rel-body-arquivo' };
   Object.keys(tabs).forEach(k => {
     const t = document.getElementById(tabs[k]); if (t) { const on = (k === tab); t.style.borderBottom = on ? '2px solid var(--accent)' : '2px solid transparent'; t.style.color = on ? 'var(--accent)' : 'var(--muted)'; }
     const b = document.getElementById(bodies[k]); if (b) b.style.display = (k === tab) ? 'flex' : 'none';
@@ -4473,6 +4479,138 @@ function exportarRelatorioPendencias() {
     <script>window.onload=()=>{window.print();}<\/script>
     </body></html>`;
   const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+}
+
+// ── Relatório: Obras por Representante ────────────────────────────────────────
+function _gerarDadosPorRepresentante() {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const ag = new Date(); ag.setHours(0, 0, 0, 0);
+  const lim = new Date(ag); lim.setDate(lim.getDate() + 3);
+  const limStr = lim.toISOString().slice(0, 10);
+  const grupos = {};
+  _obras.filter(o => !o.concluida).forEach(obra => {
+    const rep = obra.representante || 'Sem representante';
+    ETAPAS_ORDER.forEach(etapaId => {
+      const e = obra.etapas?.[etapaId];
+      const cfg = ETAPAS_CONFIG[etapaId];
+      if (!e?.ativa) return;
+      const processSub = (sub, subNome, titulo, item) => {
+        if (!sub || sub.status !== 'active') return;
+        const ref = sub.dataLimite || sub.dataPrevista || (item ? item.dataPrevista : null);
+        let status, dias = '—';
+        if (ref && ref < hoje) {
+          status = 'Em atraso';
+          dias = Math.ceil((ag - new Date(ref + 'T12:00:00')) / 86400000) + 'd';
+        } else if (ref && ref <= limStr) {
+          status = 'Perto de vencer';
+          const dd = Math.ceil((new Date(ref + 'T12:00:00') - ag) / 86400000);
+          dias = dd <= 0 ? 'hoje' : dd + 'd';
+        } else {
+          status = 'Em andamento';
+        }
+        if (!grupos[rep]) grupos[rep] = {};
+        if (!grupos[rep][obra.id]) grupos[rep][obra.id] = { numero: obra.numero || obra.id.slice(-6), nome: obra.nome, itens: [] };
+        grupos[rep][obra.id].itens.push({
+          etapa: titulo ? cfg.nome + ' — ' + titulo : cfg.nome,
+          subEtapa: subNome, status, dias,
+          dataLimite: ref ? new Date(ref + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+        });
+      };
+      if (cfg.isLista) {
+        (e.lista || []).forEach(item => (cfg.subEtapasTemplate || []).forEach(s => processSub(item.subEtapas?.[s.id], s.nome, item.titulo, item)));
+      } else {
+        (cfg.subEtapas || []).forEach(s => processSub(e.subEtapas?.[s.id], s.nome, null, null));
+      }
+    });
+  });
+  return grupos;
+}
+
+function _corStatusRep(status) {
+  return status === 'Em atraso' ? '#ef4444' : status === 'Perto de vencer' ? '#f59e0b' : '#3b82f6';
+}
+
+function exportarRelatorioRepresentantePDF() {
+  const grupos = _gerarDadosPorRepresentante();
+  const reps = Object.keys(grupos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  if (!reps.length) { showComercialToast('Nenhuma obra em andamento encontrada.', 'error'); return; }
+  const hojeFmt = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const thBase = 'text-align:left;padding:4px 8px;background:#f1f5f9;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#475569;';
+  let totalObras = 0;
+  const blocos = reps.map(rep => {
+    const obras = grupos[rep];
+    const obraIds = Object.keys(obras);
+    totalObras += obraIds.length;
+    const obrasHtml = obraIds.map(oid => {
+      const o = obras[oid];
+      const linhas = o.itens.map(it => {
+        const cor = _corStatusRep(it.status);
+        return '<tr>' +
+          '<td style="padding:5px 8px;border-bottom:1px solid #eef2f7;">' + esc(it.etapa) + '</td>' +
+          '<td style="padding:5px 8px;border-bottom:1px solid #eef2f7;">' + esc(it.subEtapa) + '</td>' +
+          '<td style="padding:5px 8px;border-bottom:1px solid #eef2f7;"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;color:#fff;background:' + cor + ';">' + esc(it.status) + '</span></td>' +
+          '<td style="padding:5px 8px;border-bottom:1px solid #eef2f7;font-family:monospace;font-size:10px;">' + esc(it.dataLimite) + '</td>' +
+          '<td style="padding:5px 8px;border-bottom:1px solid #eef2f7;font-family:monospace;font-size:10px;color:' + cor + ';font-weight:700;">' + esc(it.dias) + '</td>' +
+          '</tr>';
+      }).join('');
+      return '<div style="margin:10px 0 4px;font-weight:700;font-size:12px;color:#1e293b;">📁 #' + esc(o.numero) + ' — ' + esc(o.nome) + '</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:11px;"><thead><tr>' +
+        '<th style="' + thBase + '">Etapa</th><th style="' + thBase + '">Sub-etapa</th><th style="' + thBase + '">Status</th><th style="' + thBase + '">Prazo</th><th style="' + thBase + '">Dias</th>' +
+        '</tr></thead><tbody>' + linhas + '</tbody></table>';
+    }).join('');
+    return '<div style="margin-top:18px;page-break-inside:avoid;"><div style="font-size:14px;font-weight:800;color:#7c3aed;border-bottom:2px solid #7c3aed;padding-bottom:4px;margin-bottom:6px;">👤 ' + esc(rep) + ' <span style="font-size:10px;font-weight:600;color:#94a3b8;">(' + obraIds.length + ' obra' + (obraIds.length > 1 ? 's' : '') + ')</span></div>' + obrasHtml + '</div>';
+  }).join('');
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Obras por Representante — Premovale</title>' +
+    '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:0;padding:24px;}' +
+    '.header{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #7c3aed;padding-bottom:12px;margin-bottom:8px;}' +
+    '.header h1{font-size:16px;margin:0;color:#7c3aed;font-weight:800;}.header span{font-size:10px;color:#6b7280;}' +
+    '.footer{margin-top:18px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:10px;}</style></head>' +
+    '<body><div class="header"><div><h1>Obras por Representante</h1>' +
+    '<div style="font-size:10px;color:#6b7280;margin-top:3px;">Etapas em andamento, perto de vencer e em atraso</div></div>' +
+    '<span>Gerado em ' + hojeFmt + '</span></div>' + blocos +
+    '<div class="footer">Premovale T.I — ' + reps.length + ' representante(s) · ' + totalObras + ' obra(s)</div>' +
+    '<script>window.onload=()=>{window.print();}<' + '/script></body></html>';
+  const w = window.open('', '_blank'); w.document.write(html); w.document.close();
+  closeRelatorioModal();
+}
+
+function exportarRelatorioRepresentanteXLS() {
+  const grupos = _gerarDadosPorRepresentante();
+  const reps = Object.keys(grupos).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  if (!reps.length) { showComercialToast('Nenhuma obra em andamento encontrada.', 'error'); return; }
+  try {
+    const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const headers = ['Representante', 'Nº', 'Obra', 'Etapa', 'Sub-etapa', 'Status', 'Data Limite', 'Dias'];
+    const headerRow = headers.map(h => '<th style="background:#7c3aed;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">' + esc(h) + '</th>').join('');
+    let body = '';
+    reps.forEach(rep => {
+      const obras = grupos[rep];
+      Object.keys(obras).forEach(oid => {
+        const o = obras[oid];
+        o.itens.forEach(it => {
+          const bg = it.status === 'Em atraso' ? '#fee2e2' : it.status === 'Perto de vencer' ? '#fef3c7' : '#dbeafe';
+          const cols = [rep, '#' + o.numero, o.nome, it.etapa, it.subEtapa, it.status, it.dataLimite, it.dias];
+          body += '<tr>' + cols.map(v => '<td style="padding:5px 8px;border:1px solid #e5e7eb;background:' + bg + ';">' + esc(v) + '</td>').join('') + '</tr>';
+        });
+      });
+    });
+    const html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">' +
+      '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Por Representante</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>' +
+      '<body><table><thead><tr>' + headerRow + '</tr></thead><tbody>' + body + '</tbody></table></body></html>';
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'obras_por_representante_' + new Date().toISOString().slice(0, 10) + '.xls';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    closeRelatorioModal();
+    showComercialToast('XLS exportado! ✅', 'success');
+  } catch (e) {
+    console.error('XLS rep error:', e);
+    showComercialToast('Erro: ' + e.message, 'error');
+  }
 }
 
 // ── Filtro Minhas Pendências + Período ────────────────────────────────────────
