@@ -753,6 +753,7 @@ function diagnosticarInconsistencias() {
 }
 function _subPosteriorConcluida(obra, etapaId, subId, itemId) {
   const cfg = ETAPAS_CONFIG[etapaId]; if (!cfg || !obra || !obra.etapas || !obra.etapas[etapaId]) return null;
+  if (cfg.isIndependente) return null; // documentações são independentes — sem dependência de ordem entre subs
   let subEtapasObj, ordem;
   if (itemId) {
     const item = (obra.etapas[etapaId].lista || []).find(i => i.id === itemId); if (!item) return null;
@@ -956,6 +957,7 @@ function renderObras() {
   let lista = _obras.filter(_obraPassaFiltros).filter(o => {
     if (o.excluida) return _view === 'lixeira';
     if (o.arquivada) return _view === 'arquivo';
+    if (_F.etapaStVal && (_view === 'ativas' || _view === 'concluidos')) return true; // filtro de status vence a divisão ativas/concluidos
     if (o.concluida) return _view === 'concluidos';
     return _view === 'ativas';
   });
@@ -1944,8 +1946,15 @@ async function _saveAddCoc() {
   const _eraVaziaCoc = !etapas[etapaId].cocLista || etapas[etapaId].cocLista.length === 0;
   if (!etapas[etapaId].cocLista) etapas[etapaId].cocLista = [];
   etapas[etapaId].cocLista.push({ nome, dataPrevista: data, status: 'active', dataConclusao: null });
-  // Se etapa ainda não foi iniciada, iniciar
-  if (etapas[etapaId].status === 'pending') etapas[etapaId].status = 'active';
+  // Reabrir a etapa (concluída ou pendente) e reativar só o stub da COC — sem tocar nas outras documentações já concluídas
+  if (etapas[etapaId].subEtapas && etapas[etapaId].subEtapas.coc) {
+    etapas[etapaId].subEtapas.coc.status = 'active';
+    etapas[etapaId].subEtapas.coc.dataConclusao = null;
+  }
+  if (etapas[etapaId].status === 'pending' || etapas[etapaId].status === 'done') {
+    etapas[etapaId].status = 'active';
+    etapas[etapaId].dataConclusao = null;
+  }
   // 1ª COC: ancora as demais documentações em +14 dias corridos a partir da data prevista da COC
   if (_eraVaziaCoc && data) {
     const _venc = addDiasCorridos(data, 14);
