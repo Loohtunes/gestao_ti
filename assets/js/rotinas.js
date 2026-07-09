@@ -1341,7 +1341,7 @@ async function initRotinas() {
 
 async function _initRotinasPage() {
   await loadUsers();
-  const savedId = localStorage.getItem('chamados-current-user-id');
+  const savedId = await ensureSession();
   if (!savedId) { window.location.href = 'login.html'; return; }
   const user = users.find(u => u.id === savedId);
   if (!user) { window.location.href = 'login.html'; return; }

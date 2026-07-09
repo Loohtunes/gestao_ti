@@ -7,7 +7,7 @@ async function performLogout() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   currentUser = null;
-  localStorage.removeItem('chamados-current-user-id');
+  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'login.html';
 }
 
@@ -1910,11 +1910,18 @@ function _renderCocLista(obra, etapaId, subId) {
     </div>`;
   }).join('');
 
-  const addBtn = canAct ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
+  // Visibilidade do botão de COC (itens 1+2):
+  //  • pending + 0 COCs → nada (o "Iniciar" da etapa cuida da 1ª COC)
+  //  • ativa + 0 COCs   → "Cadastrar 1ª COC" (corrige o item 2)
+  //  • >=1 COC          → "+COC" (adicionar mais)
+  const _cocCount = cocLista.length;
+  const _addLabel = _cocCount >= 1 ? 'COC' : 'Cadastrar 1ª COC';
+  const _showAdd = canAct && (_cocCount >= 1 || e?.status === 'active');
+  const addBtn = _showAdd ? `<div style="display:flex;justify-content:center;margin-top:0.4rem;">
     <button class="sub-action-btn concluir" onclick="_openAddCocModal('${obra.id}','${etapaId}')"
       style="font-size:0.72rem;padding:0.25rem 0.9rem;display:inline-flex;align-items:center;gap:0.35rem;">
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      COC
+      ${_addLabel}
     </button>
   </div>` : '';
 
@@ -4786,7 +4793,7 @@ function highlightObraFromUrl() {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 async function _initComercialPage() {
   await loadUsers();
-  const savedId = localStorage.getItem('chamados-current-user-id');
+  const savedId = await ensureSession();
   if (!savedId) { window.location.href = 'login.html'; return; }
   const user = users.find(u => u.id === savedId);
   if (!user) { window.location.href = 'login.html'; return; }

@@ -51,7 +51,7 @@ const MAT_UNITS = {
 async function _initMateriaisPage() {
   await loadUsers();
 
-  const savedId = localStorage.getItem('chamados-current-user-id');
+  const savedId = await ensureSession();
   if (!savedId) { window.location.href = 'login.html'; return; }
 
   const user = users.find(u => u.id === savedId);
@@ -120,7 +120,7 @@ function matLogout() {
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   if (matUnsubscribe) { matUnsubscribe(); matUnsubscribe = null; }
   if (matDetailUnsub) { matDetailUnsub(); matDetailUnsub = null; }
-  localStorage.removeItem('chamados-current-user-id');
+  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'login.html';
 }
 

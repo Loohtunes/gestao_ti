@@ -48,7 +48,7 @@ function initInventario() {
 
 function invLogout() {
   if (typeof logout === 'function') logout();
-  else { localStorage.removeItem('chamados-current-user-id'); window.location.href = 'login.html'; }
+  else { sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
 }
 
 // ── Abas ───────────────────────────────────────────────────────────────────
@@ -996,7 +996,7 @@ async function deleteAtivo(id) {
 // ── Inicialização própria — mesmo padrão de configuracoes.js e menu.js ──────
 async function _initInventarioPage() {
   await loadUsers();
-  const savedId = localStorage.getItem('chamados-current-user-id');
+  const savedId = await ensureSession();
   if (!savedId) { window.location.href = 'login.html'; return; }
   const user = users.find(u => u.id === savedId);
   if (!user) { window.location.href = 'login.html'; return; }

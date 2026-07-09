@@ -121,7 +121,7 @@
                 !hasSuperAdmin ? 'inline-block' : 'none';
 
             // Se já está logado, redirecionar para menu
-            const savedId = localStorage.getItem('chamados-current-user-id');
+            const savedId = await ensureSession();
             if (savedId && users.find(u => u.id === savedId)) {
                 window.location.href = 'menu.html';
             }

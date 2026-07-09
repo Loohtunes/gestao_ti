@@ -226,7 +226,7 @@ const WIDGETS_LAYOUT_PADRAO = {
 // ── Resolução do usuário atual (sessão) ─────────────────────────────────────────
 function _wgtUsuarioAtual() {
   try {
-    const id = localStorage.getItem('chamados-current-user-id');
+    const id = sessionStorage.getItem('chamados-current-user-id');
     if (id && typeof users !== 'undefined' && Array.isArray(users)) {
       const u = users.find(x => x.id === id);
       if (u) return u;

@@ -23,7 +23,7 @@ let menuCurrentUser = null;
 async function initMenu() {
   // Verificar login
   await loadUsers();
-  const savedId = localStorage.getItem('chamados-current-user-id');
+  const savedId = await ensureSession();
   if (!savedId) { window.location.href = 'index.html'; return; }
 
   const user = users.find(u => u.id === savedId);
@@ -193,13 +193,13 @@ function goToChamados() {
 function menuLogout() {
   if (!confirm('Deseja realmente sair do sistema?')) return;
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
-  localStorage.removeItem('chamados-current-user-id');
+  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'index.html';
 }
 
 function menuAutoLogout() {
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
-  localStorage.removeItem('chamados-current-user-id');
+  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'index.html?reason=inatividade';
 }
 

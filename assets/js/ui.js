@@ -351,223 +351,170 @@ function initDarkMode() {
 // ══════════════════════════════════════════════════════
 
 // Tempos em segundo plano por papel
+// ══ Sessão compartilhada entre abas (Opção B) ══════════════════════════════
+const _SESSION_KEY = 'chamados-current-user-id';
+const _SETOR_KEY = 'premovale-current-setor';
+let _sessionSyncReady = false;
+
+function _sessionGet() { return sessionStorage.getItem(_SESSION_KEY); }
+function _sessionSet(id, setor) {
+  if (id != null) sessionStorage.setItem(_SESSION_KEY, id);
+  if (setor != null) sessionStorage.setItem(_SETOR_KEY, setor);
+}
+function _sessionClear() {
+  sessionStorage.removeItem(_SESSION_KEY);
+  sessionStorage.removeItem(_SETOR_KEY);
+}
+
+function _requestSessionFromTabs(timeout) {
+  return new Promise(function (resolve) {
+    var reqId = 'r' + Date.now() + Math.random().toString(36).slice(2);
+    var done = false;
+    function onResp(e) {
+      if (e.key === 'premovale-session-response' && e.newValue) {
+        try {
+          var r = JSON.parse(e.newValue);
+          if (r.reqId === reqId && r.userId) {
+            done = true;
+            window.removeEventListener('storage', onResp);
+            resolve({ userId: r.userId, setor: r.setor || '' });
+          }
+        } catch (_) { }
+      }
+    }
+    window.addEventListener('storage', onResp);
+    localStorage.setItem('premovale-session-request', JSON.stringify({ reqId: reqId, at: Date.now() }));
+    localStorage.removeItem('premovale-session-request');
+    setTimeout(function () {
+      if (!done) { window.removeEventListener('storage', onResp); resolve(null); }
+    }, timeout || 350);
+  });
+}
+
+function setupSessionSync() {
+  if (_sessionSyncReady) return;
+  _sessionSyncReady = true;
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'premovale-session-request' && e.newValue) {
+      var id = _sessionGet();
+      if (id) {
+        try {
+          var req = JSON.parse(e.newValue);
+          localStorage.setItem('premovale-session-response', JSON.stringify({
+            reqId: req.reqId, userId: id, setor: sessionStorage.getItem(_SETOR_KEY) || ''
+          }));
+          localStorage.removeItem('premovale-session-response');
+        } catch (_) { }
+      }
+    }
+    if (e.key === 'premovale-logout-signal' && e.newValue) {
+      _sessionClear();
+      if (typeof stopSessionTimer === 'function') stopSessionTimer();
+      var p = location.pathname;
+      if (p.indexOf('login') === -1 && p.indexOf('index') === -1) {
+        window.location.href = 'login.html';
+      }
+    }
+  });
+}
+
+async function ensureSession() {
+  setupSessionSync();
+  var id = _sessionGet();
+  if (id) return id;
+  var inherited = await _requestSessionFromTabs(350);
+  if (inherited && inherited.userId) {
+    _sessionSet(inherited.userId, inherited.setor);
+    return inherited.userId;
+  }
+  return null;
+}
+
+function broadcastLogout() {
+  localStorage.setItem('premovale-logout-signal', String(Date.now()));
+  localStorage.removeItem('premovale-logout-signal');
+}
+
 const SESSION_CONFIG = {
   requester: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 15min / aviso 3min
   attendant: { bgTimeout: 30 * 60 * 1000, warnBefore: 5 * 60 * 1000 }, // 30min / aviso 5min
   default: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // fallback
 };
 
-let _sessionBgTimeout = SESSION_CONFIG.default.bgTimeout;
-let _sessionWarnBefore = SESSION_CONFIG.default.warnBefore;
-let _sessionBgStart = null;   // quando foi para segundo plano
-let _sessionBgTimer = null;   // timer do logout em segundo plano
-let _sessionWarnTimer = null;   // timer do aviso
-let _sessionWarning = false;
-let _sessionVisualTimer = null;   // intervalo do countdown visual
-let _sessionLastHide = 0;  // timestamp da última saída (deduplicação)
-let _sessionLastFocus = 0;  // timestamp do último retorno
-let _sessionFocusCheck = null; // timeout para verificar perda de foco real
+let _inacTimeout = SESSION_CONFIG.default.bgTimeout;   // limite de INATIVIDADE
+let _inacWarnBefore = SESSION_CONFIG.default.warnBefore;
+let _inacInterval = null;
+let _inacWarning = false;
+let _inacLastMark = 0;
+const _LAST_ACTIVE_KEY = 'premovale-app-last-active';
+const _ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
 function initSessionTimer(role) {
   const isAttendant = role === 'attendant' || role === 'admin' || role === 'superadmin';
   const cfg = isAttendant ? SESSION_CONFIG.attendant : SESSION_CONFIG.requester;
-  _sessionBgTimeout = cfg.bgTimeout;
-  _sessionWarnBefore = cfg.warnBefore;
-
-  // Detectar troca de aba
-  document.addEventListener('visibilitychange', onVisibilityChange);
-
-  // Detectar saída da janela (inclui contenteditable, modais, etc)
-  document.addEventListener('blur', onDocumentBlur, true); // capture
-  document.addEventListener('focus', onDocumentFocus, true); // capture
-  window.addEventListener('blur', onWindowBlur);
-  window.addEventListener('focus', onWindowFocus);
-
-
+  _inacTimeout = cfg.bgTimeout;
+  _inacWarnBefore = cfg.warnBefore;
+  _sessMarkActive(true);
+  _ACTIVITY_EVENTS.forEach(function (ev) { window.addEventListener(ev, _sessOnActivity, { passive: true }); });
+  window.addEventListener('storage', _sessOnStorageActivity);
+  clearInterval(_inacInterval);
+  _inacInterval = setInterval(_sessCheck, 5000);
 }
 
 function stopSessionTimer() {
-  clearTimeout(_sessionBgTimer);
-  clearTimeout(_sessionWarnTimer);
-  clearInterval(_sessionVisualTimer);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
-  document.removeEventListener('blur', onDocumentBlur, true);
-  document.removeEventListener('focus', onDocumentFocus, true);
-  window.removeEventListener('blur', onWindowBlur);
-  window.removeEventListener('focus', onWindowFocus);
-  clearTimeout(_sessionFocusCheck);
+  clearInterval(_inacInterval);
+  _inacInterval = null;
+  _ACTIVITY_EVENTS.forEach(function (ev) { window.removeEventListener(ev, _sessOnActivity, { passive: true }); });
+  window.removeEventListener('storage', _sessOnStorageActivity);
   dismissSessionWarning();
   hideVisualTimer();
-  _sessionBgStart = null;
-  _sessionWarning = false;
-  _sessionLastHide = 0;
-  _sessionLastFocus = 0;
-  // Limpar timestamps do localStorage
-  localStorage.removeItem('premovale-session-hide-at');
-  localStorage.removeItem('premovale-session-timeout');
+  _inacWarning = false;
 }
 
-function onVisibilityChange() {
-  if (document.hidden) {
-    const now = Date.now();
-    if (now - _sessionLastHide < 500) return; // deduplicar com blur
-    _sessionLastHide = now;
-    console.log('[Session] visibilitychange → hidden');
-    startBackgroundTimer();
-  } else {
-    const now = Date.now();
-    if (now - _sessionLastFocus < 500) return; // deduplicar com focus
-    _sessionLastFocus = now;
-    console.log('[Session] visibilitychange → visible');
-    onReturnToTab();
+// Carimbo de última atividade — compartilhado entre abas (presença do app inteiro)
+function _sessMarkActive(force) {
+  const now = Date.now();
+  if (!force && now - _inacLastMark < 3000) return; // throttle: no máx. 1x/3s
+  _inacLastMark = now;
+  try { localStorage.setItem(_LAST_ACTIVE_KEY, String(now)); } catch (_) { }
+  if (_inacWarning) { _inacWarning = false; dismissSessionWarning(); }
+}
+
+function _sessOnActivity() { _sessMarkActive(false); }
+
+// Atividade em OUTRA aba (o carimbo compartilhado mudou) → mantém esta viva e some o aviso
+function _sessOnStorageActivity(e) {
+  if (e.key === _LAST_ACTIVE_KEY && e.newValue) {
+    _inacLastMark = Date.now();
+    if (_inacWarning) { _inacWarning = false; dismissSessionWarning(); }
   }
 }
 
-function onWindowBlur() {
-  const now = Date.now();
-  if (now - _sessionLastHide < 500) return; // deduplicar com visibilitychange
-  _sessionLastHide = now;
-  console.log('[Session] blur → segundo plano');
-  startBackgroundTimer();
+function _sessGetLastActive() {
+  const v = parseInt(localStorage.getItem(_LAST_ACTIVE_KEY) || '0', 10);
+  return v || Date.now();
 }
 
-function onWindowFocus() {
-  const now = Date.now();
-  if (now - _sessionLastFocus < 500) return; // deduplicar com visibilitychange
-  _sessionLastFocus = now;
-  // Só age se havia um timer rodando
-  if (!_sessionBgStart) return;
-  console.log('[Session] focus → voltou');
-  onReturnToTab();
-}
-
-function onDocumentBlur() {
-  // Verificar com delay se o foco realmente saiu da janela
-  // (evita falsos positivos de blur entre elementos internos)
-  clearTimeout(_sessionFocusCheck);
-  _sessionFocusCheck = setTimeout(() => {
-    if (!document.hasFocus()) {
-      const now = Date.now();
-      if (now - _sessionLastHide < 500) return;
-      _sessionLastHide = now;
-      console.log('[Session] document blur → janela perdeu foco');
-      startBackgroundTimer();
-    }
-  }, 200);
-}
-
-function onDocumentFocus() {
-  clearTimeout(_sessionFocusCheck);
-  if (!_sessionBgStart) return;
-  const now = Date.now();
-  if (now - _sessionLastFocus < 500) return;
-  _sessionLastFocus = now;
-  console.log('[Session] document focus → janela ganhou foco');
-  onReturnToTab();
-}
-
-function startBackgroundTimer() {
-  // Não iniciar se já está rodando
-  if (_sessionBgStart) return;
-  _sessionBgStart = Date.now();
-
-  // Salva timestamp no localStorage — funciona mesmo com JS suspenso pelo browser
-  localStorage.setItem('premovale-session-hide-at', String(_sessionBgStart));
-  localStorage.setItem('premovale-session-timeout', String(_sessionBgTimeout));
-
-  console.log('[Session] timer iniciado —', new Date().toLocaleTimeString('pt-BR'));
-  showVisualTimer();
-
-  clearTimeout(_sessionWarnTimer);
-  clearTimeout(_sessionBgTimer);
-
-  // Aviso antes do logout (funciona se a aba ficar ativa durante o período)
-  _sessionWarnTimer = setTimeout(() => {
-    showAfkWarning();
-  }, _sessionBgTimeout - _sessionWarnBefore);
-
-  // Logout automático como fallback (pode ser suspenso pelo browser)
-  _sessionBgTimer = setTimeout(() => {
+function _sessCheck() {
+  const idle = Date.now() - _sessGetLastActive();
+  if (idle >= _inacTimeout) {
     triggerAfkLogout();
-  }, _sessionBgTimeout);
-}
-
-function onReturnToTab() {
-  // Verificar pelo localStorage — garante funcionamento mesmo com JS suspenso pelo browser
-  const savedHideAt = parseInt(localStorage.getItem('premovale-session-hide-at') || '0');
-  const savedTimeout = parseInt(localStorage.getItem('premovale-session-timeout') || '0');
-
-  const referenceTime = savedHideAt || _sessionBgStart;
-  const referenceTimeout = savedTimeout || _sessionBgTimeout;
-  const elapsed = referenceTime ? Date.now() - referenceTime : 0;
-
-  console.log('[Session] voltou — ausente por', Math.round(elapsed / 1000) + 's',
-    '/ limite:', Math.round(referenceTimeout / 1000) + 's');
-
-  clearTimeout(_sessionBgTimer);
-  clearTimeout(_sessionWarnTimer);
-  hideVisualTimer();
-
-  // Limpar localStorage independente do resultado
-  localStorage.removeItem('premovale-session-hide-at');
-  localStorage.removeItem('premovale-session-timeout');
-
-  if (elapsed >= referenceTimeout) {
-    // Tempo esgotado — logout obrigatório
-    triggerAfkLogout();
-  } else if (elapsed >= referenceTimeout - _sessionWarnBefore) {
-    // Ainda dentro do prazo mas no período de aviso — mostrar warning
+  } else if (idle >= _inacTimeout - _inacWarnBefore) {
     showAfkWarning();
-    _sessionBgStart = null;
-  } else {
+  } else if (_inacWarning) {
+    _inacWarning = false;
     dismissSessionWarning();
-    _sessionBgStart = null;
   }
-}
-
-// ── Timer visual na navbar ──
-function showVisualTimer() {
-  const el = document.getElementById('session-timer');
-  if (el) el.style.display = 'flex';
-  _sessionBgStart = _sessionBgStart || Date.now();
-  clearInterval(_sessionVisualTimer);
-  updateVisualTimer();
-  _sessionVisualTimer = setInterval(updateVisualTimer, 1000);
 }
 
 function hideVisualTimer() {
-  clearInterval(_sessionVisualTimer);
   const el = document.getElementById('session-timer');
   if (el) el.style.display = 'none';
 }
 
-function updateVisualTimer() {
-  const countdown = document.getElementById('session-countdown');
-  const barFill = document.getElementById('session-bar-fill');
-  if (!countdown || !barFill || !_sessionBgStart) return;
-
-  const elapsed = Date.now() - _sessionBgStart;
-  const remaining = Math.max(0, _sessionBgTimeout - elapsed);
-  const pct = (remaining / _sessionBgTimeout) * 100;
-
-  const totalSecs = Math.ceil(remaining / 1000);
-  const mins = Math.floor(totalSecs / 60);
-  const secs = String(totalSecs % 60).padStart(2, '0');
-  countdown.textContent = `${mins}:${secs}`;
-  barFill.style.width = `${pct}%`;
-
-  const isWarn = remaining <= _sessionWarnBefore;
-  const isDanger = remaining <= 60000;
-  countdown.className = isDanger ? 'danger' : isWarn ? 'warn' : '';
-  barFill.className = isDanger ? 'danger' : isWarn ? 'warn' : '';
-}
-
-
-
 function showAfkWarning() {
-  if (_sessionWarning) return;
-  _sessionWarning = true;
-
+  if (_inacWarning) return;
+  _inacWarning = true;
   const overlay = document.createElement('div');
   overlay.id = 'afk-warning-overlay';
   overlay.innerHTML = `
@@ -575,43 +522,33 @@ function showAfkWarning() {
       <div class="afk-warning-icon">⏰</div>
       <div class="afk-warning-title">Sessão expirando</div>
       <div class="afk-warning-text">
-        Você está ausente há algum tempo.<br>
+        Você está inativo há algum tempo.<br>
         Sua sessão encerrará em <strong id="afk-warn-mins"></strong>.
       </div>
       <div class="afk-warning-countdown" id="afk-countdown"></div>
-      <button class="afk-warning-btn" onclick="dismissSessionWarning()">
+      <button class="afk-warning-btn" onclick="_sessMarkActive(true)">
         <span style="display:inline-flex;align-items:center;gap:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Continuar conectado</span>
       </button>
     </div>`;
   document.body.appendChild(overlay);
-
-  const warnMins = Math.round(_sessionWarnBefore / 60000);
+  const warnMins = Math.round(_inacWarnBefore / 60000);
   const warnMinsEl = document.getElementById('afk-warn-mins');
   if (warnMinsEl) warnMinsEl.textContent = `${warnMins} minuto${warnMins > 1 ? 's' : ''}`;
-
-  let secsLeft = _sessionWarnBefore / 1000;
   const countEl = document.getElementById('afk-countdown');
-  if (countEl) {
-    const m0 = Math.floor(secsLeft / 60);
-    const s0 = String(Math.floor(secsLeft % 60)).padStart(2, '0');
-    countEl.textContent = `${m0}:${s0}`;
-  }
-  const interval = setInterval(() => {
-    secsLeft--;
-    if (secsLeft <= 0 || !document.getElementById('afk-countdown')) {
-      clearInterval(interval);
-      return;
-    }
-    const m = Math.floor(secsLeft / 60);
-    const s = String(secsLeft % 60).padStart(2, '0');
-    if (countEl) countEl.textContent = `${m}:${s}`;
-    if (secsLeft <= 60 && countEl) countEl.style.color = '#ef4444';
-  }, 1000);
-  overlay.dataset.interval = interval;
+  const tick = function () {
+    if (!document.getElementById('afk-countdown')) return;
+    const idle = Date.now() - _sessGetLastActive();
+    const restante = Math.max(0, Math.ceil((_inacTimeout - idle) / 1000));
+    const m = Math.floor(restante / 60);
+    const s = String(restante % 60).padStart(2, '0');
+    if (countEl) { countEl.textContent = `${m}:${s}`; if (restante <= 60) countEl.style.color = '#ef4444'; }
+  };
+  tick();
+  overlay.dataset.interval = setInterval(tick, 1000);
 }
 
 function dismissSessionWarning() {
-  _sessionWarning = false;
+  _inacWarning = false;
   const overlay = document.getElementById('afk-warning-overlay');
   if (!overlay) return;
   clearInterval(parseInt(overlay.dataset.interval));
@@ -621,7 +558,11 @@ function dismissSessionWarning() {
 function triggerAfkLogout() {
   stopSessionTimer();
   saveSessionState();
-  performAutoLogout();
+  _sessionClear();
+  try { localStorage.removeItem(_LAST_ACTIVE_KEY); } catch (_) { }
+  localStorage.setItem('premovale-logout-reason', 'inatividade');
+  if (typeof broadcastLogout === 'function') broadcastLogout();
+  window.location.href = 'login.html?reason=inatividade';
 }
 
 function saveSessionState() {
@@ -943,7 +884,7 @@ function aplicarSidebarPai(moduloAtivo, user) {
 // sem precisar editar o init de cada uma. Resolve o usuário pela sessão.
 function _navResolveUser() {
   try {
-    const id = localStorage.getItem('chamados-current-user-id');
+    const id = sessionStorage.getItem('chamados-current-user-id');
     if (id && typeof users !== 'undefined' && Array.isArray(users)) {
       const u = users.find(x => x.id === id);
       if (u) return u;
