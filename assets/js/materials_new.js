@@ -115,8 +115,8 @@ async function _initMateriaisPage() {
 
 document.addEventListener('DOMContentLoaded', _initMateriaisPage);
 
-function matLogout() {
-  if (!confirm('Deseja realmente sair do sistema?')) return;
+async function matLogout() {
+  if (!await showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' })) return;
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   if (matUnsubscribe) { matUnsubscribe(); matUnsubscribe = null; }
   if (matDetailUnsub) { matDetailUnsub(); matDetailUnsub = null; }
@@ -965,7 +965,7 @@ async function matLinkInsumo(insumoId) {
 
 // Desvincular insumo
 async function matUnlinkInsumo() {
-  if (!confirm('Desvincular o insumo desta solicitação?')) return;
+  if (!await showConfirm('Desvincular insumo', 'Desvincular o insumo desta solicitação?', { okText: 'Desvincular' })) return;
   try {
     await db.collection('materials').doc(matActiveId).update({
       insumoId: firebase.firestore.FieldValue.delete(),

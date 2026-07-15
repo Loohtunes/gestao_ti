@@ -190,13 +190,13 @@ function renderDetailContent(ticket) {
   const reqName = capitalizeName(ticket.requester || '—');
   const attName = ticket.attendant ? capitalizeName(ticket.attendant) : null;
 
-  const isTestTicket   = ticket.ticketType === 'test';
-  const isForceClosed  = ticket.status === 'force-closed';
-  const isCompleted    = ticket.status === 'completed' || ticket.status === 'archived';
-  const headerStripClass = isTestTicket     ? 'test-strip'
-    : isForceClosed  ? 'force-closed-strip'
-    : isCompleted    ? 'completed-strip'
-    : 'prio-' + prio;
+  const isTestTicket = ticket.ticketType === 'test';
+  const isForceClosed = ticket.status === 'force-closed';
+  const isCompleted = ticket.status === 'completed' || ticket.status === 'archived';
+  const headerStripClass = isTestTicket ? 'test-strip'
+    : isForceClosed ? 'force-closed-strip'
+      : isCompleted ? 'completed-strip'
+        : 'prio-' + prio;
   document.getElementById('detail-modal-body').innerHTML = `
     <div class="detail-header-strip ${headerStripClass}">
       <div class="detail-header-left">
@@ -584,8 +584,8 @@ function sendChatMessage() {
     });
 }
 
-function deleteComment(ticketId, msgId) {
-  if (!confirm('Excluir este comentário?')) return;
+async function deleteComment(ticketId, msgId) {
+  if (!await showConfirm('Excluir comentário', 'Excluir este comentário?', { okText: 'Excluir', danger: true })) return;
   const idx = tickets.findIndex(t => t.id === ticketId);
   if (idx === -1) return;
   const deletedMsg = (tickets[idx].messages || []).find(m => m.id === msgId);
@@ -645,7 +645,7 @@ function saveCommentEdit(ticketId, msgId) {
   if (!contentEl) return;
   const newHtml = contentEl.innerHTML.trim();
   const stripped = newHtml.replace(/<br\s*\/?>/gi, '').replace(/<[^>]+>/g, '').trim();
-  if (!stripped) { alert('O comentário não pode ficar vazio.'); return; }
+  if (!stripped) { showNotification('O comentário não pode ficar vazio.', 'error'); return; }
   const msgIdx = tickets[idx].messages.findIndex(m => m.id === msgId);
   if (msgIdx !== -1) {
     const prevHtml = tickets[idx].messages[msgIdx].html || '';

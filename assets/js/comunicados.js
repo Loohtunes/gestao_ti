@@ -246,7 +246,7 @@ async function fixarComunicado(id, fixar) {
 
 // ── Arquivar ──
 async function arquivarComunicado(id) {
-  if (!confirm('Arquivar este comunicado?')) return;
+  if (!await showConfirm('Arquivar comunicado', 'Arquivar este comunicado?', { okText: 'Arquivar' })) return;
   await db.collection('comunicados').doc(id).update({ arquivado: true, arquivadoEm: new Date() });
   showMenuNotification('Comunicado arquivado!', 'success');
 }
@@ -273,7 +273,7 @@ async function editarComunicado(id) {
 }
 
 async function excluirComunicado(id) {
-  if (!confirm('Excluir permanentemente esta publicação? Esta ação não pode ser desfeita!')) return;
+  if (!await showConfirm('Excluir publicação', 'Excluir permanentemente esta publicação? Esta ação não pode ser desfeita.', { okText: 'Excluir', danger: true })) return;
   try {
     await db.collection('comunicados').doc(id).delete();
     showMenuNotification('Publicação excluída!', 'success');

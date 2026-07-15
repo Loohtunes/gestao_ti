@@ -312,7 +312,7 @@ async function editChangelogEntry(docId) {
 }
 
 async function deleteChangelogEntry(docId) {
-  if (!confirm('Excluir esta entrada de novidades?')) return;
+  if (!await showConfirm('Excluir novidade', 'Excluir esta entrada de novidades?', { okText: 'Excluir', danger: true })) return;
   try {
     await db.collection('changelog').doc(docId).delete();
     showNotification('Entrada excluída!', 'success');
@@ -822,6 +822,11 @@ function initModPai(activeSubmod) {
 // Usado por index, materiais, inventario, rotinas e comercial.
 
 const NAV_MODULOS = {
+  geral: {
+    tabs: [
+      { label: 'Painel', href: 'dashboard.html?modulo=geral', ic: 'painel', pagina: 'painel' },
+    ]
+  },
   ti: {
     tabs: [
       { label: 'Painel', href: 'dashboard.html?modulo=ti', ic: 'painel', pagina: 'painel' },
@@ -829,6 +834,7 @@ const NAV_MODULOS = {
       { label: 'Materiais', href: 'materiais.html', ic: 'package', pagina: 'materiais', mod: 'materiais' },
       { label: 'Inventário', href: 'inventario.html', ic: 'inventario', pagina: 'inventario', mod: 'inventario' },
       { label: 'Rotinas', href: 'rotinas.html', ic: 'rotinas', pagina: 'rotinas', mod: 'rotinas' },
+      { label: 'Infraestrutura', href: 'infraestrutura.html', ic: 'server', pagina: 'infraestrutura', mod: 'infraestrutura' },
     ]
   },
   comercial: {
@@ -845,26 +851,81 @@ const _NAV_TAB_ICONS = {
   package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/>',
   inventario: '<path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/>',
   rotinas: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/>',
+  server: '<rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/>',
   briefcase: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
 };
 function _navTabIco(n) {
   return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_NAV_TAB_ICONS[n] || ''}</svg>`;
 }
 function _navAcessos(user) {
-  return user.isSuperAdmin
-    ? ['chamados', 'materiais', 'inventario', 'rotinas', 'comercial']
-    : (user.acessos || ['chamados']);
+  // Super Admin acessa todo o sistema, sem exceção.
+  if (user.isSuperAdmin) {
+    return [...ACESSOS_POR_MODULO.ti, ...ACESSOS_POR_MODULO.comercial];
+  }
+  return user.acessos || ['chamados'];
 }
 
 function montarSubmodTabs(containerId, moduloAtivo, paginaAtiva, user) {
   const cont = document.getElementById(containerId);
   if (!cont || !NAV_MODULOS[moduloAtivo] || !user) return;
   const acessos = _navAcessos(user);
+  // Painel (sem t.mod) sempre visível a quem tem o módulo; cada aba é liberada
+  // individualmente pelo admin do módulo (allow-list). Super Admin vê tudo.
   const tabs = NAV_MODULOS[moduloAtivo].tabs.filter(t =>
-    !t.mod || t.mod === 'chamados' || user.isSuperAdmin || acessos.includes(t.mod));
+    !t.mod || user.isSuperAdmin || acessos.includes(t.mod));
   cont.innerHTML = tabs.map(t =>
     `<a class="submod-tab${t.pagina === paginaAtiva ? ' ativo' : ''}" href="${t.href}">${_navTabIco(t.ic)}<span>${t.label}</span></a>`
   ).join('');
+}
+
+/* ── MÓDULOS PAI: fonte única de quem enxerga o quê ──────────────────────────
+ * Modelo de acesso em 2 níveis:
+ *   1) MÓDULO  (user.modulos = ['ti','comercial'])  -> concedido pelo Super Admin
+ *                                                      em Configurações > Acessos
+ *   2) ABAS    (user.acessos = ['chamados', ...])   -> concedidas pelo admin do
+ *                                                      módulo, dentro do módulo
+ * Ganhar o módulo dá acesso apenas ao Painel; cada aba é liberada uma a uma.
+ * Super Admin acessa TUDO, sem exceção.
+ * Regra: função nova sem módulo pai natural entra no T.I.
+ * ------------------------------------------------------------------------- */
+const MODULOS_PAI = ['ti', 'comercial'];
+
+// Abas/permissões que pertencem a cada módulo pai (usado no fallback e no modal)
+const ACESSOS_POR_MODULO = {
+  ti: ['chamados', 'materiais', 'inventario', 'rotinas', 'infraestrutura', 'pub_comunicados'],
+  comercial: ['comercial', 'adminComercial', 'atribuivelComercial'],
+};
+
+// Deriva os módulos a partir dos acessos antigos (retrocompatibilidade:
+// usuários gravados antes do campo `modulos` continuam funcionando).
+function _derivarModulos(user) {
+  const ac = user.acessos || ['chamados'];
+  const mods = [];
+  if (user.isAdmin || ACESSOS_POR_MODULO.ti.some(k => ac.includes(k))) mods.push('ti');
+  if (user.isAdminComercial || user.isComercial ||
+    ACESSOS_POR_MODULO.comercial.some(k => ac.includes(k))) mods.push('comercial');
+  return mods;
+}
+
+// Módulos pai que o usuário possui. Super Admin sempre tem todos.
+function modulosDoUsuario(user) {
+  if (!user) return [];
+  if (user.isSuperAdmin) return [...MODULOS_PAI];
+  if (Array.isArray(user.modulos)) return user.modulos.filter(m => MODULOS_PAI.includes(m));
+  return _derivarModulos(user);
+}
+
+function temModulo(user, modulo) {
+  return modulosDoUsuario(user).includes(modulo);
+}
+
+// Admin de um módulo (nomeado pelo Super Admin, gerencia as abas dos usuários)
+function isAdminDoModulo(user, modulo) {
+  if (!user) return false;
+  if (user.isSuperAdmin) return true;
+  if (modulo === 'ti') return !!user.isAdmin;
+  if (modulo === 'comercial') return !!user.isAdminComercial;
+  return false;
 }
 
 function aplicarSidebarPai(moduloAtivo, user) {
@@ -873,10 +934,10 @@ function aplicarSidebarPai(moduloAtivo, user) {
     const el = document.getElementById('navpai-' + m);
     if (el) el.classList.toggle('active', m === moduloAtivo);
   });
-  const canComercial = user.isSuperAdmin || user.isAdminComercial || user.isComercial ||
-    (user.acessos || []).includes('comercial') || (user.acessos || []).includes('adminComercial');
-  const comEl = document.getElementById('navpai-comercial');
-  if (comEl) comEl.style.display = canComercial ? 'flex' : 'none';
+  MODULOS_PAI.forEach(m => {
+    const el = document.getElementById('navpai-' + m);
+    if (el) el.style.display = temModulo(user, m) ? 'flex' : 'none';
+  });
 }
 
 // ===== BOOTSTRAP DE NAVEGAÇÃO (passo 2) =====
@@ -902,6 +963,7 @@ function initNavPai() {
       if (!user) return;
       if (typeof aplicarSidebarPai === 'function') aplicarSidebarPai(modulo, user);
       if (typeof montarSubmodTabs === 'function') montarSubmodTabs('submod-tabs', modulo, pagina, user);
+      if (typeof montarBotaoAcessos === 'function') montarBotaoAcessos(user);
     };
     const user = _navResolveUser();
     if (user) run(user);
@@ -910,3 +972,316 @@ function initNavPai() {
 }
 
 document.addEventListener('DOMContentLoaded', initNavPai);
+
+/* ============================================================================
+ * showConfirm() — modal de confirmação GLOBAL (substitui o confirm() nativo)
+ * Autossuficiente: injeta o próprio CSS e DOM, funciona em qualquer página
+ * que carregue ui.js, sem exigir HTML/CSS dedicado.
+ *
+ *   if (!await showConfirm('Excluir item', 'Esta ação não pode ser desfeita.',
+ *                          { okText: 'Excluir', danger: true })) return;
+ *
+ * Regra do sistema: NUNCA usar confirm/alert/prompt nativos.
+ * ========================================================================== */
+let _pmConfirmResolve = null;
+
+function _pmConfirmCSS() {
+  if (document.getElementById('pm-confirm-style')) return;
+  const st = document.createElement('style');
+  st.id = 'pm-confirm-style';
+  st.textContent = `
+.pm-confirm-ov{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity .16s}
+.pm-confirm-ov.show{opacity:1}
+.pm-confirm-box{background:var(--surface,#fff);border:1px solid var(--border2,#e5e7eb);border-radius:14px;width:min(420px,94vw);box-shadow:0 24px 64px rgba(0,0,0,.28);transform:translateY(8px) scale(.99);transition:transform .16s}
+.pm-confirm-ov.show .pm-confirm-box{transform:none}
+.pm-confirm-title{font-family:var(--font-display,'Plus Jakarta Sans',sans-serif);font-size:.95rem;font-weight:800;color:var(--text,#111);padding:1.15rem 1.3rem .35rem}
+.pm-confirm-msg{font-family:var(--font-display,'Plus Jakarta Sans',sans-serif);font-size:.85rem;line-height:1.55;color:var(--muted,#6b7280);padding:0 1.3rem 1rem;margin:0;white-space:pre-line}
+.pm-confirm-foot{display:flex;justify-content:flex-end;gap:.5rem;padding:0 1.3rem 1.2rem}
+.pm-confirm-btn{font-family:var(--font-display,'Plus Jakarta Sans',sans-serif);font-size:.82rem;font-weight:700;padding:.55rem 1.15rem;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:background .15s,transform .12s;white-space:nowrap}
+.pm-confirm-btn:active{transform:translateY(1px)}
+.pm-confirm-cancel{background:var(--surface2,#f3f4f6);border-color:var(--border2,#e5e7eb);color:var(--text,#111)}
+.pm-confirm-cancel:hover{background:var(--surface3,#e5e7eb)}
+.pm-confirm-ok{background:var(--accent,#3b82f6);color:#fff}
+.pm-confirm-ok:hover{filter:brightness(.94)}
+.pm-confirm-ok.danger{background:#ef4444}
+.pm-confirm-ok.danger:hover{background:#dc2626}
+`;
+  document.head.appendChild(st);
+}
+
+function showConfirm(title, message, opts) {
+  opts = opts || {};
+  _pmConfirmCSS();
+  return new Promise(resolve => {
+    let done = false;
+    const finish = (val) => {
+      if (done) return;
+      done = true;
+      document.removeEventListener('keydown', onKey);
+      ov.classList.remove('show');
+      setTimeout(() => ov.remove(), 160);
+      _pmConfirmResolve = null;
+      resolve(val);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') finish(false);
+      else if (e.key === 'Enter') finish(true);
+    };
+
+    const ov = document.createElement('div');
+    ov.className = 'pm-confirm-ov';
+    ov.innerHTML =
+      '<div class="pm-confirm-box" role="alertdialog" aria-modal="true">' +
+      '<div class="pm-confirm-title"></div>' +
+      '<p class="pm-confirm-msg"></p>' +
+      '<div class="pm-confirm-foot">' +
+      '<button type="button" class="pm-confirm-btn pm-confirm-cancel"></button>' +
+      '<button type="button" class="pm-confirm-btn pm-confirm-ok"></button>' +
+      '</div></div>';
+
+    ov.querySelector('.pm-confirm-title').textContent = title || 'Confirmar';
+    ov.querySelector('.pm-confirm-msg').textContent = message || '';
+    const btnCancel = ov.querySelector('.pm-confirm-cancel');
+    const btnOk = ov.querySelector('.pm-confirm-ok');
+    btnCancel.textContent = opts.cancelText || 'Cancelar';
+    btnOk.textContent = opts.okText || 'Confirmar';
+    if (opts.danger) btnOk.classList.add('danger');
+
+    btnCancel.addEventListener('click', () => finish(false));
+    btnOk.addEventListener('click', () => finish(true));
+    ov.addEventListener('mousedown', e => { if (e.target === ov) finish(false); });
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(ov);
+    _pmConfirmResolve = finish;
+    requestAnimationFrame(() => { ov.classList.add('show'); btnOk.focus(); });
+  });
+}
+
+
+/* ============================================================================
+ * ACESSOS DO MÓDULO — botão na navbar + modal de abas por usuário
+ * Nível 2 do modelo: o admin do módulo libera as ABAS de cada usuário que já
+ * possui o módulo. O cargo de admin só o Super Admin concede.
+ * ========================================================================== */
+const ABAS_MODULO = {
+  ti: [
+    { key: 'chamados', label: 'Chamados' },
+    { key: 'materiais', label: 'Materiais' },
+    { key: 'inventario', label: 'Inventário' },
+    { key: 'rotinas', label: 'Rotinas' },
+    { key: 'infraestrutura', label: 'Infraestrutura' },
+    { key: 'pub_comunicados', label: 'Publicar Comunicados' },
+  ],
+  comercial: [
+    { key: 'comercial', label: 'Controle de Obras' },
+    { key: 'atribuivelComercial', label: 'Atribuível' },
+  ],
+};
+
+// Como o cargo de admin é gravado em cada módulo (histórico do sistema):
+//   T.I       -> campo booleano user.isAdmin
+//   Comercial -> acesso 'adminComercial' (é o que comercial.js consulta)
+const ADMIN_MODULO = {
+  ti: { tipo: 'campo', chave: 'isAdmin' },
+  comercial: { tipo: 'acesso', chave: 'adminComercial' },
+};
+
+function _ehAdminModulo(user, modulo) {
+  const def = ADMIN_MODULO[modulo];
+  if (!def || !user) return false;
+  return def.tipo === 'campo'
+    ? !!user[def.chave]
+    : (user.acessos || []).includes(def.chave);
+}
+
+function nomeModulo(m) { return m === 'ti' ? 'T.I' : m === 'comercial' ? 'Comercial' : m; }
+
+// Injeta o botão "Gerenciar acessos" na navbar da página do módulo.
+function montarBotaoAcessos(user, moduloExplicito) {
+  // moduloExplicito: usado pelo Painel (dashboard), cujo escopo vem de ?modulo=
+  const modulo = moduloExplicito || document.body.getAttribute('data-modulo');
+  if (!modulo || !ABAS_MODULO[modulo] || !user) return;
+  if (!isAdminDoModulo(user, modulo)) return;      // admin do módulo ou Super Admin
+  if (document.getElementById('btn-acessos-modulo')) return;
+
+  const right = document.querySelector('.nav-right');
+  if (!right) return;
+  const btn = document.createElement('button');
+  btn.id = 'btn-acessos-modulo';
+  btn.className = 'sync-fab-small';
+  btn.title = 'Gerenciar acessos do módulo';
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M22 11h-6"/><path d="M19 8v6"/></svg> Acessos`;
+  btn.onclick = () => abrirModalAcessos(modulo);
+  right.insertBefore(btn, right.firstChild);
+}
+
+function abrirModalAcessos(modulo) {
+  const eu = _navResolveUser();
+  if (!eu || !isAdminDoModulo(eu, modulo)) return;
+  _acModulo = modulo;
+
+  const ov = document.createElement('div');
+  ov.className = 'pm-ac-ov';
+  ov.id = 'pm-ac-ov';
+  ov.innerHTML = `
+    <div class="pm-ac-box">
+      <div class="pm-ac-head">
+        <div class="pm-ac-title">Acessos · ${nomeModulo(modulo)}</div>
+        <button class="pm-ac-x" onclick="fecharModalAcessos()">&times;</button>
+      </div>
+      <div class="pm-ac-body" id="pm-ac-body"></div>
+    </div>`;
+  ov.addEventListener('mousedown', e => { if (e.target === ov) fecharModalAcessos(); });
+  document.body.appendChild(ov);
+  _pmAcessosCSS();
+  requestAnimationFrame(() => ov.classList.add('show'));
+  renderModalAcessos();
+}
+let _acModulo = null;
+
+function fecharModalAcessos() {
+  const ov = document.getElementById('pm-ac-ov');
+  if (!ov) return;
+  ov.classList.remove('show');
+  setTimeout(() => ov.remove(), 160);
+  _acModulo = null;
+}
+
+function renderModalAcessos() {
+  const body = document.getElementById('pm-ac-body');
+  const modulo = _acModulo;
+  if (!body || !modulo) return;
+  const eu = _navResolveUser();
+  const souSA = !!eu?.isSuperAdmin;
+  const abas = ABAS_MODULO[modulo];
+
+  // Só usuários que já possuem o módulo (o Super Admin concede isso em Configurações).
+  const lista = (typeof users !== 'undefined' ? users : []).filter(u => temModulo(u, modulo));
+  if (!lista.length) {
+    body.innerHTML = `<div class="pm-ac-vazio">Nenhum usuário com este módulo.</div>`;
+    return;
+  }
+
+  body.innerHTML = lista.map(u => {
+    const isSA = !!u.isSuperAdmin;
+    const isSelf = u.id === eu?.id;
+    const trava = isSA || isSelf;               // SA tem tudo; ninguém edita a si mesmo
+    const acessos = u.acessos || [];
+    const ehAdmin = _ehAdminModulo(u, modulo);
+
+    const chips = abas.map(a => {
+      const on = isSA || acessos.includes(a.key);
+      return `<label class="pm-ac-chip ${on ? 'on' : ''} ${trava ? 'lock' : ''}">
+        <input type="checkbox" ${on ? 'checked' : ''} ${trava ? 'disabled' : ''}
+          onchange="toggleAbaUsuario('${u.id}','${a.key}',this.checked)">
+        <span>${a.label}</span>
+      </label>`;
+    }).join('');
+
+    // Cargo de admin: só o Super Admin concede.
+    const admChip = `<label class="pm-ac-chip adm ${(isSA || ehAdmin) ? 'on' : ''} ${(!souSA || trava) ? 'lock' : ''}"
+        title="${souSA ? '' : 'Somente o Super Admin define admins'}">
+        <input type="checkbox" ${(isSA || ehAdmin) ? 'checked' : ''} ${(!souSA || trava) ? 'disabled' : ''}
+          onchange="toggleAdminModulo('${u.id}',this.checked)">
+        <span>Admin</span>
+      </label>`;
+
+    const tag = isSA ? 'Super Admin' : ehAdmin ? 'Admin' : (u.setor || '');
+    return `<div class="pm-ac-row">
+      <div class="pm-ac-user">
+        <div class="pm-ac-nome">${capitalizeName(u.username)}</div>
+        ${tag ? `<div class="pm-ac-tag">${tag}</div>` : ''}
+      </div>
+      <div class="pm-ac-chips">${chips}${admChip}</div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleAbaUsuario(userId, chave, ativo) {
+  const eu = _navResolveUser();
+  if (!eu || !isAdminDoModulo(eu, _acModulo)) return;
+  const u = users.find(x => x.id === userId);
+  if (!u || u.isSuperAdmin || u.id === eu.id) return;
+
+  let acessos = [...(u.acessos || [])];
+  if (ativo && !acessos.includes(chave)) acessos.push(chave);
+  if (!ativo) acessos = acessos.filter(a => a !== chave);
+
+  const idx = users.findIndex(x => x.id === userId);
+  users[idx] = { ...u, acessos };
+  try {
+    await db.collection('users').doc(userId).update({ acessos });
+    showNotification('Acesso atualizado. ✅', 'success');
+  } catch (e) {
+    console.error('[toggleAbaUsuario]', e);
+    showNotification('Erro ao salvar.', 'error');
+  }
+  renderModalAcessos();
+}
+
+async function toggleAdminModulo(userId, ativo) {
+  const eu = _navResolveUser();
+  if (!eu?.isSuperAdmin) return;                 // só Super Admin nomeia admin
+  const u = users.find(x => x.id === userId);
+  if (!u || u.isSuperAdmin || u.id === eu.id) return;
+
+  const def = ADMIN_MODULO[_acModulo];
+  const patch = {};
+  if (def.tipo === 'campo') {
+    patch[def.chave] = ativo;
+  } else {
+    let acessos = [...(u.acessos || [])];
+    if (ativo && !acessos.includes(def.chave)) acessos.push(def.chave);
+    if (!ativo) acessos = acessos.filter(a => a !== def.chave);
+    patch.acessos = acessos;
+    patch.isAdminComercial = ativo;             // mantém o campo legado coerente
+  }
+
+  const idx = users.findIndex(x => x.id === userId);
+  users[idx] = { ...u, ...patch };
+  try {
+    await db.collection('users').doc(userId).update(patch);
+    showNotification(`Admin ${ativo ? 'concedido' : 'removido'}. ✅`, 'success');
+  } catch (e) {
+    console.error('[toggleAdminModulo]', e);
+    showNotification('Erro ao salvar.', 'error');
+  }
+  renderModalAcessos();
+}
+
+function _pmAcessosCSS() {
+  if (document.getElementById('pm-ac-style')) return;
+  const st = document.createElement('style');
+  st.id = 'pm-ac-style';
+  st.textContent = `
+.pm-ac-ov{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;transition:opacity .16s}
+.pm-ac-ov.show{opacity:1}
+.pm-ac-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(680px,96vw);max-height:86vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.3);transform:translateY(8px);transition:transform .16s}
+.pm-ac-ov.show .pm-ac-box{transform:none}
+.pm-ac-head{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.3rem .8rem;border-bottom:1px solid var(--border2)}
+.pm-ac-title{font-family:var(--font-display);font-size:.95rem;font-weight:800;color:var(--text)}
+.pm-ac-x{border:none;background:transparent;color:var(--muted);font-size:1.5rem;line-height:1;cursor:pointer}
+.pm-ac-x:hover{color:var(--accent)}
+.pm-ac-body{padding:.6rem 1.3rem 1.2rem;overflow-y:auto}
+.pm-ac-vazio{padding:2rem;text-align:center;color:var(--muted);font-size:.85rem}
+.pm-ac-row{display:flex;align-items:center;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--border2)}
+.pm-ac-row:last-child{border-bottom:none}
+.pm-ac-user{flex:0 0 150px;min-width:0}
+.pm-ac-nome{font-family:var(--font-display);font-weight:700;font-size:.85rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-ac-tag{font-family:var(--font-mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.pm-ac-chips{display:flex;flex-wrap:wrap;gap:.35rem;flex:1}
+.pm-ac-chip{display:inline-flex;align-items:center;cursor:pointer;user-select:none}
+.pm-ac-chip input{position:absolute;opacity:0;width:0;height:0}
+.pm-ac-chip span{font-family:var(--font-display);font-size:.72rem;font-weight:600;padding:.3rem .6rem;border-radius:999px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);transition:all .13s}
+.pm-ac-chip:hover span{border-color:var(--accent)}
+.pm-ac-chip.on span{background:var(--accent);border-color:var(--accent);color:#fff}
+.pm-ac-chip.adm.on span{background:#f59e0b;border-color:#f59e0b}
+.pm-ac-chip.lock{cursor:not-allowed;opacity:.55}
+.pm-ac-chip.lock:hover span{border-color:var(--border2)}
+`;
+  document.head.appendChild(st);
+}

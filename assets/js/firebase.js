@@ -39,19 +39,66 @@ const auth = firebase.auth();
 // Persistência offline com sincronização entre abas
 db.enablePersistence({ synchronizeTabs: true }).catch(() => { });
 
-// Monitor de conexão
-db.collection('_ping').doc('status')
-  .onSnapshot(() => updateFirebaseStatus(true), () => updateFirebaseStatus(false));
+/* ── Monitor de conexão do Firebase ─────────────────────────────────────────
+ * O indicador antigo procurava um elemento #sync-icon-nav que não existe em
+ * nenhum HTML, então saía cedo e NUNCA sinalizava. Reescrito:
+ *   - O botão é montado/compactado por JS (ícone + pontinho), sem tocar nos HTMLs.
+ *   - O sinal vem dos metadados do Firestore (snap.metadata.fromCache), que é
+ *     confiável e não depende de uma coleção `_ping` com regra própria.
+ * ------------------------------------------------------------------------- */
+let _fbOnline = null;
 
 function updateFirebaseStatus(online) {
+  _fbOnline = online;
   const btn = document.getElementById('sync-fab-nav');
-  const icon = document.getElementById('sync-icon-nav');
-  if (!btn || !icon) return;
-  icon.innerHTML = online ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" x2="12.01" y1="20" y2="20"/></svg>` : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7.072 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19.05 12.859a10 10 0 0 0-2.007-1.523"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/><path d="M1.42 9a15.91 15.91 0 0 1 5.7-4.5"/><path d="m2 2 20 20"/></svg>`;
+  if (!btn) return;
+  const dot = btn.querySelector('.fb-dot') || _montarFabFirebase(btn);
+  if (!dot) return;
+  dot.style.background = online ? '#22c55e' : '#ef4444';
+  dot.style.boxShadow = `0 0 0 3px ${online ? 'rgba(34,197,94,.18)' : 'rgba(239,68,68,.18)'}`;
   btn.title = online
-    ? 'Firebase: Conectado — dados em tempo real'
-    : 'Firebase: Sem conexão — trabalhando offline';
+    ? 'Firebase: conectado'
+    : 'Firebase: sem conexão — trabalhando offline';
 }
+
+// Compacta o botão: mantém o ícone, remove o texto "Firebase", adiciona o pontinho.
+function _montarFabFirebase(btn) {
+  if (!btn) return null;
+  // remove os nós de texto soltos (o rótulo "Firebase")
+  [...btn.childNodes].forEach(n => {
+    if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) n.remove();
+  });
+  btn.classList.add('fb-fab-compacto');
+  const dot = document.createElement('span');
+  dot.className = 'fb-dot';
+  dot.style.cssText = 'width:7px;height:7px;border-radius:50%;background:#9ca3af;flex-shrink:0;transition:background .25s,box-shadow .25s;';
+  btn.appendChild(dot);
+
+  if (!document.getElementById('fb-fab-style')) {
+    const st = document.createElement('style');
+    st.id = 'fb-fab-style';
+    st.textContent = '.fb-fab-compacto{gap:7px;padding-left:.55rem;padding-right:.55rem;cursor:default;}';
+    document.head.appendChild(st);
+  }
+  return dot;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('sync-fab-nav');
+  if (btn) _montarFabFirebase(btn);
+  if (_fbOnline !== null) updateFirebaseStatus(_fbOnline);
+});
+
+// Sinal de conexão: metadados do Firestore (fromCache = servindo do cache = offline)
+db.collection('users').limit(1).onSnapshot(
+  { includeMetadataChanges: true },
+  snap => updateFirebaseStatus(!snap.metadata.fromCache),
+  err => { console.warn('[Firebase] listener de status:', err.code || err); updateFirebaseStatus(false); }
+);
+
+// Reforço imediato pelos eventos do navegador
+window.addEventListener('online', () => updateFirebaseStatus(true));
+window.addEventListener('offline', () => updateFirebaseStatus(false));
 
 // Hash de senha com SHA-256
 async function hashPassword(password) {

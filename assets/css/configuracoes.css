@@ -554,13 +554,22 @@ body.dark-mode .config-user-badge.admin {
 
 /* ── ABA ACESSOS ── */
 .config-access-table {
-  width: 100%;
+  /* Largura sob medida: ocupa só o necessário e cresce sozinha quando
+     novos módulos pai entrarem (cada coluna tem largura fixa). */
+  width: auto;
+  max-width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 14px;
   overflow: hidden;
+}
+
+/* Coluna de módulo: largura fixa — a tabela expande a cada módulo novo */
+.config-access-table th:not(:first-child),
+.config-access-table td:not(:first-child) {
+  width: 130px;
 }
 
 .config-access-table th {

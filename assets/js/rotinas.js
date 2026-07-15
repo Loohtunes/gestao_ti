@@ -527,7 +527,7 @@ async function addImpressora() {
 }
 
 async function removeImpressora(id) {
-  if (!confirm('Remover esta impressora?')) return;
+  if (!await showConfirm('Remover impressora', 'Remover esta impressora?', { okText: 'Remover', danger: true })) return;
   _impressoras = _impressoras.filter(i => i.id !== id);
   await db.collection('rotinas_config').doc('impressoras').set({ lista: _impressoras });
   const totalPages = Math.ceil(_impressoras.length / IMP_PER_PAGE);
@@ -775,7 +775,7 @@ async function addDvr() {
 }
 
 async function removeDvr(id) {
-  if (!confirm('Remover este DVR e todas as suas câmeras?')) return;
+  if (!await showConfirm('Remover DVR', 'Remover este DVR e todas as suas câmeras?', { okText: 'Remover', danger: true })) return;
   _dvrs = _dvrs.filter(d => d.id !== id);
   _cameras = _cameras.filter(c => c.dvrId !== id);
   await Promise.all([
@@ -804,7 +804,7 @@ async function addCamera() {
 }
 
 async function removeCamera(id) {
-  if (!confirm('Remover esta câmera?')) return;
+  if (!await showConfirm('Remover câmera', 'Remover esta câmera?', { okText: 'Remover', danger: true })) return;
   _cameras = _cameras.filter(c => c.id !== id);
   await db.collection('rotinas_config').doc('cameras').set({ lista: _cameras });
   renderCFTVModalCameras();
@@ -1282,7 +1282,7 @@ function setHistFiltroModulo(v) { _histFiltroModulo = v; loadHistorico(); }
 function setHistFiltroMes(v) { _histFiltroMes = v; loadHistorico(); }
 
 async function deleteRotinaRecord(id, col) {
-  if (!confirm('Excluir este registro?')) return;
+  if (!await showConfirm('Excluir registro', 'Excluir este registro?', { okText: 'Excluir', danger: true })) return;
   const m = { servidor: 'rotinas_servidor', impressoras: 'rotinas_impressoras', cftv: 'rotinas_cftv' };
   try { await db.collection(m[col]).doc(id).delete(); showRotinasToast('Excluído.', 'success'); loadHistorico(); }
   catch (e) { showRotinasToast('Erro ao excluir.', 'error'); }

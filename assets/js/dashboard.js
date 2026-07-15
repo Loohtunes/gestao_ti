@@ -2,41 +2,11 @@
  * dashboard.js — lógica do Dashboard (extraído do inline de dashboard.html)
  * Passo 1 do app-shell: vira arquivo para poder ser carregado pela casca.
  * Comportamento idêntico ao inline anterior.
+ *
+ * NAV: a navegação (NAV_MODULOS, ícones, filtro de acesso e montagem das abas)
+ * vive em ui.js e é a FONTE ÚNICA. Para adicionar um submódulo, edite apenas
+ * NAV_MODULOS em ui.js — não recrie listas de abas aqui.
  * ========================================================================== */
-// ── Ícones das abas de submódulo (Lucide inline) ──
-const _TAB_IC = {
-    painel: '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
-    ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
-    package: '<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/>',
-    inventario: '<path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/>',
-    rotinas: '<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/>',
-    briefcase: '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
-};
-const tabIco = (n) => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${_TAB_IC[n] || ''}</svg>`;
-
-const MODULOS = {
-    geral: {
-        nome: 'Menu Principal',
-        tabs: [{ label: 'Painel', href: 'dashboard.html?modulo=geral', ic: 'painel', painel: true }]
-    },
-    ti: {
-        nome: 'T.I',
-        tabs: [
-            { label: 'Painel', href: 'dashboard.html?modulo=ti', ic: 'painel', painel: true },
-            { label: 'Chamados', href: 'index.html', ic: 'ticket', mod: 'chamados' },
-            { label: 'Materiais', href: 'materiais.html', ic: 'package', mod: 'materiais' },
-            { label: 'Inventário', href: 'inventario.html', ic: 'inventario', mod: 'inventario' },
-            { label: 'Rotinas', href: 'rotinas.html', ic: 'rotinas', mod: 'rotinas' },
-        ]
-    },
-    comercial: {
-        nome: 'Comercial',
-        tabs: [
-            { label: 'Painel', href: 'dashboard.html?modulo=comercial', ic: 'painel', painel: true },
-            { label: 'Controle de Obras', href: 'comercial.html', ic: 'briefcase', mod: 'comercial' },
-        ]
-    },
-};
 
 
 function dashLogout() {
@@ -44,21 +14,6 @@ function dashLogout() {
     else { sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
 }
 
-function acessosDe(user) {
-    return user.isSuperAdmin
-        ? ['chamados', 'materiais', 'inventario', 'rotinas', 'comercial']
-        : (user.acessos || ['chamados']);
-}
-
-function montarTabs(user, escopo) {
-    const acessos = acessosDe(user);
-    const modulo = MODULOS[escopo];
-    const tabs = modulo.tabs.filter(t =>
-        t.painel || !t.mod || t.mod === 'chamados' || user.isSuperAdmin || acessos.includes(t.mod));
-    document.getElementById('submod-tabs').innerHTML = tabs.map(t =>
-        `<a class="submod-tab${t.painel ? ' ativo' : ''}" href="${t.href}">${tabIco(t.ic)}<span>${t.label}</span></a>`
-    ).join('');
-}
 
 // ===== Painel Comercial: dados, métricas e alertas =====
 const ETAPA_LABELS = { proposta: 'Proposta', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos', medicao: 'Medição' };
@@ -251,7 +206,7 @@ function _bindPostit(el) {
     const delBtn = el.querySelector('[data-act="del"]');
     if (delBtn) delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm('Excluir este aviso?')) return;
+        if (!await showConfirm('Excluir aviso', 'Excluir este aviso?', { okText: 'Excluir', danger: true })) return;
         try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
     });
 }
@@ -604,16 +559,16 @@ async function _initDashboardModulo() {
     // Escopo do painel
     const params = new URLSearchParams(window.location.search);
     let escopo = params.get('modulo') || 'geral';
-    if (!MODULOS[escopo]) escopo = 'geral';
+    if (!NAV_MODULOS[escopo]) escopo = 'geral';
     if (escopo === 'comercial' && !canComercial) escopo = 'geral';
 
     // Marcar módulo ativo na sidebar
     const ativoEl = document.getElementById('dash-mod-' + escopo);
     if (ativoEl) ativoEl.classList.add('active');
 
-    // Cabeçalho + abas + widgets
-    const modulo = MODULOS[escopo];
-    montarTabs(user, escopo);
+    // Cabeçalho + abas + widgets (nav unificada em ui.js)
+    montarSubmodTabs('submod-tabs', escopo, 'painel', user);
+    if (typeof montarBotaoAcessos === 'function') montarBotaoAcessos(user, escopo);
     if (escopo === 'comercial') {
         document.getElementById('dash-content').style.display = '';
         renderPainelComercial();

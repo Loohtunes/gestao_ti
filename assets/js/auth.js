@@ -179,13 +179,13 @@ async function saveUser() {
     ? (document.getElementById('user-admin-input').checked || document.getElementById('user-role-group').style.display === 'none')
     : (editingUserId ? (users.find(u => u.id === editingUserId)?.isAdmin || false) : false);
 
-  if (!name) { alert('Preencha o nome de usuário'); return; }
-  if (!editingUserId && !passRaw) { alert('Preencha a senha para criar o usuário'); return; }
-  if (hasAnydesk && !anydesk) { alert('Digite o ID do AnyDesk ou selecione "Não tenho AnyDesk"'); return; }
+  if (!name) { showNotification('Preencha o nome de usuário', 'error'); return; }
+  if (!editingUserId && !passRaw) { showNotification('Preencha a senha para criar o usuário', 'error'); return; }
+  if (hasAnydesk && !anydesk) { showNotification('Digite o ID do AnyDesk ou selecione "Não tenho AnyDesk"', 'error'); return; }
 
   if (editingUserId) {
     const duplicate = users.find(u => u.username === name && u.id !== editingUserId);
-    if (duplicate) { alert('Esse nome de usuário já existe!'); return; }
+    if (duplicate) { showNotification('Esse nome de usuário já existe!', 'error'); return; }
     const idx = users.findIndex(u => u.id === editingUserId);
     if (idx !== -1) {
       const wasSuperAdmin = users[idx].isSuperAdmin;
@@ -201,7 +201,7 @@ async function saveUser() {
     openUserManagerModal();
     showNotification('Usuário atualizado com sucesso.', 'success');
   } else {
-    if (users.find(u => u.username === name)) { alert('Esse nome de usuário já existe!'); return; }
+    if (users.find(u => u.username === name)) { showNotification('Esse nome de usuário já existe!', 'error'); return; }
     const isFirst = users.length === 0;
     const hashedPass = await hashPassword(passRaw);
     users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin: isFirst ? true : isAdmin, isSuperAdmin: isFirst, email, whatsapp, anydesk, setor, isVip: isFirst ? false : isVip });
@@ -216,7 +216,7 @@ async function removeUser(userId) {
   const u = users.find(u => u.id === userId);
   if (!u) return;
   if (u.isSuperAdmin) { showNotification('O Administrador Geral não pode ser removido.', 'error'); return; }
-  if (!confirm('Deletar este usuário?')) return;
+  if (!await showConfirm('Deletar usuário', 'Deletar este usuário? Esta ação não pode ser desfeita.', { okText: 'Deletar', danger: true })) return;
   users = users.filter(u => u.id !== userId);
   await db.collection('users').doc(userId).delete();
   renderUserList();
@@ -262,10 +262,10 @@ async function performLogin() {
   await loadUsers();
   const name = document.getElementById('attendant-name').value.trim().toLowerCase();
   const pass = document.getElementById('attendant-pass').value.trim();
-  if (!name || !pass) { alert('Preencha o nome de usuário e a senha.'); return; }
+  if (!name || !pass) { showNotification('Preencha o nome de usuário e a senha.', 'error'); return; }
   const hashedPass = await hashPassword(pass);
   const user = users.find(u => u.username.toLowerCase() === name && u.password === hashedPass);
-  if (!user) { alert('Usuário ou senha incorretos.'); return; }
+  if (!user) { showNotification('Usuário ou senha incorretos.', 'error'); return; }
   currentUser = user;
   sessionStorage.setItem('chamados-current-user-id', user.id);
   document.getElementById('attendant-pass').value = '';
@@ -347,8 +347,8 @@ function performAutoLogout() {
   });
 }
 
-function performLogout() {
-  if (!confirm('Deseja realmente sair do sistema?')) return;
+async function performLogout() {
+  if (!await showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' })) return;
   closeTicketDetail();
   if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
   if (typeof stopSessionTimer === 'function') stopSessionTimer();

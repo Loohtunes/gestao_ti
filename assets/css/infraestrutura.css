@@ -1,0 +1,596 @@
+/* ===== Infraestrutura (T.I) — Premovale ===== */
+
+/* Toolbar */
+.infra-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+}
+
+.infra-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    color: var(--muted);
+}
+
+.infra-search svg {
+    flex-shrink: 0;
+}
+
+.infra-search input {
+    min-width: 0;
+}
+
+.infra-search input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.infra-filtro-sel {
+    flex: 0 1 180px;
+    min-width: 120px;
+}
+
+.infra-toolbar-actions {
+    display: flex;
+    gap: 0.45rem;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+/* Botões da toolbar: compactos, nunca quebram linha */
+.infra-toolbar-actions .btn-primary,
+.infra-toolbar-actions .btn-secondary {
+    padding: 0.55rem 0.85rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Inputs genéricos do módulo */
+.infra-inp {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 9px;
+    padding: 0.55rem 0.7rem;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.infra-inp:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+textarea.infra-inp {
+    resize: vertical;
+    min-height: 68px;
+}
+
+.infra-lbl {
+    display: block;
+    font-size: 0.68rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0.85rem 0 0.35rem;
+}
+
+.infra-lbl:first-child {
+    margin-top: 0;
+}
+
+.infra-lbl-opt {
+    text-transform: none;
+    letter-spacing: 0;
+    opacity: 0.75;
+    font-weight: 400;
+}
+
+/* Grid de equipamentos */
+.infra-equip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 0.85rem;
+}
+
+.infra-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.infra-card:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border2));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
+}
+
+.infra-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.infra-card-ico {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--surface2);
+    color: var(--accent);
+}
+
+.infra-card-head {
+    flex: 1;
+    min-width: 0;
+}
+
+.infra-card-id {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.infra-card-tipo {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.infra-card-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.infra-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.infra-card-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.infra-card-line svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.infra-card-line.obs {
+    font-style: italic;
+    opacity: 0.9;
+}
+
+.infra-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.infra-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--st, var(--muted));
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--st, var(--muted)) 12%, transparent);
+}
+
+.infra-status-badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--st, var(--muted));
+}
+
+.infra-card-foto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.72rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-family: var(--font-mono);
+}
+
+.infra-card-foto:hover {
+    text-decoration: underline;
+}
+
+.infra-icon-btn {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.infra-icon-btn:hover {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border2));
+}
+
+.infra-icon-btn.danger:hover {
+    color: #ef4444;
+    border-color: #ef444455;
+}
+
+/* Empty state */
+.infra-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+}
+
+.infra-empty-ico {
+    display: inline-flex;
+    color: var(--muted);
+    opacity: 0.55;
+    margin-bottom: 0.6rem;
+}
+
+.infra-empty-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+}
+
+.infra-empty-msg {
+    font-size: 0.85rem;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* Placeholder da aba Mapa */
+.infra-soon {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--muted);
+}
+
+.infra-soon-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    background: var(--surface2);
+    color: var(--accent);
+    opacity: 0.85;
+    margin-bottom: 0.9rem;
+}
+
+.infra-soon-title {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+}
+
+.infra-soon-msg {
+    font-size: 0.87rem;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* Overlays / modais do módulo */
+.infra-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.42);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    transition: opacity 0.18s;
+}
+
+.infra-overlay.show {
+    opacity: 1;
+}
+
+.infra-modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    width: min(460px, 94vw);
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.28);
+    transform: translateY(8px) scale(0.99);
+    transition: transform 0.18s;
+}
+
+.infra-overlay.show .infra-modal {
+    transform: none;
+}
+
+.infra-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem 0.6rem;
+}
+
+.infra-modal-title {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--text);
+}
+
+.infra-x {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.2rem;
+}
+
+.infra-x:hover {
+    color: var(--accent);
+}
+
+.infra-modal-body {
+    padding: 0.4rem 1.25rem 0.6rem;
+    overflow-y: auto;
+}
+
+.infra-modal-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.85rem 1.25rem 1.15rem;
+}
+
+.infra-confirm-msg {
+    font-size: 0.87rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin: 0.2rem 0 0.4rem;
+}
+
+/* Botão de perigo (não existia global) */
+.btn-danger {
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s, transform 0.15s;
+    white-space: nowrap;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.btn-danger:active {
+    transform: translateY(0);
+}
+
+/* Gerenciar tipos */
+.infra-tipos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.infra-tipos-empty {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 1.2rem 0.5rem;
+}
+
+.infra-tipo-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background: var(--surface2);
+}
+
+.infra-tipo-ico {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--accent);
+}
+
+.infra-tipo-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 0.87rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.infra-tipo-uso {
+    font-size: 0.66rem;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    background: var(--surface3);
+    padding: 0.1rem 0.4rem;
+    border-radius: 6px;
+}
+
+/* Seletor de ícone (botão + grade) */
+.infra-icone-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: border-color 0.15s;
+}
+
+.infra-icone-btn:hover {
+    border-color: var(--accent);
+}
+
+.infra-icone-btn span:first-child {
+    color: var(--accent);
+    display: inline-flex;
+}
+
+.infra-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.infra-icon-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.13s;
+}
+
+.infra-icon-cell:hover {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border2));
+    transform: translateY(-1px);
+}
+
+.infra-icon-cell.sel {
+    color: #fff;
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.infra-icon-hint {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.7rem;
+    line-height: 1.4;
+}
+
+/* Telas estreitas: aí sim a toolbar quebra, de forma organizada */
+@media (max-width: 900px) {
+    .infra-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .infra-search {
+        max-width: none;
+        flex: 1 1 100%;
+    }
+
+    .infra-filtro-sel {
+        flex: 1 1 160px;
+    }
+
+    .infra-toolbar-actions {
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 560px) {
+    .infra-toolbar-actions {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .infra-toolbar-actions .btn-primary,
+    .infra-toolbar-actions .btn-secondary {
+        flex: 1;
+    }
+}

@@ -117,7 +117,7 @@ async function saveTicket() {
   const prio = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
   const rawType = document.getElementById('ticket-type-input')?.value || 'error';
   const ticketType = rawType === 'test' ? 'error' : rawType;
-  if (!title) { alert('Por favor, adicione um título ao chamado'); return; }
+  if (!title) { showNotification('Por favor, adicione um título ao chamado', 'error'); return; }
 
   // Solicitante: admin pode abrir em nome de outro usuário
   const onBehalfVal = document.getElementById('ticket-onbehalf-input')?.value?.trim();

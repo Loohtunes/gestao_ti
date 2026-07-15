@@ -392,7 +392,7 @@ async function saveInsumo() {
 async function deleteInsumo(id) {
   const ins = _insumos.find(i => i.id === id);
   if (!ins) return;
-  if (!confirm(`Excluir o insumo "${ins.nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  if (!await showConfirm('Excluir insumo', `Excluir o insumo "${ins.nome}"?\nEsta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
   try {
     await db.collection('insumos').doc(id).delete();
     showNotification('Insumo excluído.', 'success');
@@ -983,7 +983,7 @@ async function saveAtivo() {
 async function deleteAtivo(id) {
   const ativo = _ativos.find(a => a.id === id);
   if (!ativo) return;
-  if (!confirm(`Excluir o ativo "${ativo.nomeAmigavel || ativo.nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  if (!await showConfirm('Excluir ativo', `Excluir o ativo "${ativo.nomeAmigavel || ativo.nome}"?\nEsta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
   try {
     await db.collection('ativos').doc(id).delete();
     showNotification('Ativo excluído.', 'success');

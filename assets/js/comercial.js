@@ -466,7 +466,7 @@ function _obraSemaforo(o) {
   return 'em_dia';
 }
 function _obraTemVencendo(o, dias) {
-  if (!o.etapas || o.concluida) return false;
+  if (!o.etapas || _obraFinalizada(o)) return false;
   const hoje = new Date().toISOString().slice(0, 10);
   const lim = new Date(); lim.setDate(lim.getDate() + dias); const limStr = lim.toISOString().slice(0, 10);
   const chk = (ref, st) => ref && st !== 'done' && st !== 'pulada' && st !== 'cancelado' && ref >= hoje && ref <= limStr;
@@ -502,7 +502,7 @@ function _obraEntregaMatch(o, buckets) {
 function _etapaStatusMatch(o, etapaId, val) {
   const e = o.etapas && o.etapas[etapaId]; if (!e) return false;
   if (val === 'concluida') return o.concluida || e.status === 'done';
-  if (o.concluida) return false;
+  if (_obraFinalizada(o)) return false;
   if (val === 'atrasada') return hasEtapaAtrasadaPorId(o, etapaId);
   if (val === 'perto_vencer') {
     const hoje = new Date().toISOString().slice(0, 10);
@@ -584,6 +584,8 @@ function _migrateObraToV11(obra) {
   if (obra.arquivada === undefined) out.arquivada = false;
   if (obra.caixaId === undefined) out.caixaId = null;
   if (obra.excluida === undefined) out.excluida = false;
+  if (obra.emEspera === undefined) out.emEspera = false;
+  if (obra.cancelada === undefined) out.cancelada = false;
   return out;
 }
 async function migrateObras() {
@@ -885,7 +887,7 @@ function hasEtapaAtrasadaPorId(obra, etapaId) {
 }
 
 function hasSubEtapaAtrasada(obra) {
-  if (!obra.etapas || obra.concluida) return false;
+  if (!obra.etapas || _obraFinalizada(obra)) return false;
   const hoje = new Date().toISOString().slice(0, 10);
   for (const id of ETAPAS_ORDER) {
     const e = obra.etapas[id];
@@ -912,8 +914,13 @@ function hasSubEtapaAtrasada(obra) {
 // Stripe do card — fonte única: semáforo vermelho > amarelo > azul > verde.
 // Percorre TODAS as etapas ativas (listas, normais e Docs independentes),
 // descartando sub-etapas/itens pulados e concluídos.
+// Obra em estado terminal/parado: concluída, em espera ou cancelada.
+function _obraFinalizada(o) { return !!(o && (o.concluida || o.emEspera || o.cancelada)); }
+
 function getCorStripe(obra) {
+  if (obra.cancelada) return '#7f1d1d'; // vinho escuro
   if (obra.concluida) return '#22c55e'; // verde
+  if (obra.emEspera) return '#f97316';  // laranja
   const hoje = new Date().toISOString().slice(0, 10);
   const d7 = new Date(); d7.setDate(d7.getDate() + 7);
   const d7s = d7.toISOString().slice(0, 10);
@@ -946,6 +953,29 @@ function getCorStripe(obra) {
   return '#3b82f6';                  // azul padrão
 }
 
+// Cor do stripe para o status de UMA etapa (usado quando há filtro de etapa ativo).
+// Mesmas cores do getCorStripe: verde concluída, vermelho atraso, âmbar vencendo,
+// azul ativa, cinza pendente/não iniciada.
+function _corEtapaStripe(obra, etapaId) {
+  const e = obra.etapas && obra.etapas[etapaId];
+  if (!e) return '#d1d5db';
+  if (obra.concluida || e.status === 'done') return '#22c55e';
+  if (hasEtapaAtrasadaPorId(obra, etapaId)) return '#ef4444';
+  const hoje = new Date().toISOString().slice(0, 10);
+  const d7 = new Date(); d7.setDate(d7.getDate() + 7);
+  const d7s = d7.toISOString().slice(0, 10);
+  const chk = (ref, st) => ref && st !== 'done' && st !== 'pulada' && st !== 'cancelado' && ref >= hoje && ref <= d7s;
+  const cfg = ETAPAS_CONFIG[etapaId];
+  let vencendo = false;
+  if (e.ativa) {
+    if (cfg && cfg.isLista) vencendo = (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => chk(_refAtraso(x, it), x.status)));
+    else vencendo = Object.values(e.subEtapas || {}).some(x => !x.isCocLista && chk(x.dataLimite || x.dataPrevista, x.status));
+  }
+  if (vencendo) return '#f59e0b';
+  if (e.ativa || e.status === 'active') return '#3b82f6';
+  return '#d1d5db';
+}
+
 // ── Renderizar cards ──────────────────────────────────────────────────────────
 function renderObras() {
   const el = document.getElementById('obras-grid');
@@ -958,7 +988,7 @@ function renderObras() {
     if (o.excluida) return _view === 'lixeira';
     if (o.arquivada) return _view === 'arquivo';
     if (_F.etapaStVal && (_view === 'ativas' || _view === 'concluidos')) return true; // filtro de status vence a divisão ativas/concluidos
-    if (o.concluida) return _view === 'concluidos';
+    if (_obraFinalizada(o)) return _view === 'concluidos';
     return _view === 'ativas';
   });
   // Ordenação
@@ -1000,7 +1030,9 @@ function renderObras() {
     const hoje2 = new Date().toISOString().slice(0, 10);
 
     // Stripe: semáforo — fonte única (getCorStripe)
-    const corBorda = getCorStripe(obra);
+    // Stripe: com filtro de etapa ativo, mostra a cor do status daquela etapa;
+    // sem filtro, mostra a saúde geral da obra.
+    const corBorda = _F.etapaStEtapa ? _corEtapaStripe(obra, _F.etapaStEtapa) : getCorStripe(obra);
 
     // Linhas de status por etapa
     const etapaLinhas = ETAPAS_ORDER.map(id => {
@@ -1224,11 +1256,6 @@ function renderObras() {
           </button>
         </div>
       </div>
-      <div class="card-etapas-grid">${etapaLinhas}</div>
-      <div class="obra-prazo ${prazoInfo.cls}">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        ${prazoInfo.texto}
-      </div>
       ${_view === 'concluidos' ? `<div style="display:flex;gap:0.4rem;margin-top:0.7rem;">
         <button class="btn-secondary" onclick="event.stopPropagation();reabrirObra('${obra.id}')" style="font-size:0.72rem;padding:0.3rem 0.7rem;display:inline-flex;align-items:center;gap:0.3rem;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>Reabrir</button>
         <button class="btn-primary" onclick="event.stopPropagation();_arquivarObra('${obra.id}')" style="font-size:0.72rem;padding:0.3rem 0.7rem;display:inline-flex;align-items:center;gap:0.3rem;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>Arquivar</button>
@@ -1359,10 +1386,17 @@ function renderObraModal(obra) {
   const prazoInfo = getPrazoInfo(obra.prazoEstimado);
   const canAdmin = podeEditarComercial();
   const canEditar = podeEditarComercial();
+  const _obsDock = document.getElementById('obs-dock'); if (_obsDock) _obsDock.style.display = 'none';
   document.getElementById('obra-modal-meta').innerHTML = `
-    <span>👤 ${obra.representante || '—'}</span>
-    <span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
-    <span class="${prazoInfo.cls}">⏱ ${prazoInfo.texto}</span>`;
+    <div class="obra-modal-meta-left">
+      <span>👤 ${obra.representante || '—'}</span>
+      <span>📅 Fechamento: ${obra.dataFechamento ? new Date(obra.dataFechamento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</span>
+      <span class="${prazoInfo.cls}">⏱ ${prazoInfo.texto}</span>
+    </div>
+    <button class="obra-obs-btn" onclick="openObsNavModal('${obra.id}')" title="Ver observações da obra">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.5 9h.01"/><path d="M14.5 9h.01"/></svg>
+      Observações
+    </button>`;
   const tl = document.getElementById('obra-timeline'); if (!tl) return;
   const hoje = new Date().toISOString().slice(0, 10);
   tl.innerHTML = ETAPAS_ORDER.map(etapaId => {
@@ -1575,13 +1609,55 @@ function _renderObraFooter(obra, canAdmin) {
     footer.innerHTML = `
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}${histBtn}</div>
       <div style="display:flex;gap:0.6rem;align-items:center;">
-        ${podeEditarComercial() ? `<button class="btn-primary" onclick="concluirObraManual('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Concluir obra</button>` : ''}
+        ${podeEditarComercial() ? `<button class="btn-primary" onclick="openFinalizarModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Finalizar</button>` : ''}
         <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>
       </div>`;
   }
 }
 
 
+
+// ── Finalizar obra: modal compacto com 3 estados
+let _finalizarOv = null;
+function openFinalizarModal(obraId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const ov = document.createElement('div');
+  ov.className = 'finalizar-ov';
+  ov.innerHTML =
+    '<div class="finalizar-box">'
+    + '<div class="finalizar-title">Finalizar obra</div>'
+    + '<div class="finalizar-sub">#' + (obra.numero || '') + ' — escolha o estado</div>'
+    + '<button class="finalizar-opt" onclick="_finalizarEscolha(\'' + obraId + '\',\'concluir\')"><span class="finalizar-dot" style="background:#22c55e"></span>Concluir Obra</button>'
+    + '<button class="finalizar-opt" onclick="_finalizarEscolha(\'' + obraId + '\',\'espera\')"><span class="finalizar-dot" style="background:#f97316"></span>Obra em espera</button>'
+    + '<button class="finalizar-opt" onclick="_finalizarEscolha(\'' + obraId + '\',\'cancelada\')"><span class="finalizar-dot" style="background:#7f1d1d"></span>Obra Cancelada</button>'
+    + '<button class="finalizar-cancel" onclick="_closeFinalizar()">Cancelar</button>'
+    + '</div>';
+  ov.addEventListener('mousedown', e => { if (e.target === ov) _closeFinalizar(); });
+  document.body.appendChild(ov);
+  _finalizarOv = ov;
+  requestAnimationFrame(() => ov.classList.add('show'));
+}
+function _closeFinalizar() { if (_finalizarOv) { _finalizarOv.remove(); _finalizarOv = null; } }
+
+async function _finalizarEscolha(obraId, tipo) {
+  _closeFinalizar();
+  if (tipo === 'concluir') { concluirObraManual(obraId); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const nome = tipo === 'espera' ? 'em espera' : 'cancelada';
+  const ok = await _showConfirm(tipo === 'espera' ? 'Obra em espera' : 'Obra cancelada',
+    `Marcar a obra "${obra.numero}" como ${nome}? Ela irá para "Finalizadas/Canceladas".`,
+    { okText: 'Confirmar' });
+  if (!ok) return;
+  const patch = tipo === 'espera'
+    ? { emEspera: true, cancelada: false, concluida: false }
+    : { cancelada: true, emEspera: false, concluida: false };
+  try {
+    await db.collection('obras').doc(obraId).update(patch);
+    showComercialToast(`Obra marcada como ${nome}. ✅`, 'success');
+    closeObraModal();
+  } catch (e) { console.error('[finalizarObra]', e); showComercialToast('Erro ao salvar. Tente novamente.', 'error'); }
+}
 
 // ── Concluir com data retroativa ─────────────────────────────────────────────
 let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null, _conclCocIdx = null;
@@ -3141,7 +3217,7 @@ async function reabrirObra(obraId) {
   const _ok = await _showConfirm('Reabrir obra', `Reabrir a obra "${obra.numero}"? Ela voltará para o campo de obras ativas.`, { okText: 'Reabrir' });
   if (!_ok) return;
   try {
-    await db.collection('obras').doc(obraId).update({ concluida: false, dataConclusao: null, concluidaManual: false, arquivada: false, caixaId: null });
+    await db.collection('obras').doc(obraId).update({ concluida: false, emEspera: false, cancelada: false, dataConclusao: null, concluidaManual: false, arquivada: false, caixaId: null });
     _audit(obraId, 'reabertura', 'Obra reaberta (progresso preservado)');
     showComercialToast('Obra reaberta! ✅', 'success');
   } catch (e) { console.error('[reabrir obra]', e); showComercialToast('Erro ao reabrir a obra.', 'error'); }
@@ -3397,7 +3473,7 @@ async function concluirObraManual(obraId) {
   if (!ok) return;
   const hoje = new Date().toISOString().slice(0, 10);
   try {
-    await db.collection('obras').doc(obraId).update({ concluida: true, dataConclusao: hoje, concluidaManual: true });
+    await db.collection('obras').doc(obraId).update({ concluida: true, emEspera: false, cancelada: false, dataConclusao: hoje, concluidaManual: true });
     await _desafixarObra(obraId);
     _audit(obraId, 'conclusao', 'Obra concluída manualmente');
     closeObraModal();
@@ -4207,20 +4283,200 @@ async function saveObs() {
   showComercialToast('Observação registrada! ✅', 'success');
   closeObsModal();
 }
+// ============================================================================
+// OBSERVAÇÕES — painel docado ao lado do card (etapa -> sub-etapa -> notas)
+// Reúne observações + revisões + prorrogações. O Histórico ficou só p/ auditoria.
+// ============================================================================
+let _obsNavObraId = null, _obsNavEtapa = null, _obsNavItem = null, _obsNavGrupo = null;
+function _escObs(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function _shortObs(s, n) { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '\u2026' : s; }
+
+// Cores de IDENTIDADE de cada etapa (as mesmas referenciadas no card da obra).
+const _ETAPA_COR = {
+  proposta: '#3b82f6',      // azul
+  contrato: '#8b5cf6',      // roxo
+  documentacoes: '#f97316', // laranja
+  aditivos: '#ec4899',      // rosa
+  medicao: 'var(--muted)'   // cinza
+};
+
+// Reúne notas (obs+rev+prorrog). Etapas lista (aditivos/medicao) agrupam por ITEM.
+function _coletarObservacoes(obra) {
+  const out = [];
+  const mkObs = o => ({ tipo: 'obs', texto: o.texto, por: o.por, data: o.data, hora: o.hora });
+  const mkRev = r => ({ tipo: 'rev', numero: r.numero, texto: r.motivo, por: r.por, data: r.data });
+  const mkProrrog = sd => {
+    const arr = (sd.prorrogacoes || []).map(pr => ({
+      tipo: 'prorroga', por: pr.por, data: (pr.em || '').slice(0, 10),
+      texto: (pr.motivo || 'Prazo ajustado') + ((pr.de || pr.para) ? ` (${pr.de || '\u2014'} \u2192 ${pr.para || '\u2014'})` : '')
+    }));
+    if (!(sd.prorrogacoes || []).length && (sd.prorrogacaoJustificativa || sd.prorrogadoEm)) {
+      arr.push({ tipo: 'prorroga', texto: sd.prorrogacaoJustificativa || 'Prazo prorrogado', por: sd.prorrogadoPor, data: sd.prorrogadoEm });
+    }
+    return arr;
+  };
+  const entradasDe = sd => {
+    if (!sd) return [];
+    let arr = [];
+    (sd.observacoes || []).forEach(o => arr.push(mkObs(o)));
+    (sd.revisoes || []).forEach(r => arr.push(mkRev(r)));
+    return arr.concat(mkProrrog(sd));
+  };
+
+  ETAPAS_ORDER.forEach(etapaId => {
+    const e = obra.etapas && obra.etapas[etapaId]; if (!e) return;
+    const cfg = ETAPAS_CONFIG[etapaId];
+    const grupos = [], itens = [];
+
+    let etapaArr = [];
+    (e.observacoes || []).forEach(o => etapaArr.push(mkObs(o)));
+    (e.revisoes || []).forEach(r => etapaArr.push(mkRev(r)));
+    if (etapaArr.length) grupos.push({ key: '_etapa', label: 'Geral da etapa', entradas: etapaArr });
+
+    if (!cfg.isLista) {
+      (cfg.subEtapas || []).forEach(sub => {
+        grupos.push({ key: 'sub:' + sub.id, label: sub.nome, entradas: entradasDe(e.subEtapas && e.subEtapas[sub.id]) });
+      });
+      (e.cocLista || []).forEach((coc, idx) => {
+        grupos.push({ key: 'coc:' + idx, label: 'COC \u00b7 ' + (coc.nome || ('#' + (idx + 1))), entradas: entradasDe(coc) });
+      });
+    } else {
+      (e.lista || []).forEach(item => {
+        const ig = (cfg.subEtapasTemplate || []).map(sub => ({
+          key: 'item:' + item.id + ':' + sub.id, label: sub.nome,
+          entradas: entradasDe(item.subEtapas && item.subEtapas[sub.id])
+        }));
+        itens.push({ itemId: item.id, itemLabel: item.titulo || 'Item', grupos: ig });
+      });
+    }
+    out.push({ etapaId, etapaNome: cfg.nome, isLista: !!cfg.isLista, grupos, itens });
+  });
+  return out;
+}
+
+function openObsNavModal(obraId) {
+  const dock = document.getElementById('obs-dock');
+  if (dock && dock.style.display === 'flex' && _obsNavObraId === obraId) { closeObsNavModal(); return; }
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  _obsNavObraId = obraId;
+  _obsNavEtapa = null; _obsNavItem = null; _obsNavGrupo = null;
+  _renderObsNav();
+  if (dock) dock.style.display = 'flex';
+}
+function closeObsNavModal() {
+  const dock = document.getElementById('obs-dock'); if (dock) dock.style.display = 'none';
+  _obsNavObraId = null; _obsNavEtapa = null; _obsNavItem = null; _obsNavGrupo = null;
+}
+function _selectObsEtapa(id) {
+  const abrir = _obsNavEtapa !== id;
+  _obsNavEtapa = abrir ? id : null; _obsNavItem = null; _obsNavGrupo = null; _renderObsNav();
+}
+function _selectObsItem(itemId) {
+  const abrir = _obsNavItem !== itemId;
+  _obsNavItem = abrir ? itemId : null; _obsNavGrupo = null; _renderObsNav();
+}
+function _selectObsGrupo(key) { _obsNavGrupo = key; _renderObsNav(); }
+
+function _totalEntradas(etapa) {
+  let t = etapa.grupos.reduce((a, g) => a + g.entradas.length, 0);
+  (etapa.itens || []).forEach(it => { t += it.grupos.reduce((a, g) => a + g.entradas.length, 0); });
+  return t;
+}
+function _acharGrupo(etapa, key) {
+  let g = etapa.grupos.find(x => x.key === key);
+  if (g) return g;
+  for (const it of (etapa.itens || [])) { g = it.grupos.find(x => x.key === key); if (g) return g; }
+  return null;
+}
+
+function _renderObsNav() {
+  const body = document.getElementById('obs-nav-body'); if (!body) return;
+  const obra = _obras.find(o => o.id === _obsNavObraId); if (!obra) return;
+  const dados = _coletarObservacoes(obra);
+  if (!dados.length) {
+    body.innerHTML = '<div class="obs-nav-vazio">Nenhuma nota registrada nesta obra ainda.</div>';
+    return;
+  }
+  const etapaSel = dados.find(d => d.etapaId === _obsNavEtapa) || null;
+  const grupoSel = etapaSel ? _acharGrupo(etapaSel, _obsNavGrupo) : null;
+  const _caret = '<svg class="obs-etapa-caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+  const btnSub = g => `<button class="obs-etapa-sub ${grupoSel && g.key === grupoSel.key ? 'ativo' : ''}" onclick="_selectObsGrupo('${_escObs(g.key)}')">`
+    + `<span>${_escObs(g.label)}</span>${g.entradas.length ? `<span class="obs-nav-badge">${g.entradas.length}</span>` : ''}</button>`;
+
+  const etapasCol = dados.map(d => {
+    const aberto = d.etapaId === _obsNavEtapa;
+    const total = _totalEntradas(d);
+    let corpo = '';
+    if (aberto) {
+      if (!d.isLista) {
+        corpo = d.grupos.map(btnSub).join('');
+      } else {
+        corpo = d.grupos.map(btnSub).join('');  // "Geral da etapa", se houver
+        corpo += d.itens.map(it => {
+          const itAberto = it.itemId === _obsNavItem;
+          const itTotal = it.grupos.reduce((a, g) => a + g.entradas.length, 0);
+          return `<div class="obs-item-block">`
+            + `<button class="obs-item-head ${itAberto ? 'aberto' : ''}" onclick="_selectObsItem('${_escObs(it.itemId)}')" title="${_escObs(it.itemLabel)}">`
+            + `<span class="obs-item-nome">${_escObs(_shortObs(it.itemLabel, 22))}</span>`
+            + `${itTotal ? `<span class="obs-nav-badge">${itTotal}</span>` : ''}${_caret}</button>`
+            + (itAberto ? `<div class="obs-item-subs">${it.grupos.map(btnSub).join('')}</div>` : '')
+            + `</div>`;
+        }).join('');
+      }
+    }
+    return `<div class="obs-etapa-block">`
+      + `<button class="obs-etapa-head ${aberto ? 'aberto' : ''}" onclick="_selectObsEtapa('${d.etapaId}')">`
+      + `<span class="obs-etapa-dot" style="background:${_ETAPA_COR[d.etapaId] || 'var(--muted)'};"></span>`
+      + `<span class="obs-etapa-nome">${_escObs(d.etapaNome)}</span>`
+      + `${total ? `<span class="obs-nav-badge">${total}</span>` : ''}${_caret}</button>`
+      + (aberto ? `<div class="obs-etapa-subs">${corpo}</div>` : '')
+      + `</div>`;
+  }).join('');
+
+  let comentariosHTML = '<div class="obs-nav-hint">Selecione uma sub-etapa \u00e0 esquerda para ver as notas.</div>';
+  if (grupoSel && !grupoSel.entradas.length) {
+    comentariosHTML = '<div class="obs-nav-hint">Nenhuma nova atualiza\u00e7\u00e3o.</div>';
+  } else if (grupoSel) {
+    const ord = grupoSel.entradas.slice().sort((a, b) =>
+      ((b.data || '') + (b.hora || '')).localeCompare((a.data || '') + (a.hora || '')));
+    const TP = {
+      obs: { lbl: 'Observa\u00e7\u00e3o', cor: 'var(--accent)' },
+      rev: { lbl: 'Revis\u00e3o', cor: '#f59e0b' },
+      prorroga: { lbl: 'Prorroga\u00e7\u00e3o', cor: '#8b5cf6' }
+    };
+    comentariosHTML = ord.map(o => {
+      const tp = TP[o.tipo] || TP.obs;
+      const lbl = o.tipo === 'rev' && o.numero ? `${tp.lbl} ${o.numero}` : tp.lbl;
+      return `<div class="obs-nav-comment"><div class="obs-nav-comment-head">`
+        + `<span class="obs-nav-tag" style="--tag:${tp.cor};">${lbl}</span>`
+        + `<span class="obs-nav-quando">${_escObs(o.data || '')}${o.hora ? ' \u00b7 ' + _escObs(o.hora) : ''}</span></div>`
+        + `<div class="obs-nav-texto">${_escObs(o.texto || '')}</div>`
+        + `<div class="obs-nav-autor">${_escObs(o.por || 'Autor n\u00e3o registrado')}</div></div>`;
+    }).join('');
+  }
+
+  body.innerHTML =
+    `<div class="obs-col obs-col-etapas"><div class="obs-col-title">Etapas</div><div class="obs-etapas-list">${etapasCol}</div></div>`
+    + `<div class="obs-col obs-col-notas"><div class="obs-col-title">Notas${grupoSel ? ' \u00b7 ' + _escObs(grupoSel.label) : ''}</div><div class="obs-nav-comments">${comentariosHTML}</div></div>`;
+}
 function openHistoricoModal(obraId) {
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const el = document.getElementById('historico-modal-body');
-  if (!el) return;
-  // Renderizar aba Histórico
-  _renderHistoricoAba(obra, el);
-  // Marcar como visto
+  // Histórico agora é SÓ auditoria (obs/revisões/prorrogações migraram p/ Observações).
   _marcarHistoricoVisto(obra);
   const o = _obras.find(x => x.id === obraId); if (o) { _saveAccordionState(); renderObraModal(o); _restoreAccordionState(); }
   document.getElementById('historico-modal').style.display = 'flex';
-  // Carregar auditoria em background
+  const auditEl = document.getElementById('historico-auditoria-body');
+  if (auditEl) {
+    auditEl.style.display = 'block';
+    auditEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Carregando\u2026</div>';
+  }
   _loadAuditoria(obraId).then(() => {
-    const auditEl = document.getElementById('historico-auditoria-body');
-    if (auditEl) _renderAuditoriaAba(obraId, auditEl);
+    const el2 = document.getElementById('historico-auditoria-body');
+    if (el2) _renderAuditoriaAba(obraId, el2);
   });
 }
 
@@ -4288,13 +4544,11 @@ function _renderHistoricoAba(obra, el) {
     const e = obra.etapas?.[etapaId]; if (!e) return;
     const cfg = ETAPAS_CONFIG[etapaId];
     const itens = [];
-    (e.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: '📝 Etapa', texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
     (e.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
     // Sub-etapas normais
     if (!cfg.isLista) {
       (cfg.subEtapas || []).forEach(sub => {
         const sd = e.subEtapas?.[sub.id];
-        (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
         (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${sub.nome}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
         if (sd) _prorrogItens(sd, sub.nome).forEach(x => itens.push(x));
       });
@@ -4304,7 +4558,6 @@ function _renderHistoricoAba(obra, el) {
       (e.lista || []).forEach(item => {
         (cfg.subEtapasTemplate || []).forEach(sub => {
           const sd = item.subEtapas?.[sub.id];
-          (sd?.observacoes || []).forEach(o => itens.push({ tipo: 'obs', badge: `📝 ${item.titulo} · ${sub.nome}`, texto: o.texto, meta: `${o.data} ${o.hora || ''} — ${o.por}` }));
           (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${item.titulo}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
           if (sd) _prorrogItens(sd, `${item.titulo} · ${sub.nome}`).forEach(x => itens.push(x));
         });

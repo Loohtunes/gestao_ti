@@ -427,12 +427,12 @@ function buildArchivedRow(ticket) {
   const setorHtml = ticket.setor ? '<span class="tl-setor-tag">' + ticket.setor + '</span>' : '<span class="tl-empty">—</span>';
   const dateHtml = ticket.completedAt || ticket.forceClosedAt || ticket.archivedAt || '—';
   const isForceClosed = ticket.status === 'force-closed';
-  const rowClass    = isForceClosed ? 'tl-row tl-force-closed' : 'tl-row archived arc-row';
-  const dateClass   = isForceClosed ? 'tl-date-force-closed' : 'tl-date-done';
+  const rowClass = isForceClosed ? 'tl-row tl-force-closed' : 'tl-row archived arc-row';
+  const dateClass = isForceClosed ? 'tl-date-force-closed' : 'tl-date-done';
   const borderStyle = isForceClosed ? 'border-left:3px solid #991b1b;cursor:pointer' : 'cursor:pointer';
-  const labelColor  = isForceClosed ? '#991b1b' : '#15803d';
-  const labelText   = isForceClosed ? 'Fechado' : 'Concluído';
-  const titleHtml   = '<span style="display:flex;flex-direction:column;gap:1px;">'
+  const labelColor = isForceClosed ? '#991b1b' : '#15803d';
+  const labelText = isForceClosed ? 'Fechado' : 'Concluído';
+  const titleHtml = '<span style="display:flex;flex-direction:column;gap:1px;">'
     + '<span class="tl-title-text">' + ticket.title + '</span>'
     + '<span style="font-size:0.62rem;font-family:var(--font-mono);color:' + labelColor + ';font-weight:700;letter-spacing:0.04em;line-height:1;">' + labelText + '</span>'
     + '</span>';
@@ -741,7 +741,7 @@ function setTicketPriority(id, priority) {
 function setSubStatus(id, subStatus) {
   const t = tickets.find(t => t.id === id); if (!t) return;
   t.status = subStatus;
-  if (!t.startedAt) t.startedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  if (!t.startedAt) t.startedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   if (!t.attendant) t.attendant = currentUser.username;
   logTicketEvent(t, 'Status alterado para "' + (STATUS_LABEL[subStatus] || subStatus) + '" por ' + capitalizeName(currentUser.username));
   saveTickets(); if (activeDetailId === id) openTicketDetail(id);
@@ -845,12 +845,12 @@ function canActOnTicket(ticket) {
   return ticket.attendant === currentUser.username;
 }
 
-function completeTicket(id) {
+async function completeTicket(id) {
   const t = tickets.find(t => t.id === id);
   if (!t) return;
   if (!canActOnTicket(t)) { showNotification('Você não tem permissão para concluir este chamado.', 'error'); return; }
-  if (!confirm(`Concluir o chamado "${t.title}"?`)) return;
-  const now = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  if (!await showConfirm('Concluir chamado', `Concluir o chamado "${t.title}"?`, { okText: 'Concluir' })) return;
+  const now = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   t.status = 'archived';
   t.completedAt = now;
   t.archivedAt = now;
@@ -861,22 +861,22 @@ function completeTicket(id) {
   showNotification(`Chamado "${t.title}" concluido! ✅`, 'success');
 }
 
-function releaseTicket(id) {
+async function releaseTicket(id) {
   const t = tickets.find(t => t.id === id);
   if (!t) return;
   if (!canActOnTicket(t)) { showNotification('Você não tem permissão para devolver este chamado.', 'error'); return; }
-  if (!confirm(`Devolver o chamado "${t.title}" para a fila?`)) return;
+  if (!await showConfirm('Devolver chamado', `Devolver o chamado "${t.title}" para a fila?`, { okText: 'Devolver' })) return;
   t.status = 'available'; t.attendant = null; t.startedAt = null; t.subStatus = null;
   logTicketEvent(t, `Chamado devolvido à fila por ${capitalizeName(currentUser.username)}`);
   saveTickets(); if (activeDetailId === id) openTicketDetail(id);
   showNotification(`Chamado "${t.title}" devolvido à fila`, 'success');
 }
 
-function reopenTicket(id) {
+async function reopenTicket(id) {
   const t = tickets.find(t => t.id === id);
   if (!t) return;
   if (!canActOnTicket(t)) { showNotification('Você não tem permissão para reabrir este chamado.', 'error'); return; }
-  if (!confirm(`Reabrir o chamado "${t.title}"?`)) return;
+  if (!await showConfirm('Reabrir chamado', `Reabrir o chamado "${t.title}"?`, { okText: 'Reabrir' })) return;
   t.status = 'available';
   t.attendant = null;
   t.startedAt = null;
@@ -887,16 +887,17 @@ function reopenTicket(id) {
   showNotification(`Chamado "${t.title}" reaberto! 🔄`, 'success');
 }
 
-function archiveTicket(id) {
-  const t = tickets.find(t => t.id === id); if (!t || !confirm(`Arquivar o chamado "${t.title}"?`)) return;
-  t.status = 'archived'; t.archivedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+async function archiveTicket(id) {
+  const t = tickets.find(t => t.id === id); if (!t) return;
+  if (!await showConfirm('Arquivar chamado', `Arquivar o chamado "${t.title}"?`, { okText: 'Arquivar' })) return;
+  t.status = 'archived'; t.archivedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   logTicketEvent(t, `Chamado arquivado por ${capitalizeName(currentUser.username)}`);
   saveTickets(); closeTicketDetail();
   showNotification(`Chamado "${t.title}" arquivado. 📦`, 'success');
 }
 
-function deleteTicket(id) {
-  if (!confirm('Tem certeza que deseja excluir este chamado?')) return;
+async function deleteTicket(id) {
+  if (!await showConfirm('Excluir chamado', 'Tem certeza que deseja excluir este chamado? Esta ação não pode ser desfeita.', { okText: 'Excluir', danger: true })) return;
   tickets = tickets.filter(t => t.id !== id);
   if (activeDetailId === id) closeTicketDetail();
   db.collection('tickets').doc(id).delete().catch(console.error);
@@ -907,10 +908,10 @@ function deleteTicket(id) {
 // CHAMADOS DE TESTE
 // ════════════════════════════════════════════
 
-function clearTestTickets() {
+async function clearTestTickets() {
   const testList = tickets.filter(t => t.ticketType === 'test');
   if (!testList.length) { showNotification('Nenhum chamado de teste para limpar.', 'error'); return; }
-  if (!confirm(`Excluir ${testList.length} chamado(s) de teste? Esta ação não pode ser desfeita.`)) return;
+  if (!await showConfirm('Excluir chamados de teste', `Excluir ${testList.length} chamado(s) de teste? Esta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
   const batch = db.batch();
   testList.forEach(t => batch.delete(db.collection('tickets').doc(t.id)));
   batch.commit()
@@ -1065,7 +1066,7 @@ function executeMerge() {
   // Arquiva os chamados secundários
   otherTickets.forEach(t => {
     t.status = 'archived';
-    t.archivedAt = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    t.archivedAt = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     logTicketEvent(t,
       `Chamado arquivado por mesclagem — incorporado ao chamado ${mainNum} por ${capitalizeName(currentUser.username)}`);
   });
@@ -1399,15 +1400,15 @@ async function escalateToAdmin(t) {
 
     // Reinicia SLA com prazo cheio, sem direito a sobrevida
     await loadSlaConfig();
-    const hours   = getSlaHours(t.priority);
-    const now     = Date.now();
+    const hours = getSlaHours(t.priority);
+    const now = Date.now();
     const prevAtt = t.attendant;
 
-    t.attendant      = nextAdmin.username;
-    t.slaStartedAt   = new Date(now).toISOString();
-    t.slaDeadline    = new Date(now + hours * 3600000).toISOString();
-    t.slaOverdue     = false;
-    t.slaSobrevida   = false;
+    t.attendant = nextAdmin.username;
+    t.slaStartedAt = new Date(now).toISOString();
+    t.slaDeadline = new Date(now + hours * 3600000).toISOString();
+    t.slaOverdue = false;
+    t.slaSobrevida = false;
     t.slaSemSobrevida = true; // flag: admin não tem direito a sobrevida
 
     logTicketEvent(t,
@@ -1437,10 +1438,10 @@ async function escalateToAdmin(t) {
 
 // Bloqueia o chamado — só superAdmin pode intervir
 async function blockTicket(t, justificativa) {
-  t.sloBloqueado  = true;
-  t.slaBloqueado  = true;
-  t.slaBlockedAt  = new Date().toISOString();
-  t.slaBlockedBy  = t.attendant;
+  t.sloBloqueado = true;
+  t.slaBloqueado = true;
+  t.slaBlockedAt = new Date().toISOString();
+  t.slaBlockedBy = t.attendant;
 
   logTicketEvent(t,
     `🔒 Chamado bloqueado — SLA do admin vencido sem resolução. Intervenção do SuperAdmin necessária.`
@@ -1557,17 +1558,17 @@ async function slaIntervir_confirmarReatribuir(userId) {
 
   await loadSlaConfig();
   const hours = getSlaHours(t.priority);
-  const now   = Date.now();
+  const now = Date.now();
 
-  t.attendant       = found.username;
-  t.slaBloqueado    = false;
-  t.sloBloqueado    = false;
+  t.attendant = found.username;
+  t.slaBloqueado = false;
+  t.sloBloqueado = false;
   t.slaEscaladoAdmin = false;
-  t.slaOverdue      = false;
-  t.slaSobrevida    = false;
+  t.slaOverdue = false;
+  t.slaSobrevida = false;
   t.slaSemSobrevida = false;
-  t.slaStartedAt    = new Date(now).toISOString();
-  t.slaDeadline     = new Date(now + hours * 3600000).toISOString();
+  t.slaStartedAt = new Date(now).toISOString();
+  t.slaDeadline = new Date(now + hours * 3600000).toISOString();
 
   logTicketEvent(t,
     `🔓 Desbloqueado por SuperAdmin ${capitalizeName(currentUser.username)} — reatribuído para "${capitalizeName(found.username)}", SLA reiniciado (${hours}h)`
@@ -1585,12 +1586,12 @@ function slaIntervir_confirmarFechar() {
 
   const reason = `Fechado forçadamente por SuperAdmin ${capitalizeName(currentUser.username)} após estouro de SLA hierárquico.`;
 
-  t.status           = 'force-closed';
-  t.slaBloqueado     = false;
-  t.sloBloqueado     = false;
-  t.forceClosedBy    = currentUser.username;
-  t.forceClosedAt    = new Date().toLocaleString('pt-BR', {
-    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+  t.status = 'force-closed';
+  t.slaBloqueado = false;
+  t.sloBloqueado = false;
+  t.forceClosedBy = currentUser.username;
+  t.forceClosedAt = new Date().toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
   t.forceCloseReason = reason;
 
@@ -1606,10 +1607,10 @@ function openSlaOverdueModal(ticket, fase) {
   // Evita abrir dois modais para o mesmo ticket
   if (document.getElementById('sla-overdue-modal')) return;
 
-  const isFaseAdmin  = fase === 'admin';
+  const isFaseAdmin = fase === 'admin';
   const semSobrevida = ticket.slaSemSobrevida || isFaseAdmin;
-  const btnLabel     = semSobrevida ? 'Confirmar Justificativa e Bloquear Chamado' : 'Confirmar e Ativar Sobrevida';
-  const subtext      = semSobrevida
+  const btnLabel = semSobrevida ? 'Confirmar Justificativa e Bloquear Chamado' : 'Confirmar e Ativar Sobrevida';
+  const subtext = semSobrevida
     ? `O chamado será <strong style="color:#ef4444">bloqueado</strong> e exigirá intervenção do <strong>SuperAdmin</strong>.`
     : `Informe a justificativa para continuar com <strong>sobrevida de 50%</strong> do tempo original.`;
 
@@ -1647,7 +1648,7 @@ async function confirmSlaOverdue(ticketId, fase) {
   if (!t) return;
   document.getElementById('sla-overdue-modal')?.remove();
 
-  const isFaseAdmin  = fase === 'admin';
+  const isFaseAdmin = fase === 'admin';
   const semSobrevida = t.slaSemSobrevida || isFaseAdmin;
 
   // Salva justificativa no Firestore
@@ -1666,10 +1667,10 @@ async function confirmSlaOverdue(ticketId, fase) {
     await blockTicket(t, just);
   } else {
     // Atendente venceu → ativar sobrevida 50%
-    const original  = new Date(t.slaDeadline).getTime() - new Date(t.slaStartedAt || t.startedAt).getTime();
+    const original = new Date(t.slaDeadline).getTime() - new Date(t.slaStartedAt || t.startedAt).getTime();
     const sobrevida = original * 0.5;
     t.slaSobrevida = true;
-    t.slaDeadline  = new Date(Date.now() + sobrevida).toISOString();
+    t.slaDeadline = new Date(Date.now() + sobrevida).toISOString();
     logTicketEvent(t,
       `SLA vencido — sobrevida ativada (${Math.round(sobrevida / 3600000 * 10) / 10}h) por ${capitalizeName(currentUser.username)}`
     );
@@ -1677,4 +1678,3 @@ async function confirmSlaOverdue(ticketId, fase) {
     showNotification('Sobrevida ativada. Resolva o chamado o mais rápido possível! ⚠️', 'error');
   }
 }
-

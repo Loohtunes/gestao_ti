@@ -23,16 +23,9 @@ let configEditingId = null;
 let configUsersPage = 1;
 const CONFIG_USERS_PER_PAGE = 30; // 10 por coluna × 3 colunas
 
-const MODULOS = [
-  { key: 'chamados', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg> Chamados` },
-  { key: 'materiais', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/><path d="m7.5 4.27 9 5.15"/></svg> Materiais` },
-  { key: 'inventario', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"/><path d="m7 16.5-4.74-2.85"/><path d="m7 16.5 5-3"/><path d="M7 16.5v5.17"/><path d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"/><path d="m17 16.5-5-3"/><path d="m17 16.5 4.74-2.85"/><path d="M17 16.5v5.17"/><path d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"/><path d="M12 8 7.26 5.15"/><path d="m12 8 4.74-2.85"/><path d="M12 13.5V8"/></svg> Inventário` },
-  { key: 'pub_comunicados', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg> Publicar Comunicados` },
-  { key: 'rotinas', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg> Rotinas` },
-  { key: 'comercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Comercial` },
-  { key: 'adminComercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><circle cx="17" cy="7" r="3" fill="currentColor" stroke="none" opacity="0.6"/></svg> Admin Comercial` },
-  { key: 'atribuivelComercial', label: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 11-3 3-1.5-1.5"/></svg> Atribuível (Comercial)` },
-];
+// (A lista de módulos/abas agora vive em ui.js: MODULOS_PAI e ACESSOS_POR_MODULO —
+//  fonte única, compartilhada com a navegação e o modal de acessos do módulo.)
+
 
 // ── Inicializar ──
 async function initConfiguracoes() {
@@ -63,6 +56,13 @@ async function initConfiguracoes() {
   // Aba Administração — apenas SuperAdmin
   const adminTab = document.getElementById('tab-administracao');
   if (adminTab) adminTab.style.display = user.isSuperAdmin ? 'flex' : 'none';
+
+  // Aba Acessos (concessão de MÓDULO) — apenas SuperAdmin
+  const acessosTab = document.getElementById('tab-acessos');
+  if (acessosTab) acessosTab.style.display = user.isSuperAdmin ? 'flex' : 'none';
+
+  // Migração: grava o campo `modulos` para usuários antigos (derivado dos acessos).
+  if (user.isSuperAdmin) _migrarModulosUsuarios();
 
   openTab('usuarios');
 }
@@ -251,7 +251,7 @@ async function addServidorAdmin() {
 }
 
 async function removeServidorAdmin(id) {
-  if (!confirm('Remover este servidor e todos os seus discos?')) return;
+  if (!await showConfirm('Remover servidor', 'Remover este servidor e todos os seus discos?', { okText: 'Remover', danger: true })) return;
   _adminServidores = _adminServidores.filter(s => s.id !== id);
   await db.collection('rotinas_config').doc('servidores').set({ lista: _adminServidores });
   renderServidoresAdminList();
@@ -755,7 +755,7 @@ async function saveSetor() {
 
 async function toggleSetorAtivo(id, currentAtivo) {
   const acao = currentAtivo ? 'desativar' : 'ativar';
-  if (!confirm(`Deseja ${acao} este setor?`)) return;
+  if (!await showConfirm('Alterar setor', `Deseja ${acao} este setor?`, { okText: 'Confirmar' })) return;
   try {
     await db.collection('setores').doc(id).update({ ativo: !currentAtivo });
     showConfigNotification(`Setor ${currentAtivo ? 'desativado' : 'ativado'}! ✅`, 'success');
@@ -889,7 +889,7 @@ function openConfigEditUser(userId) {
   const user = users.find(u => u.id === userId);
   if (!user) return;
   if (user.isSuperAdmin && !configCurrentUser.isSuperAdmin) {
-    alert('Apenas o Super Admin pode editar esta conta.');
+    showNotification('Apenas o Super Admin pode editar esta conta.', 'error');
     return;
   }
   configEditingId = userId;
@@ -899,7 +899,7 @@ function openConfigEditUser(userId) {
   document.getElementById('config-user-pass-input').value = '';
   document.getElementById('config-user-pass-input').placeholder = 'Deixe vazio para manter a senha atual';
   document.getElementById('config-user-role-input').value = user.role;
-  document.getElementById('config-user-admin-input').checked = !!user.isAdmin;
+  // (admin agora é nomeado no modal de Acessos do módulo)
   document.getElementById('config-user-email-input').value = user.email || '';
   document.getElementById('config-user-whatsapp-input').value = user.whatsapp || '';
   document.getElementById('config-user-setor-input').value = user.setor || '';
@@ -911,7 +911,7 @@ function openConfigEditUser(userId) {
   if (vipInput) vipInput.checked = !!user.isVip;
   // SuperAdmin: bloquear campos imutáveis
   const isSA = !!user.isSuperAdmin;
-  const lockFields = ['config-user-name-input', 'config-user-role-input', 'config-user-admin-input', 'config-user-setor-input', 'config-user-vip-input'];
+  const lockFields = ['config-user-name-input', 'config-user-role-input', 'config-user-setor-input', 'config-user-vip-input'];
   lockFields.forEach(id => { const el = document.getElementById(id); if (el) { el.disabled = isSA; el.style.opacity = isSA ? '0.5' : ''; el.title = isSA ? 'Campo imutável para SuperAdmin' : ''; } });
   // Aviso visual
   const notice = document.getElementById('superadmin-lock-notice');
@@ -927,7 +927,6 @@ function resetConfigUserForm() {
       if (el) el.value = '';
     });
   document.getElementById('config-user-role-input').value = 'requester';
-  document.getElementById('config-user-admin-input').checked = false;
   document.getElementById('config-anydesk-no').checked = true;
   document.getElementById('config-user-anydesk-input').style.display = 'none';
   const vipInput = document.getElementById('config-user-vip-input');
@@ -957,7 +956,7 @@ function toggleConfigAnydeskInput() {
 
 function _acessosPadraoPorSetor(setor) {
   const mapa = {
-    'T.I': ['chamados', 'materiais', 'inventario', 'rotinas'],
+    'T.I': ['chamados', 'materiais', 'inventario', 'rotinas', 'infraestrutura'],
     'Comercial': ['comercial'],
     'Engenharia': ['chamados'],
   };
@@ -994,17 +993,19 @@ async function saveConfigUser() {
   const hasAnydesk = document.getElementById('config-anydesk-yes').checked;
   const anydesk = hasAnydesk ? document.getElementById('config-user-anydesk-input').value.trim() : '';
   const isVip = configCurrentUser.isSuperAdmin ? (document.getElementById('config-user-vip-input')?.checked || false) : false;
-  const isAdmin = configCurrentUser.isSuperAdmin
-    ? (document.getElementById('config-user-admin-input').checked)
-    : (configEditingId ? (users.find(u => u.id === configEditingId)?.isAdmin || false) : false);
+  // O cargo de admin não é mais editado aqui: preserva-se o valor atual do
+  // usuário. Admin é nomeado pelo Super Admin no modal "Acessos" do módulo.
+  const isAdmin = configEditingId
+    ? (users.find(u => u.id === configEditingId)?.isAdmin || false)
+    : false;
 
-  if (!name) { alert('Preencha o nome de usuário'); return; }
-  if (!configEditingId && !passRaw) { alert('Preencha a senha para criar o usuário'); return; }
-  if (hasAnydesk && !anydesk) { alert('Digite o ID do AnyDesk ou selecione "Não tenho AnyDesk"'); return; }
+  if (!name) { showNotification('Preencha o nome de usuário', 'error'); return; }
+  if (!configEditingId && !passRaw) { showNotification('Preencha a senha para criar o usuário', 'error'); return; }
+  if (hasAnydesk && !anydesk) { showNotification('Digite o ID do AnyDesk ou selecione "Não tenho AnyDesk"', 'error'); return; }
 
   if (configEditingId) {
     const dup = users.find(u => u.username === name && u.id !== configEditingId);
-    if (dup) { alert('Esse nome de usuário já existe!'); return; }
+    if (dup) { showNotification('Esse nome de usuário já existe!', 'error'); return; }
     const idx = users.findIndex(u => u.id === configEditingId);
     if (idx !== -1) {
       const user = users[idx];
@@ -1039,7 +1040,7 @@ async function saveConfigUser() {
     renderConfigUsers();
     showConfigNotification('Usuário atualizado! ✅', 'success');
   } else {
-    if (users.find(u => u.username === name)) { alert('Esse nome de usuário já existe!'); return; }
+    if (users.find(u => u.username === name)) { showNotification('Esse nome de usuário já existe!', 'error'); return; }
     const hashedPass = await hashPassword(passRaw);
     users.push({ id: Date.now().toString(), username: name, password: hashedPass, role, isAdmin, isSuperAdmin: false, email, whatsapp, anydesk, setor, isVip, nome });
     saveUsers();
@@ -1054,23 +1055,42 @@ async function saveConfigUser() {
 // ABA ACESSOS
 // ══════════════════════════════
 function renderAccessTable() {
+  const thead = document.getElementById('access-thead');
   const tbody = document.getElementById('access-tbody');
   if (!tbody) return;
 
+  // Só o Super Admin concede módulos.
+  if (!configCurrentUser?.isSuperAdmin) {
+    if (thead) thead.innerHTML = '';
+    tbody.innerHTML = `<tr><td colspan="3" style="padding:2rem;text-align:center;color:var(--muted);font-size:0.85rem;">
+      Apenas o Super Admin pode conceder m\u00f3dulos.</td></tr>`;
+    return;
+  }
+
+  // Cabeçalho gerado a partir da mesma fonte que gera o corpo (fonte única).
+  if (thead) {
+    thead.innerHTML = `<tr><th>Usu\u00e1rio</th>` + MODULOS_PAI.map(m =>
+      `<th style="padding:0.4rem 0.6rem;text-align:center;">
+         <span style="display:inline-flex;align-items:center;gap:5px;">${_moduloIco(m)} ${_moduloNome(m)}</span>
+       </th>`).join('') + `</tr>`;
+  }
+
   tbody.innerHTML = users.map(u => {
     const role = u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : u.role === 'attendant' ? 'Atendente' : 'Solicitante';
-    const acessos = u.acessos || ['chamados'];
+    const mods = modulosDoUsuario(u);
     const isSA = u.isSuperAdmin;
+    const isSelf = u.id === configCurrentUser?.id;
 
-    const toggleCols = MODULOS.map(m => {
-      const checked = isSA || acessos.includes(m.key);
-      const disabled = m.key === 'chamados' || isSA;
-      return `<td>
-        <label class="access-toggle" title="${disabled ? 'Não pode ser alterado' : ''}">
-          <input type="checkbox"
-            ${checked ? 'checked' : ''}
-            ${disabled ? 'disabled' : ''}
-            onchange="toggleAcesso('${u.id}','${m.key}',this.checked)">
+    const cols = MODULOS_PAI.map(m => {
+      const checked = mods.includes(m);
+      // SA tem tudo; ninguém remove o próprio acesso (trava anti-auto-exclusão).
+      const disabled = isSA || isSelf;
+      const motivo = isSA ? 'Super Admin acessa todo o sistema'
+        : isSelf ? 'Voc\u00ea n\u00e3o pode alterar os pr\u00f3prios m\u00f3dulos' : '';
+      return `<td style="text-align:center;">
+        <label class="access-toggle" title="${motivo}">
+          <input type="checkbox" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}
+            onchange="toggleModulo('${u.id}','${m}',this.checked)">
           <span class="access-toggle-slider"></span>
         </label>
       </td>`;
@@ -1079,22 +1099,54 @@ function renderAccessTable() {
     return `<tr>
       <td>
         <div class="access-user-name">${capitalizeName(u.username)}</div>
-        <div class="access-user-role">${role}${u.setor ? ' · ' + u.setor : ''}</div>
+        <div class="access-user-role">${role}${u.setor ? ' \u00b7 ' + u.setor : ''}</div>
       </td>
-      ${toggleCols}
+      ${cols}
     </tr>`;
   }).join('');
 }
 
-async function toggleAcesso(userId, modulo, ativo) {
+function _moduloNome(m) { return m === 'ti' ? 'T.I' : m === 'comercial' ? 'Comercial' : m; }
+function _moduloIco(m) {
+  const ic = m === 'ti'
+    ? '<rect width="18" height="12" x="3" y="4" rx="2"/><path d="M8 20h8M12 16v4"/>'
+    : '<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>';
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle">${ic}</svg>`;
+}
+
+// Concede/revoga um MÓDULO PAI (só Super Admin). As abas são geridas dentro do módulo.
+async function toggleModulo(userId, modulo, ativo) {
+  if (!configCurrentUser?.isSuperAdmin) return;
   const user = users.find(u => u.id === userId);
   if (!user) return;
-  let acessos = [...(user.acessos || ['chamados'])];
-  if (ativo && !acessos.includes(modulo)) acessos.push(modulo);
-  if (!ativo) acessos = acessos.filter(a => a !== modulo);
-  user.acessos = acessos;
-  await db.collection('users').doc(userId).update({ acessos });
-  showConfigNotification('Acesso atualizado! 🔐', 'success');
+  if (user.isSuperAdmin || user.id === configCurrentUser.id) return;
+
+  let mods = modulosDoUsuario(user).filter(m => MODULOS_PAI.includes(m));
+  if (ativo && !mods.includes(modulo)) mods.push(modulo);
+  if (!ativo) mods = mods.filter(m => m !== modulo);
+
+  const patch = { modulos: mods };
+
+  // Revogar o módulo remove também as abas e o cargo de admin daquele módulo,
+  // para não deixar permissões órfãs.
+  if (!ativo) {
+    const doModulo = ACESSOS_POR_MODULO[modulo] || [];
+    patch.acessos = (user.acessos || []).filter(a => !doModulo.includes(a));
+    if (modulo === 'ti') patch.isAdmin = false;
+    if (modulo === 'comercial') patch.isAdminComercial = false;
+  }
+
+  const idx = users.findIndex(u => u.id === userId);
+  users[idx] = { ...user, ...patch };
+  try {
+    await db.collection('users').doc(userId).update(patch);
+    showConfigNotification(
+      `M\u00f3dulo ${_moduloNome(modulo)} ${ativo ? 'concedido' : 'revogado'}. \u2705`, 'success');
+  } catch (e) {
+    console.error('[toggleModulo]', e);
+    showConfigNotification('Erro ao salvar. Tente novamente.', 'error');
+  }
+  renderAccessTable();
 }
 
 // ══════════════════════════════
@@ -1137,9 +1189,11 @@ function renderFirebaseInfo() {
       </a>
     </div>`;
 
-  // Monitorar status
-  db.collection('_ping').doc('status').onSnapshot(
-    () => updateConfigFirebase(true),
+  // Monitorar status — mesmo sinal do monitor global (metadados do Firestore).
+  // A coleção `_ping` foi abandonada: não tem regra própria e dava falso "offline".
+  db.collection('users').limit(1).onSnapshot(
+    { includeMetadataChanges: true },
+    snap => updateConfigFirebase(!snap.metadata.fromCache),
     () => updateConfigFirebase(false)
   );
 }
@@ -1168,8 +1222,8 @@ function showConfigNotification(msg, type) {
 }
 
 // ── Logout ──
-function configLogout() {
-  if (!confirm('Deseja realmente sair do sistema?')) return;
+async function configLogout() {
+  if (!await showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' })) return;
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'index.html';
@@ -1495,7 +1549,7 @@ async function toggleTemplateAtivo(id, currentAtivo) {
 async function deleteTemplate(id) {
   const t = _templates.find(x => x.id === id);
   if (!t) return;
-  if (!confirm(`Excluir o template "${t.nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  if (!await showConfirm('Excluir template', `Excluir o template "${t.nome}"?\nEsta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
   try {
     await db.collection('templates').doc(id).delete();
     showConfigNotification('Template excluído.', 'success');
@@ -1543,4 +1597,24 @@ function openTemplateDetail(id) {
 
 function closeTemplateDetail() {
   document.getElementById('template-detail-modal').classList.remove('open');
+}
+
+/* ── Migração para o modelo de acesso em 2 níveis ────────────────────────────
+ * Usuários criados antes do campo `modulos` têm os módulos derivados dos seus
+ * acessos antigos e gravados uma única vez. Não-destrutivo: ninguém perde nada.
+ * ------------------------------------------------------------------------- */
+async function _migrarModulosUsuarios() {
+  const pendentes = users.filter(u => !Array.isArray(u.modulos) && !u.isSuperAdmin);
+  if (!pendentes.length) return;
+  let ok = 0;
+  for (const u of pendentes) {
+    const mods = _derivarModulos(u);
+    try {
+      await db.collection('users').doc(u.id).update({ modulos: mods });
+      const idx = users.findIndex(x => x.id === u.id);
+      if (idx !== -1) users[idx] = { ...u, modulos: mods };
+      ok++;
+    } catch (e) { console.error('[migrarModulos]', u.username, e); }
+  }
+  if (ok) console.log(`[Acessos] Migração concluída: ${ok} usuário(s) receberam o campo 'modulos'.`);
 }

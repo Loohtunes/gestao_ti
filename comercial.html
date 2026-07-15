@@ -217,7 +217,7 @@
         <div class="comercial-filters-bar">
           <div class="view-seg" id="comercial-view-seg">
             <button class="active" data-view="ativas" onclick="setComercialView('ativas')">Ativas</button>
-            <button data-view="concluidos" onclick="setComercialView('concluidos')">Concluídos</button>
+            <button data-view="concluidos" onclick="setComercialView('concluidos')">Finalizadas/Canceladas</button>
           </div>
           <button id="btn-arquivo-morto" class="btn-arquivo-morto" onclick="setComercialView('arquivo')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -238,28 +238,111 @@
             </div>
           </div>
           <div id="ctrl-normais" style="display:flex;align-items:center;gap:0.5rem;flex:1;">
-            <button id="btn-filtros" class="btn-filtros" onclick="toggleFiltrosPanel()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-              </svg>
-              Filtros
-              <span id="filtros-count" class="filtros-count" style="display:none;">0</span>
-            </button>
-            <button id="btn-limpar-filtros" class="btn-limpar-filtros" onclick="limparTodosFiltros()"
-              style="display:none;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 6h18" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Limpar tudo
-            </button>
-            <select onchange="setOrdenacao(this.value)" class="filtros-ordenacao" style="margin-left:auto;">
+            <div class="filtros-anchor">
+              <button id="btn-filtros" class="btn-filtros" onclick="toggleFiltrosPanel()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
+                Filtros
+                <span id="filtros-count" class="filtros-count" style="display:none;">0</span>
+              </button>
+              <button id="btn-limpar-filtros" class="btn-limpar-filtros" onclick="limparTodosFiltros()"
+                style="display:none;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                Limpar tudo
+              </button>
+              <div id="filtros-panel" class="filtros-panel">
+                <div class="filtros-panel-header">
+                  <span>Filtros</span>
+                  <button class="filtros-panel-close" onclick="fecharFiltrosPanel()"
+                    aria-label="Fechar">&times;</button>
+                </div>
+                <div class="filtros-panel-body">
+
+                  <div class="filtro-grupo">
+                    <label class="filtro-label">Palavra-chave</label>
+                    <input type="text" class="filtro-input" placeholder="Nº, nome ou representante..."
+                      oninput="_fSet('busca', this.value.toLowerCase().trim())">
+                  </div>
+
+                  <div class="filtro-grupo">
+                    <label class="filtro-label">Representante</label>
+                    <div class="filtro-rep-toggles">
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Verdile', this.classList.contains('ativo'))">Verdile</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Ricardo', this.classList.contains('ativo'))">Ricardo</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Sebastião', this.classList.contains('ativo'))">Sebastião</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Ângelo', this.classList.contains('ativo'))">Ângelo</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Sérgio', this.classList.contains('ativo'))">Sérgio</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Matheus', this.classList.contains('ativo'))">Matheus</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Henrique', this.classList.contains('ativo'))">Henrique</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Flávio', this.classList.contains('ativo'))">Flávio</button>
+                      <button type="button" class="filtro-rep-toggle"
+                        onclick="this.classList.toggle('ativo'); _fToggleRep('Gazzo', this.classList.contains('ativo'))">Gazzo</button>
+                    </div>
+                  </div>
+
+                  <div class="filtro-grupo">
+                    <label class="filtro-label">Período (etapas)</label>
+                    <div class="filtro-periodo">
+                      <input type="date" class="filtro-input" onchange="_fSet('periodoDe', this.value)" aria-label="De">
+                      <input type="date" class="filtro-input" onchange="_fSet('periodoAte', this.value)"
+                        aria-label="Até">
+                    </div>
+                  </div>
+
+                  <div class="filtro-grupo">
+                    <label class="filtro-label">Atribuição</label>
+                    <label class="filtro-check"><input type="checkbox" id="flt-atrib-mine"
+                        onchange="_setAtrib('mine', this.checked)"> Atribuídas a mim</label>
+                    <label class="filtro-check"><input type="checkbox" id="flt-atrib-none"
+                        onchange="_setAtrib('none', this.checked)"> Sem atribuição</label>
+                    <div id="filtro-atrib-user-wrap" style="display:none;margin-top:0.5rem;">
+                      <label class="filtro-label" style="margin-bottom:0.25rem;">Atribuídas a (gestor)</label>
+                      <select id="filtro-atrib-user" class="filtro-input"
+                        onchange="_fSet('atribUser', this.value)"></select>
+                    </div>
+                  </div>
+
+                  <div class="filtro-grupo">
+                    <label class="filtro-label">Filtro das Etapas</label>
+                    <select class="filtro-input" onchange="_fSet('etapaStEtapa', this.value)"
+                      style="margin-bottom:0.45rem;">
+                      <option value="">Etapa iniciada (qualquer)</option>
+                      <option value="proposta">Proposta Consolidada</option>
+                      <option value="contrato">Contrato</option>
+                      <option value="documentacoes">Documentações</option>
+                      <option value="aditivos">Aditivos / Termo</option>
+                      <option value="medicao">Medição</option>
+                    </select>
+                    <select class="filtro-input" onchange="_fSet('etapaStVal', this.value)">
+                      <option value="">Qualquer status</option>
+                      <option value="atrasada">Atrasada</option>
+                      <option value="perto_vencer">Perto de vencer (7 dias)</option>
+                      <option value="concluida">Concluída</option>
+                    </select>
+                  </div>
+
+                </div>
+              </div>
+            </div><!-- /.filtros-anchor -->
+            <select onchange="setOrdenacao(this.value)" class="filtros-ordenacao">
               <option value="recente">Mais recente</option>
               <option value="num-asc">Nº crescente</option>
               <option value="num-desc">Nº decrescente</option>
             </select>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-left:auto;">
               <label style="font-size:0.72rem;font-family:var(--font-mono);color:var(--muted);white-space:nowrap;">Cards
                 por página</label>
               <select id="per-page-select" onchange="setObrasPorPagina(this.value)"
@@ -270,85 +353,6 @@
                 <option value="48">48</option>
               </select>
             </div>
-          </div>
-        </div>
-
-        <!-- Bloco 4: Painel lateral de filtros -->
-        <div id="filtros-panel" class="filtros-panel">
-          <div class="filtros-panel-header">
-            <span>Filtros</span>
-            <button class="filtros-panel-close" onclick="fecharFiltrosPanel()" aria-label="Fechar">&times;</button>
-          </div>
-          <div class="filtros-panel-body">
-
-            <div class="filtro-grupo">
-              <label class="filtro-label">Palavra-chave</label>
-              <input type="text" class="filtro-input" placeholder="Nº, nome ou representante..."
-                oninput="_fSet('busca', this.value.toLowerCase().trim())">
-            </div>
-
-            <div class="filtro-grupo">
-              <label class="filtro-label">Representante</label>
-              <div class="filtro-rep-toggles">
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Verdile', this.classList.contains('ativo'))">Verdile</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Ricardo', this.classList.contains('ativo'))">Ricardo</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Sebastião', this.classList.contains('ativo'))">Sebastião</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Ângelo', this.classList.contains('ativo'))">Ângelo</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Sérgio', this.classList.contains('ativo'))">Sérgio</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Matheus', this.classList.contains('ativo'))">Matheus</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Henrique', this.classList.contains('ativo'))">Henrique</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Flávio', this.classList.contains('ativo'))">Flávio</button>
-                <button type="button" class="filtro-rep-toggle"
-                  onclick="this.classList.toggle('ativo'); _fToggleRep('Gazzo', this.classList.contains('ativo'))">Gazzo</button>
-              </div>
-            </div>
-
-            <div class="filtro-grupo">
-              <label class="filtro-label">Período (etapas)</label>
-              <div class="filtro-periodo">
-                <input type="date" class="filtro-input" onchange="_fSet('periodoDe', this.value)" aria-label="De">
-                <input type="date" class="filtro-input" onchange="_fSet('periodoAte', this.value)" aria-label="Até">
-              </div>
-            </div>
-
-            <div class="filtro-grupo">
-              <label class="filtro-label">Atribuição</label>
-              <label class="filtro-check"><input type="checkbox" id="flt-atrib-mine"
-                  onchange="_setAtrib('mine', this.checked)"> Atribuídas a mim</label>
-              <label class="filtro-check"><input type="checkbox" id="flt-atrib-none"
-                  onchange="_setAtrib('none', this.checked)"> Sem atribuição</label>
-              <div id="filtro-atrib-user-wrap" style="display:none;margin-top:0.5rem;">
-                <label class="filtro-label" style="margin-bottom:0.25rem;">Atribuídas a (gestor)</label>
-                <select id="filtro-atrib-user" class="filtro-input" onchange="_fSet('atribUser', this.value)"></select>
-              </div>
-            </div>
-
-            <div class="filtro-grupo">
-              <label class="filtro-label">Filtro das Etapas</label>
-              <select class="filtro-input" onchange="_fSet('etapaStEtapa', this.value)" style="margin-bottom:0.45rem;">
-                <option value="">Etapa iniciada (qualquer)</option>
-                <option value="proposta">Proposta Consolidada</option>
-                <option value="contrato">Contrato</option>
-                <option value="documentacoes">Documentações</option>
-                <option value="aditivos">Aditivos / Termo</option>
-                <option value="medicao">Medição</option>
-              </select>
-              <select class="filtro-input" onchange="_fSet('etapaStVal', this.value)">
-                <option value="">Qualquer status</option>
-                <option value="atrasada">Atrasada</option>
-                <option value="perto_vencer">Perto de vencer (7 dias)</option>
-                <option value="concluida">Concluída</option>
-              </select>
-            </div>
-
           </div>
         </div>
 
@@ -461,6 +465,13 @@
       </div>
       <div class="obra-modal-footer" id="obra-modal-footer"></div>
     </div>
+    <aside class="obs-dock" id="obs-dock" style="display:none;">
+      <div class="obs-dock-head">
+        <span>Observações</span>
+        <button class="obs-dock-x" onclick="closeObsNavModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div id="obs-nav-body" class="obs-dock-body"></div>
+    </aside>
   </div>
 
   <!-- ══ MODAL EDITAR OBRA ══ -->
@@ -1275,22 +1286,12 @@
       style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(620px,95vw);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px #00000030;">
       <div
         style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:0.9rem;font-weight:700;">Histórico da Obra</div>
+        <div style="font-size:0.9rem;font-weight:700;">Auditoria da Obra</div>
         <button onclick="closeHistoricoModal()"
           style="background:none;border:none;cursor:pointer;color:var(--muted);">✕</button>
       </div>
-      <div style="display:flex;border-bottom:1px solid var(--border2);flex-shrink:0;">
-        <button id="tab-historico-btn" onclick="_switchHistoricoTab('historico',_currentObraId)"
-          style="flex:1;padding:0.6rem 1rem;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);font-size:0.82rem;font-family:var(--font-display);font-weight:600;cursor:pointer;">
-          📝 Histórico
-        </button>
-        <button id="tab-auditoria-btn" onclick="_switchHistoricoTab('auditoria',_currentObraId)"
-          style="flex:1;padding:0.6rem 1rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:0.82rem;font-family:var(--font-display);font-weight:600;cursor:pointer;">
-          🔒 Auditoria
-        </button>
-      </div>
-      <div id="historico-modal-body" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
-      <div id="historico-auditoria-body" style="display:none;overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
+
+      <div id="historico-auditoria-body" style="overflow-y:auto;padding:1.25rem 1.5rem;flex:1;"></div>
       <div
         style="padding:1rem 1.5rem;border-top:1px solid var(--border2);display:flex;justify-content:flex-end;flex-shrink:0;">
         <button class="btn-secondary" onclick="closeHistoricoModal()">Fechar</button>
