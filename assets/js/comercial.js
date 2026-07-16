@@ -538,7 +538,7 @@ function _obraPassaFiltros(o) {
   if (_F.atrib === 'mine' && !_obraTemRespAtivo(o, currentUser && currentUser.username)) return false;
   if (_F.atrib === 'none' && _obraTemQualquerResp(o)) return false;
   if (_F.atribUser && !_obraTemRespAtivo(o, _F.atribUser)) return false;
-  if (_F.etapaStEtapa) { const e = o.etapas && o.etapas[_F.etapaStEtapa]; if (!(e && (o.concluida || e.status === 'active' || e.status === 'done'))) return false; }
+  if (_F.etapaStEtapa) { const e = o.etapas && o.etapas[_F.etapaStEtapa]; if (!e) return false; }
   if (_F.etapaStVal) {
     if (_F.etapaStEtapa) { if (!_etapaStatusMatch(o, _F.etapaStEtapa, _F.etapaStVal)) return false; }
     else if (!ETAPAS_ORDER.some(id => { const e = o.etapas && o.etapas[id]; return e && (o.concluida || e.status === 'active' || e.status === 'done') && _etapaStatusMatch(o, id, _F.etapaStVal); })) return false;
@@ -956,6 +956,14 @@ function getCorStripe(obra) {
 // Cor do stripe para o status de UMA etapa (usado quando há filtro de etapa ativo).
 // Mesmas cores do getCorStripe: verde concluída, vermelho atraso, âmbar vencendo,
 // azul ativa, cinza pendente/não iniciada.
+// Etapa realmente iniciada = alguma sub-etapa começou (active/done/data).
+// Etapa 'alcançada' (e.ativa) mas sem trabalho ainda NÃO conta como iniciada.
+function _etapaIniciada(e, cfg) {
+  if (!e) return false;
+  const started = sd => sd && (sd.status === 'active' || sd.status === 'done' || sd.dataInicio || sd.dataConclusao);
+  if (cfg && cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(started));
+  return Object.values(e.subEtapas || {}).some(started);
+}
 function _corEtapaStripe(obra, etapaId) {
   const e = obra.etapas && obra.etapas[etapaId];
   if (!e) return '#d1d5db';
@@ -972,7 +980,7 @@ function _corEtapaStripe(obra, etapaId) {
     else vencendo = Object.values(e.subEtapas || {}).some(x => !x.isCocLista && chk(x.dataLimite || x.dataPrevista, x.status));
   }
   if (vencendo) return '#f59e0b';
-  if (e.ativa || e.status === 'active') return '#3b82f6';
+  if (_etapaIniciada(e, cfg)) return '#3b82f6';
   return '#d1d5db';
 }
 
@@ -994,6 +1002,16 @@ function renderObras() {
   // Ordenação
   if (_ordenacao === 'num-asc') lista = [...lista].sort((a, b) => (parseInt(a.numero) || 0) - (parseInt(b.numero) || 0));
   if (_ordenacao === 'num-desc') lista = [...lista].sort((a, b) => (parseInt(b.numero) || 0) - (parseInt(a.numero) || 0));
+
+  // Com filtro de etapa: ordena por urgência do stripe daquela etapa
+  // (atrasada > perto de vencer > em andamento > não iniciada > concluída).
+  if (_F.etapaStEtapa) {
+    const _rankStripe = o => {
+      const c = _corEtapaStripe(o, _F.etapaStEtapa);
+      return c === '#ef4444' ? 0 : c === '#f59e0b' ? 1 : c === '#3b82f6' ? 2 : c === '#d1d5db' ? 3 : 4;
+    };
+    lista = [...lista].sort((a, b) => _rankStripe(a) - _rankStripe(b));
+  }
 
   const total = lista.length;
   const totalPags = Math.max(1, Math.ceil(total / _obrasPorPagina));
@@ -1405,7 +1423,7 @@ function renderObraModal(obra) {
     // ── Etapa pulada ou inativa: mostrar antes de qualquer outro check ──────
     if (!eData?.ativa || eData?.status === 'pulada') {
       const isPulada = eData?.status === 'pulada';
-      const canIniciarX = !obra.concluida;
+      const canIniciarX = !_obraFinalizada(obra);
       return `<div class="etapa-item" data-etapa-row="${etapaId}">
         <div class="etapa-icon pending" style="${isPulada ? 'opacity:0.5;' : 'opacity:0.4;'}">⏭</div>
         <div class="etapa-content">
@@ -1433,7 +1451,7 @@ function renderObraModal(obra) {
           <div class="etapa-nome" style="${eStatus === 'active' ? `color:${cor2};` : ''}">
             ${cfg.nome}
             ${cfg.opcional ? '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>' : ''}
-            ${!obra.concluida && eStatus !== 'done' ? `<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>` : ''}
+            ${!_obraFinalizada(obra) && eStatus !== 'done' ? `<button class="sub-action-btn motivo" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="pularEtapa('${obra.id}','${etapaId}')">⏭ Pular</button>` : ''}
           </div>
           <div>${renderListaEtapa(obra, etapaId, hoje)}</div>
         </div>
@@ -1449,11 +1467,11 @@ function renderObraModal(obra) {
       const atrasada = subStatus !== 'done' && subStatus !== 'pulada' && subStatus !== 'cancelado' && limite && limite < hoje;
       const isIndependenteSub = subCfg.isIndependente || cfg.isIndependente;
       const _furadaSub = (subStatus === 'pending' || subStatus === 'active') && !!_subPosteriorConcluida(obra, etapaId, subCfg.id, null);
-      const canConcluir = (subStatus === 'active' || _furadaSub) && !obra.concluida;
-      const canIniciarSub = isIndependenteSub && subStatus === 'pending' && !obra.concluida;
+      const canConcluir = (subStatus === 'active' || _furadaSub) && !_obraFinalizada(obra);
+      const canIniciarSub = isIndependenteSub && subStatus === 'pending' && !_obraFinalizada(obra);
       const canMotivo = atrasada && !subData.motivoAtraso;
-      const canRevisaoSub = subStatus !== 'pending' && !obra.concluida;
-      const canProrrogar = subStatus === 'active' && !obra.concluida;
+      const canRevisaoSub = subStatus !== 'pending' && !_obraFinalizada(obra);
+      const canProrrogar = subStatus === 'active' && !_obraFinalizada(obra);
       const subRevisoes = (subData.revisoes || []);
       const subDotStyle = atrasada ? `style="background:#ef4444;border-color:#ef4444;"` : subStatus === 'done' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : subStatus === 'active' ? `style="background:${cfg.cor};border-color:${cfg.cor};"` : '';
 
@@ -1526,15 +1544,15 @@ function renderObraModal(obra) {
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="aprovado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Aprovado</button>` : '',
         subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item motivo" data-action="recusado" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Recusado</button>` : '',
         !subCfg.isAprovacaoRecusa && canConcluir ? `<button class="acao-item concluir" data-action="concluir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Concluir</button>` : '',
-        (canProrrogar || (subCfg.isAnalise && subStatus !== 'done' && !obra.concluida)) ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
-        (subStatus !== 'done' && subStatus !== 'cancelado' && !obra.concluida) ? `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>` : '',
+        (canProrrogar || (subCfg.isAnalise && subStatus !== 'done' && !_obraFinalizada(obra))) ? `<button class="acao-item" data-action="prorrogar" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Prorrogar</button>` : '',
+        (subStatus !== 'done' && subStatus !== 'cancelado' && !_obraFinalizada(obra)) ? `<button class="acao-item" data-action="atribuir" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" data-resp="${resp}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${_respBtnLabel(subData)}</button>` : '',
         `<button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button>`,
         canMotivo ? `<button class="acao-item" data-action="motivo" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/></svg> Registrar motivo</button>` : '',
-        (subCfg.isCancelavel && subStatus !== 'done' && subStatus !== 'cancelado' && !obra.concluida) ? `<button class="acao-item motivo" data-action="cancelar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Cancelar</button>` : '',
-        (subCfg.isCancelavel && subStatus === 'cancelado' && !obra.concluida) ? `<button class="acao-item concluir" data-action="reativar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reativar</button>` : '',
+        (subCfg.isCancelavel && subStatus !== 'done' && subStatus !== 'cancelado' && !_obraFinalizada(obra)) ? `<button class="acao-item motivo" data-action="cancelar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}" style="color:#ef4444;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Cancelar</button>` : '',
+        (subCfg.isCancelavel && subStatus === 'cancelado' && !_obraFinalizada(obra)) ? `<button class="acao-item concluir" data-action="reativar-doc" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reativar</button>` : '',
       ].filter(Boolean).join('');
       const _reabrirDrop = podeEditarComercial() ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
-      const actions = obra.concluida ? '' : (subStatus === 'done') ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
+      const actions = _obraFinalizada(obra) ? '' : (subStatus === 'done') ? _reabrirDrop : `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="${dropId}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="${dropId}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;">${_menuItems}</div></div>`;
       return `<div class="sub-etapa-item">
         <div class="sub-etapa-icon ${iconCls}" ${iconCls === 'active' ? `style="background:${cor};border-color:${cor};"` : iconCls === 'atrasada' ? 'style="background:#ef4444;border-color:#ef4444;"' : ''}>${statusIcon}</div>
         <div class="sub-etapa-content">
@@ -1548,8 +1566,8 @@ function renderObraModal(obra) {
     }).join('');
     const etapaIconCls = etapaStatus === 'done' ? 'done' : etapaStatus === 'active' ? 'active' : 'pending';
     const etapaIconStyle = etapaStatus === 'active' ? `style="background:${cor};border-color:${cor};"` : etapaStatus === 'done' ? `style="background:${cor};border-color:${cor};"` : '';
-    const canRevisao = etapaStatus !== 'pending' && !obra.concluida;
-    const canIniciar = etapaStatus === 'pending' && !obra.concluida;
+    const canRevisao = etapaStatus !== 'pending' && !_obraFinalizada(obra);
+    const canIniciar = etapaStatus === 'pending' && !_obraFinalizada(obra);
     return `<div class="etapa-item" data-etapa-row="${etapaId}">
       <div class="etapa-icon ${etapaIconCls}" ${etapaIconStyle}>${etapaStatus === 'done' ? '✓' : ''}</div>
       <div class="etapa-content">
@@ -1558,7 +1576,7 @@ function renderObraModal(obra) {
           ${(!cfg.isIndependente && (eData.revisoes || []).length > 0) ? `<span style="background:#f59e0b;color:#fff;font-size:0.6rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:4px;font-family:var(--font-mono);">REV.${eData.revisoes.length}</span>` : ''}
           ${cfg.opcional ? '<span style="font-size:0.65rem;font-weight:400;color:var(--muted);">(opcional)</span>' : ''}
           ${canIniciar ? `<button class="sub-action-btn concluir" style="font-size:0.68rem;padding:0.2rem 0.55rem;" onclick="iniciarEtapa('${obra.id}','${etapaId}')">▶ Iniciar</button>` : ''}
-          ${!obra.concluida && etapaStatus !== 'done' ? `
+          ${!_obraFinalizada(obra) && etapaStatus !== 'done' ? `
             <div style="position:relative;display:inline-block;">
               <button class="sub-action-btn" data-dropdown="acao-etapa-${etapaId}"
                 style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:inline-flex;align-items:center;gap:0.25rem;">
@@ -1582,7 +1600,7 @@ function renderObraModal(obra) {
 
 function _renderObraFooter(obra, canAdmin) {
   const footer = document.getElementById('obra-modal-footer'); if (!footer) return;
-  const adminBtns = canAdmin && !obra.concluida ? `
+  const adminBtns = canAdmin && !_obraFinalizada(obra) ? `
     <button class="btn-secondary" onclick="openEditarObraModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar
     </button>
@@ -1595,14 +1613,14 @@ function _renderObraFooter(obra, canAdmin) {
     Histórico
     ${_histNovo ? `<span style="position:absolute;top:-5px;right:-5px;width:12px;height:12px;background:#ef4444;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px #ef4444;"></span>` : ''}
   </button>`;
-  if (obra.concluida) {
+  if (_obraFinalizada(obra)) {
     footer.innerHTML = `
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}
         ${canAdmin ? `<button class="btn-secondary" onclick="reabrirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">↩ Reabrir</button>` : ''}
         ${histBtn}
       </div>
       <div style="display:flex;gap:0.6rem;align-items:center;">
-        <span style="font-size:0.78rem;color:var(--muted);">✅ Obra concluída</span>
+        <span style="font-size:0.78rem;color:var(--muted);">${obra.cancelada ? '🔴 Obra cancelada' : obra.emEspera ? '🟠 Obra em espera' : '✅ Obra concluída'}</span>
         <button class="btn-secondary" onclick="closeObraModal()">Fechar</button>
       </div>`;
   } else {
@@ -1926,7 +1944,7 @@ function _renderCocLista(obra, etapaId, subId) {
   const cocLista = e?.cocLista || [];
   // Dot status for COC is based on cocLista state
   // (subEtapas.coc is a stub — actual state in cocLista)
-  const canAct = !obra.concluida;
+  const canAct = !_obraFinalizada(obra);
   const hoje = new Date().toISOString().slice(0, 10);
 
   const itemsHtml = cocLista.map((item, idx) => {
@@ -2288,7 +2306,7 @@ function renderListaEtapa(obra, etapaId, hoje) {
   const cfg = ETAPAS_CONFIG[etapaId];
   const e = obra.etapas?.[etapaId];
   const lista = e?.lista || [];
-  const canAdd = !obra.concluida;
+  const canAdd = !_obraFinalizada(obra);
   const label = cfg.nome === 'Aditivos / Termo' ? 'Aditivo' : 'Medição';
 
   const itemsHtml = lista.map((item, idx) => {
@@ -2355,11 +2373,11 @@ function renderListaEtapa(obra, etapaId, hoje) {
       const dotColor = subStatus === 'done' ? '#22c55e' : atrasada ? '#ef4444' : subStatus === 'active' ? cfg.cor : 'var(--muted)';
       const dotSymbol = subStatus === 'done' ? '✓' : atrasada ? '!' : subStatus === 'active' ? '›' : '·';
       const dropId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
-      const canConc = subStatus !== 'done' && !obra.concluida;
+      const canConc = subStatus !== 'done' && !_obraFinalizada(obra);
       const _furadaSubL = (subStatus === 'pending' || subStatus === 'active') && !!_subPosteriorConcluida(obra, etapaId, subCfg.id, item.id);
 
-      const _reabrirDropLista = (podeEditarComercial() && subStatus === 'done' && !obra.concluida) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
-      const acoesDropdown = !obra.concluida && subStatus !== 'done' ? (() => {
+      const _reabrirDropLista = (podeEditarComercial() && subStatus === 'done' && !_obraFinalizada(obra)) ? `<div style="position:relative;display:inline-block;"><button class="sub-action-btn" data-dropdown="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" style="font-size:0.68rem;padding:0.2rem 0.55rem;background:var(--surface2);border-color:var(--border2);color:var(--text);display:flex;align-items:center;gap:0.25rem;">Ações<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><div id="reab-acao-lista-${etapaId}-${item.id}-${subCfg.id}" class="acao-dropdown-menu" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:8px;box-shadow:0 8px 24px #00000022;min-width:165px;overflow:hidden;"><button class="acao-item" data-action="reabrir-sub" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg> Reabrir</button><button class="acao-item" data-action="obs" data-obra="${obra.id}" data-etapa="${etapaId}" data-item="${item.id}" data-sub="${subCfg.id}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Observações</button></div></div>` : '';
+      const acoesDropdown = !_obraFinalizada(obra) && subStatus !== 'done' ? (() => {
         const _dId = `acao-lista-${etapaId}-${item.id}-${subCfg.id}`;
         const _resp = _getResponsaveis(sub).join(',');
         const _items = [
@@ -3367,7 +3385,7 @@ async function _concluirSubAjuste(obraId, etapaId, subId, itemId, data, obsTxt) 
   }
   const todasEtapasDone = ETAPAS_ORDER.filter(id => etapas[id] && etapas[id].ativa && etapas[id].status !== 'pulada').every(id => etapas[id] && etapas[id].status === 'done');
   const upd = { etapas };
-  if (todasEtapasDone && !obra.concluida) { upd.concluida = true; upd.dataConclusao = data; }
+  if (todasEtapasDone && !_obraFinalizada(obra)) { upd.concluida = true; upd.dataConclusao = data; }
   await db.collection('obras').doc(obraId).update(upd);
   _audit(obraId, 'conclusao', `${cfg.nome} \u00b7 ${subNome} concluída (ajuste de inconsistência) com data ${data}`);
   showComercialToast('Etapa ajustada e concluída! \u2705', 'success');
