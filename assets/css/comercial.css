@@ -127,7 +127,7 @@
 .obra-card-numero {
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--accent);

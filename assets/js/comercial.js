@@ -106,7 +106,6 @@ const ETAPAS_ORDER = ['proposta', 'contrato', 'documentacoes', 'aditivos', 'medi
 
 const REPRESENTANTES = ['Verdile', 'Ricardo', 'Sebastião', 'Ângelo', 'Sérgio', 'Matheus', 'Henrique', 'Flávio', 'Gazzo'];
 
-
 // ── Helper lista aditivos/medições ───────────────────────────────────────────
 function _toRomano(num) {
   num = parseInt(num) || 0;
@@ -125,8 +124,12 @@ function criarItemLista(etapaId, titulo, dataPrevista) {
   return { id: `${etapaId}_${Date.now()}`, titulo, dataPrevista: dataPrevista || null, status: 'active', subEtapas };
 }
 
-
 // ── Responsáveis (multi-atribuição) ─────────────────────────────
+// Title-case para nomes em relatórios (corrige case misturado).
+function _capRel(nome) {
+  if (!nome || nome === '—') return nome || '—';
+  return String(nome).trim().split(/\s+/).map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w).join(' ');
+}
 function _getResponsaveis(o) {
   if (!o) return [];
   if (Array.isArray(o.responsaveis)) return o.responsaveis.filter(Boolean);
@@ -153,7 +156,6 @@ function _respBadges(o, fs, alvo) {
     : `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:var(--surface2);color:var(--muted);border:1px solid var(--border2);border-radius:5px;font-size:${fs};font-weight:600;padding:0.1rem 0.45rem;font-family:var(--font-mono);">${icoU} ${r}</span>`
   ).join(' ');
 }
-
 
 function _migrateObraToV3(obra) {
   const etapas = obra.etapas ? JSON.parse(JSON.stringify(obra.etapas)) : {};
@@ -197,7 +199,6 @@ function _migrateObraToV3(obra) {
 
   return { etapas };
 }
-
 
 function _migrateObraToV10(obra) {
   // Marca o stub `coc` em Documentações com isCocLista (não deve contar como doc).
@@ -341,7 +342,6 @@ function _migrateObraToV4(obra) {
   return { etapas };
 }
 
-
 // ── Init estrutura etapas ─────────────────────────────────────────────────────
 function initObraEtapas(dataFechamento) {
   const etapas = {};
@@ -392,7 +392,6 @@ let _filtroUsuarioPendencia = ''; // Para visualização do gestor
 // ── Bloco 4: Filtros consolidados (painel lateral) ───────────────────────────
 const _F = { busca: '', reps: [], atrib: '', atribUser: '', periodoDe: '', periodoAte: '', etapaStEtapa: '', etapaStVal: '' };
 function _fSet(k, v) { _F[k] = v; _paginaAtual = 0; _afterFiltro(); }
-function _fToggle(k, v, on) { const a = _F[k]; const i = a.indexOf(v); if (on && i < 0) a.push(v); if (!on && i >= 0) a.splice(i, 1); _paginaAtual = 0; _afterFiltro(); }
 function _fToggleRep(rep, on) { const i = _F.reps.indexOf(rep); if (on && i < 0) _F.reps.push(rep); if (!on && i >= 0) _F.reps.splice(i, 1); _paginaAtual = 0; _afterFiltro(); }
 function _afterFiltro() { renderObras(); _atualizarBotaoFiltros(); }
 function _contarFiltrosAtivos() {
@@ -457,46 +456,6 @@ function _obraTemQualquerResp(o) {
     const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return false;
     if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _getResponsaveis(x).length));
     return Object.values(e.subEtapas || {}).some(x => x.status !== 'done' && x.status !== 'cancelado' && _getResponsaveis(x).length);
-  });
-}
-function _obraSemaforo(o) {
-  if (o.concluida) return 'concluida';
-  if (hasSubEtapaAtrasada(o)) return 'atrasada';
-  if (_obraTemVencendo(o, 7)) return 'vencendo';
-  return 'em_dia';
-}
-function _obraTemVencendo(o, dias) {
-  if (!o.etapas || _obraFinalizada(o)) return false;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const lim = new Date(); lim.setDate(lim.getDate() + dias); const limStr = lim.toISOString().slice(0, 10);
-  const chk = (ref, st) => ref && st !== 'done' && st !== 'pulada' && st !== 'cancelado' && ref >= hoje && ref <= limStr;
-  return ETAPAS_ORDER.some(id => {
-    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return false;
-    if (cfg.isLista) return (e.lista || []).some(it => Object.values(it.subEtapas || {}).some(x => chk(_refAtraso(x, it), x.status)));
-    return Object.values(e.subEtapas || {}).some(x => !x.isCocLista && chk(x.dataLimite || x.dataPrevista, x.status)) || (e.cocLista || []).some(ci => chk(ci.dataPrevista, ci.status));
-  });
-}
-function _obraEntregaMatch(o, buckets) {
-  if (!o.etapas) return false;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const d1 = new Date(); d1.setDate(d1.getDate() + 1); const s1 = d1.toISOString().slice(0, 10);
-  const d7 = new Date(); d7.setDate(d7.getDate() + 7); const s7 = d7.toISOString().slice(0, 10);
-  const d30 = new Date(); d30.setDate(d30.getDate() + 30); const s30 = d30.toISOString().slice(0, 10);
-  let temPrazo = false, semData = false;
-  const refs = [];
-  ETAPAS_ORDER.forEach(id => {
-    const e = o.etapas[id], cfg = ETAPAS_CONFIG[id]; if (!e || !e.ativa) return;
-    const push = (ref, st) => { if (st === 'done' || st === 'pulada' || st === 'cancelado') return; temPrazo = temPrazo || !!ref; if (!ref) semData = true; if (ref) refs.push(ref); };
-    if (cfg.isLista) (e.lista || []).forEach(it => Object.values(it.subEtapas || {}).forEach(x => push(_refAtraso(x, it), x.status)));
-    else { Object.values(e.subEtapas || {}).forEach(x => { if (!x.isCocLista) push(x.dataLimite || x.dataPrevista, x.status); }); (e.cocLista || []).forEach(ci => push(ci.dataPrevista, ci.status)); }
-  });
-  return buckets.some(b => {
-    if (b === 'sem_data') return semData;
-    if (b === 'atraso') return refs.some(r => r < hoje);
-    if (b === '1d') return refs.some(r => r >= hoje && r <= s1);
-    if (b === '7d') return refs.some(r => r >= hoje && r <= s7);
-    if (b === '30d') return refs.some(r => r >= hoje && r <= s30);
-    return false;
   });
 }
 function _etapaStatusMatch(o, etapaId, val) {
@@ -564,15 +523,7 @@ function setComercialView(v) {
 }
 function _setBuscaArquivo(v) { _buscaArquivo = (v || '').trim().toLowerCase(); if (_view === 'arquivo' || _view === 'lixeira') renderObras(); }
 
-function setFiltroRep(val) { _filtroRep = val; _paginaAtual = 0; renderObras(); }
-function setFiltroEtapa(val) { _filtroEtapa = val; _paginaAtual = 0; renderObras(); }
-function setFiltroDataDe(val) { _filtroDataDe = val; _paginaAtual = 0; renderObras(); }
-function setFiltroDataAte(val) { _filtroDataAte = val; _paginaAtual = 0; renderObras(); }
-function setFiltroEtapaAtraso(val) { _filtroEtapaAtraso = val; _paginaAtual = 0; renderObras(); }
-function setFiltroBusca(val) { _filtroBusca = val.toLowerCase().trim(); _paginaAtual = 0; renderObras(); }
 function setOrdenacao(val) { _ordenacao = val; _paginaAtual = 0; renderObras(); }
-function setFiltroPeriodoDe(val) { _filtroPeriodoDe = val; _paginaAtual = 0; renderObras(); }
-function setFiltroPeriodoAte(val) { _filtroPeriodoAte = val; _paginaAtual = 0; renderObras(); }
 function setObrasPorPagina(val) { _obrasPorPagina = parseInt(val); localStorage.setItem('comercial-per-page', val); _paginaAtual = 0; renderObras(); }
 function irParaPagina(p) { _paginaAtual = p; renderObras(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
@@ -863,7 +814,6 @@ function getPrazoInfo(prazo) {
   return { texto: `Prazo: ${fmt}`, cls: '' };
 }
 
-
 // Data de referência p/ atraso de uma sub-etapa: dataLimite OU dataPrevista (subs isAnalise/data livre),
 // e, em itens de lista ativos, a dataPrevista do item.
 function _refAtraso(sub, item) {
@@ -884,31 +834,6 @@ function hasEtapaAtrasadaPorId(obra, etapaId) {
   }
   return Object.values(e.subEtapas || {}).some(sub => !sub.isCocLista && _vencido(sub.dataLimite || sub.dataPrevista, sub.status, hoje))
     || (e.cocLista || []).some(ci => _vencido(ci.dataPrevista, ci.status, hoje));
-}
-
-function hasSubEtapaAtrasada(obra) {
-  if (!obra.etapas || _obraFinalizada(obra)) return false;
-  const hoje = new Date().toISOString().slice(0, 10);
-  for (const id of ETAPAS_ORDER) {
-    const e = obra.etapas[id];
-    if (!e?.ativa) continue;
-    // Lista (aditivos/medicao)
-    if (Array.isArray(e.lista)) {
-      for (const item of e.lista) {
-        for (const sub of Object.values(item.subEtapas || {})) {
-          if (_vencido(_refAtraso(sub, item), sub.status, hoje)) return true;
-        }
-      }
-    } else {
-      for (const sub of Object.values(e.subEtapas || {})) {
-        if (!sub.isCocLista && _vencido(sub.dataLimite || sub.dataPrevista, sub.status, hoje)) return true;
-      }
-      for (const ci of (e.cocLista || [])) {
-        if (_vencido(ci.dataPrevista, ci.status, hoje)) return true;
-      }
-    }
-  }
-  return false;
 }
 
 // Stripe do card — fonte única: semáforo vermelho > amarelo > azul > verde.
@@ -1633,8 +1558,6 @@ function _renderObraFooter(obra, canAdmin) {
   }
 }
 
-
-
 // ── Finalizar obra: modal compacto com 3 estados
 let _finalizarOv = null;
 function openFinalizarModal(obraId) {
@@ -1930,7 +1853,6 @@ async function saveRecusa() {
   closeRecusaModal();
 }
 
-
 // ── COC Lista — múltiplas COCs por obra ───────────────────────────────────────
 let _cocObraId = null;
 
@@ -2209,7 +2131,6 @@ async function iniciarSubEtapa(obraId, etapaId, subId) {
   showComercialToast('Sub-etapa iniciada! ✅', 'success');
 }
 
-
 let _addItemEtapaId = null, _addItemObraId = null;
 
 function openAddItemModal(obraId, etapaId) {
@@ -2279,27 +2200,6 @@ async function confirmarExcluir() {
   await db.collection('obras').doc(_excluirObraId).update({ etapas });
   showComercialToast('Item excluído. ✅', 'success');
   closeExcluirItemModal();
-}
-
-async function concluirItemLista(obraId, etapaId, itemId) {
-  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const hoje = new Date().toISOString().slice(0, 10);
-  const etapas = JSON.parse(JSON.stringify(obra.etapas));
-  const item = etapas[etapaId].lista.find(i => i.id === itemId);
-  if (!item) return;
-  item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username;
-  // Verificar se todos itens done → etapa done → verificar conclusão obra
-  const todosDone = etapas[etapaId].lista.every(i => i.status === 'done');
-  if (todosDone) etapas[etapaId].status = 'done';
-  const todasDone = ETAPAS_ORDER.filter(id => etapas[id]?.ativa && etapas[id]?.status !== 'pulada').every(id => etapas[id]?.status === 'done');
-  if (todasDone) {
-    await db.collection('obras').doc(obraId).update({ etapas, concluida: true, dataConclusao: hoje });
-    showComercialToast('Obra concluída! 🎉', 'success');
-  } else {
-    await db.collection('obras').doc(obraId).update({ etapas });
-    showComercialToast('Item concluído! ✅', 'success');
-  }
 }
 
 function renderListaEtapa(obra, etapaId, hoje) {
@@ -2438,32 +2338,9 @@ function renderListaEtapa(obra, etapaId, hoje) {
   return `${itemsHtml}${addBtn}`;
 }
 
-
 // ── Dropdown Ações ─────────────────────────────────────────────────────────
 
 // ── Contar pendências atribuídas ao usuário logado ───────────────────────────
-function contarMinhasPendencias(obra) {
-  if (!obra.etapas || obra.concluida) return 0;
-  let count = 0;
-  ETAPAS_ORDER.forEach(id => {
-    const e = obra.etapas[id];
-    const cfg = ETAPAS_CONFIG[id];
-    if (!e?.ativa) return;
-    if (cfg.isLista) {
-      (e.lista || []).forEach(item => {
-        Object.values(item.subEtapas || {}).forEach(s => {
-          if (s.status !== 'done' && s.status !== 'cancelado' && _temResp(s, currentUser?.username)) count++;
-        });
-      });
-    } else {
-      Object.values(e.subEtapas || {}).forEach(s => {
-        if (s.status !== 'done' && s.status !== 'cancelado' && _temResp(s, currentUser?.username)) count++;
-      });
-    }
-  });
-  return count;
-}
-
 
 // ── Badge Histórico — itens novos desde última visualização ─────────────────
 function _getHistKey(obraId) { return `hist-visto-${obraId}`; }
@@ -2501,7 +2378,6 @@ function _historicoTemNovos(obra) {
 function _marcarHistoricoVisto(obra) {
   localStorage.setItem(_getHistKey(obra.id), _contarHistoricoTotal(obra));
 }
-
 
 // ── Auditoria — registro imutável em subcoleção ───────────────────────────────
 function _nomeSubProrroga(etapaId, subId) {
@@ -2573,7 +2449,6 @@ const _AUDIT_CORES = {
   arquivamento: '#c79a5a', movimentacao: '#3b82f6', exclusao: '#ef4444', restauracao: '#22c55e',
 };
 
-
 // ── Contar tarefas abertas atribuídas ao usuário no card ─────────────────────
 function _contarTarefasAtribuidas(obra) {
   if (obra.concluida || !currentUser) return 0;
@@ -2611,17 +2486,7 @@ function _contarTarefasAtribuidas(obra) {
 // ── Dropdown Ações — event delegation ────────────────────────────────────────
 let _acaoListenerActive = false;
 
-function _acaoCloseAll(e) {
-  if (!e.target.closest('[data-dropdown]') && !e.target.closest('.acao-dropdown-menu')) {
-    document.querySelectorAll('.acao-dropdown-menu').forEach(d => d.style.display = 'none');
-  }
-}
-
-function toggleAcaoDropdown(id) { } // mantido para compatibilidade
-
-function closeAcaoDropdown(id) {
-  const el = document.getElementById(id); if (el) el.style.display = 'none';
-}
+// mantido para compatibilidade
 
 function _initAcaoDelegate() {
   if (_acaoListenerActive) return;
@@ -2719,20 +2584,7 @@ function _initAcaoDelegate() {
   });
 }
 
-
 // ── Concluir sub-etapa de dentro de uma lista (aditivo/medicao) ───────────
-async function concluirSubEtapaDeLista(obraId, etapaId, itemId, subId) {
-  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  const cfg = ETAPAS_CONFIG[etapaId];
-  const precisaTipo = subId === 'termo_assinatura';
-  if (precisaTipo) {
-    _tipoConclObraId = obraId; _tipoConclEtapaId = etapaId; _tipoConclSubId = subId;
-    _tipoConclItemId = itemId;
-    document.getElementById('tipo-conclusao-modal').style.display = 'flex';
-    return;
-  }
-  await _concluirSubDeLista(obraId, etapaId, itemId, subId, null);
-}
 let _tipoConclItemId = null;
 async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCustom, obsTxt) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -2780,14 +2632,6 @@ async function _concluirSubDeLista(obraId, etapaId, itemId, subId, tipo, dataCus
 }
 
 // ── Concluir sub-etapa ────────────────────────────────────────────────────────
-async function concluirSubEtapa(obraId, etapaId, subId) {
-  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  // Sub-etapas com escolha de tipo (Aditivos/Contrato assinatura)
-  const precisaTipo = (etapaId === 'aditivos' && subId === 'termo_assinatura') ||
-    (etapaId === 'contrato' && subId === 'assinatura');
-  if (precisaTipo) { openTipoConclusaoModal(obraId, etapaId, subId); return; }
-  await _concluirComTipo(obraId, etapaId, subId, null);
-}
 
 async function _concluirComTipo(obraId, etapaId, subId, tipo, dataCustom) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -2941,11 +2785,6 @@ async function pularEtapa(obraId, etapaId) {
 // ── Modal Aprovado/Assinado (Aditivo) ────────────────────────────────────────
 let _tipoConclObraId = null, _tipoConclEtapaId = null, _tipoConclSubId = null;
 
-function openTipoConclusaoModal(obraId, etapaId, subId) {
-  _tipoConclObraId = obraId; _tipoConclEtapaId = etapaId; _tipoConclSubId = subId;
-  document.getElementById('tipo-conclusao-modal').style.display = 'flex';
-}
-
 async function salvarTipoConclusao(tipo) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
   document.getElementById('tipo-conclusao-modal').style.display = 'none';
@@ -3062,8 +2901,6 @@ async function saveProrrogacao() {
   showComercialToast(`Prazo atualizado para ${new Date(novaData + 'T12:00:00').toLocaleDateString('pt-BR')}! ✅`, 'success');
   closeProrrogarModal();
 }
-
-
 
 // ── Helper: encontrar sub-etapa em etapa normal ou lista ─────────────────────
 function _findSubRef(etapas, etapaId, subId, itemId) {
@@ -4092,8 +3929,8 @@ function _gerarDadosRelatorio() {
             })();
             linhas.push({
               numero: obra.numero || obra.id.slice(-6), nome: obra.nome,
-              representante: obra.representante || '—',
-              responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
+              representante: _capRel(obra.representante),
+              responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).map(_capRel).join(', ') || '—',
               etapa: `${NOMES_ETAPA[etapaId]} — ${item.titulo}`,
               subEtapa: subCfg.nome,
               status: cancelada ? 'Cancelada' : concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
@@ -4135,8 +3972,8 @@ function _gerarDadosRelatorio() {
         linhas.push({
           numero: obra.numero || obra.id.slice(-6),
           nome: obra.nome,
-          representante: obra.representante || '—',
-          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
+          representante: _capRel(obra.representante),
+          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).map(_capRel).join(', ') || '—',
           etapa: NOMES_ETAPA[etapaId],
           subEtapa: subCfg.nome,
           status: cancelada ? 'Cancelada' : concluida ? 'Concluída' : atrasada ? 'Em atraso' : vencendo ? 'Perto de vencer' : 'Em andamento',
@@ -4246,7 +4083,6 @@ function exportarRelatorioPDF() {
   w.document.close();
   closeRelatorioModal();
 }
-
 
 // ── Observações por etapa/sub-etapa ──────────────────────────────────────────
 let _obsObraId = null, _obsEtapaId = null, _obsSubId = null;
@@ -4498,27 +4334,6 @@ function openHistoricoModal(obraId) {
   });
 }
 
-function _switchHistoricoTab(tab, obraId) {
-  const t1 = document.getElementById('tab-historico-btn');
-  const t2 = document.getElementById('tab-auditoria-btn');
-  const b1 = document.getElementById('historico-modal-body');
-  const b2 = document.getElementById('historico-auditoria-body');
-  if (!t1 || !t2 || !b1 || !b2) return;
-  if (tab === 'historico') {
-    t1.style.borderBottom = '2px solid var(--accent)'; t1.style.color = 'var(--accent)';
-    t2.style.borderBottom = '2px solid transparent'; t2.style.color = 'var(--muted)';
-    b1.style.display = 'block'; b2.style.display = 'none';
-  } else {
-    t2.style.borderBottom = '2px solid var(--accent)'; t2.style.color = 'var(--accent)';
-    t1.style.borderBottom = '2px solid transparent'; t1.style.color = 'var(--muted)';
-    b1.style.display = 'none'; b2.style.display = 'block';
-    _loadAuditoria(obraId).then(() => {
-      const el = document.getElementById('historico-auditoria-body');
-      if (el) _renderAuditoriaAba(obraId, el);
-    });
-  }
-}
-
 function _renderAuditoriaAba(obraId, el) {
   const entries = _auditoriaCache[obraId] || [];
   if (!entries.length) {
@@ -4539,70 +4354,6 @@ function _renderAuditoriaAba(obraId, el) {
   }).join('') + '<div style="font-size:0.7rem;color:var(--muted);text-align:center;padding:0.75rem;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Registro imutável — auditoria do sistema</div>';
 }
 
-function _prorrogItens(sd, label) {
-  const out = [];
-  (sd.prorrogacoes || []).forEach(p => out.push({
-    tipo: 'prorroga', badge: `⏱ Prorrogação · ${label}`,
-    texto: (p.motivo || 'Prazo ajustado') + ((p.de || p.para) ? ` (${p.de || '—'} → ${p.para || '—'})` : ''),
-    meta: `${(p.em || '').slice(0, 10)} — ${p.por || '—'}`
-  }));
-  if (!(sd.prorrogacoes || []).length && (sd.prorrogacaoJustificativa || sd.prorrogadoEm)) {
-    out.push({
-      tipo: 'prorroga', badge: `⏱ Prorrogação · ${label}`,
-      texto: sd.prorrogacaoJustificativa || 'Prazo prorrogado',
-      meta: `${sd.prorrogadoEm || '—'} — ${sd.prorrogadoPor || '—'}`
-    });
-  }
-  return out;
-}
-function _renderHistoricoAba(obra, el) {
-  const NOMES = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
-  let html = '';
-  ETAPAS_ORDER.forEach(etapaId => {
-    const e = obra.etapas?.[etapaId]; if (!e) return;
-    const cfg = ETAPAS_CONFIG[etapaId];
-    const itens = [];
-    (e.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
-    // Sub-etapas normais
-    if (!cfg.isLista) {
-      (cfg.subEtapas || []).forEach(sub => {
-        const sd = e.subEtapas?.[sub.id];
-        (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${sub.nome}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
-        if (sd) _prorrogItens(sd, sub.nome).forEach(x => itens.push(x));
-      });
-      (e.cocLista || []).forEach(coc => _prorrogItens(coc, `COC · ${coc.nome || ''}`).forEach(x => itens.push(x)));
-    } else {
-      // Lista (aditivos/medicao)
-      (e.lista || []).forEach(item => {
-        (cfg.subEtapasTemplate || []).forEach(sub => {
-          const sd = item.subEtapas?.[sub.id];
-          (sd?.revisoes || []).forEach(r => itens.push({ tipo: 'rev', badge: `REV.${r.numero} ${item.titulo}`, texto: r.motivo, meta: `${r.data || '—'} — ${r.por || '—'}` }));
-          if (sd) _prorrogItens(sd, `${item.titulo} · ${sub.nome}`).forEach(x => itens.push(x));
-        });
-      });
-    }
-    if (!itens.length) return;
-    html += `<div style="margin-bottom:1.25rem;"><div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-family:var(--font-mono);margin-bottom:0.5rem;padding-bottom:0.3rem;border-bottom:1px solid var(--border2);">${NOMES[etapaId] || etapaId}</div>`;
-    itens.forEach(s => {
-      const badgeMax = 48;
-      const badgeLabel = s.badge.length > badgeMax ? s.badge.slice(0, badgeMax) + '…' : s.badge;
-      html += `<div class="hist-entry">
-        <div class="hist-entry-header">
-          <span class="hist-entry-badge ${s.tipo}" title="${s.badge}">${badgeLabel}</span>
-          <span class="hist-entry-meta">${s.meta}</span>
-        </div>
-        <div class="hist-entry-text">${s.texto.replace(/^(Recusado:)/, '<span style="color:#ef4444;font-weight:700;">$1</span>')}</div>
-      </div>`;
-    });
-    html += '</div>';
-  });
-  if (!html) html = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem;">Nenhum histórico registrado.</div>';
-  el.innerHTML = html;
-  _marcarHistoricoVisto(obra);
-  document.getElementById('historico-modal').style.display = 'flex';
-  // Atualizar footer para remover badge
-  const o = _obras.find(x => x.id === obraId); if (o) { _saveAccordionState(); renderObraModal(o); _restoreAccordionState(); }
-}
 function closeHistoricoModal() { document.getElementById('historico-modal').style.display = 'none'; }
 
 let _atribObraId = null, _atribEtapaId = null, _atribSubId = null, _atribModo = null;
@@ -4681,8 +4432,6 @@ async function saveAtribuicao() {
   closeAtribuirModal();
 }
 
-
-
 // ── Relatório de pendências ───────────────────────────────────────────────────
 function exportarRelatorioPendencias() {
   const hoje = new Date().toISOString().slice(0, 10);
@@ -4701,10 +4450,10 @@ function exportarRelatorioPendencias() {
         rows.push({
           numero: obra.numero || obra.id.slice(-6),
           nome: obra.nome,
-          representante: obra.representante || '—',
+          representante: _capRel(obra.representante),
           etapa: titulo ? `${cfg.nome} — ${titulo}` : cfg.nome,
           subEtapa: subNome,
-          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).join(', ') || '—',
+          responsaveis: _getResponsaveis(sub), responsavel: _getResponsaveis(sub).map(_capRel).join(', ') || '—',
           status: ref && ref < hoje ? 'Atrasada' : 'Em andamento',
           dataLimite: ref ? new Date(ref + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
         });
@@ -4903,109 +4652,6 @@ function exportarRelatorioRepresentanteXLS() {
 // ── Filtro Minhas Pendências + Período ────────────────────────────────────────
 let _dropdownAberto = false;
 
-function togglePeriodoDropdown() {
-  const btn = document.getElementById('btn-periodo');
-  const dd = document.getElementById('periodo-dropdown');
-  if (!dd) return;
-  const open = dd.style.display === 'flex';
-  // Fechar pendências se aberto
-  const pdrop = document.getElementById('pendencias-dropdown');
-  if (pdrop) pdrop.style.display = 'none';
-  dd.style.display = open ? 'none' : 'flex';
-  if (btn) {
-    btn.style.background = !open ? 'var(--accent)' : '';
-    btn.style.color = !open ? '#fff' : '';
-    btn.style.borderColor = !open ? 'var(--accent)' : '';
-  }
-}
-
-function toggleMinhasPendencias() {
-  const btn = document.getElementById('btn-minhas-pendencias');
-  const pdrop = document.getElementById('pendencias-dropdown');
-  if (!pdrop) return;
-  // Fechar período se aberto
-  const perDrop = document.getElementById('periodo-dropdown');
-  if (perDrop) perDrop.style.display = 'none';
-  // Desligar: estado real está em _filtroMinhasPendencias (cobre gestor E usuário comum)
-  const ativo = _filtroMinhasPendencias || pdrop.style.display === 'flex';
-  if (ativo) {
-    pdrop.style.display = 'none';
-    const wrap = document.getElementById('pendencia-user-wrap');
-    if (wrap) wrap.style.display = 'none';
-    _filtroMinhasPendencias = false;
-    _filtroUsuarioPendencia = '';
-    _paginaAtual = 0;
-    if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
-    renderObras();
-    return;
-  }
-  // Verificar se é gestor
-  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
-  if (isGestor) {
-    // Gestor: mostrar seletor
-    _atualizarSeletorPendencia();
-    document.getElementById('pendencia-user-wrap').style.display = 'flex';
-    pdrop.style.display = 'flex';
-    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
-  } else {
-    // Usuário comum: aplicar direto
-    _filtroMinhasPendencias = true;
-    _filtroUsuarioPendencia = '';
-    _paginaAtual = 0;
-    renderObras();
-    if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--accent)'; }
-  }
-}
-
-
-function _atualizarSeletorPendencia() {
-  const wrap = document.getElementById('pendencia-user-wrap');
-  if (!wrap) return;
-  const isGestor = currentUser?.isSuperAdmin || (currentUser?.acessos || []).includes('adminComercial');
-  if (!isGestor) { wrap.style.display = 'none'; return; }
-  const lista = (typeof users !== 'undefined' ? users : []).filter(u =>
-    u.isSuperAdmin || (u.acessos || []).includes('adminComercial') || (u.acessos || []).includes('comercial')
-  );
-  const sel = document.getElementById('pendencia-user-sel');
-  if (sel) {
-    sel.innerHTML = lista.map(u => `<option value="${u.username}"${u.username === currentUser.username ? ' selected' : ''}>${u.username}${u.username === currentUser.username ? ' (você)' : ''}</option>`).join('');
-    wrap.style.display = 'flex';
-  }
-}
-
-function aplicarPendencias() {
-  const sel = document.getElementById('pendencia-user-sel');
-  const val = sel?.value || '';
-  _filtroUsuarioPendencia = val === currentUser?.username ? '' : val;
-  _filtroMinhasPendencias = true;
-  _paginaAtual = 0;
-  // Fechar dropdown
-  const pdrop = document.getElementById('pendencias-dropdown');
-  if (pdrop) pdrop.style.display = 'none';
-  renderObras();
-}
-
-function setPendenciaUsuario(val) {
-  _filtroUsuarioPendencia = val === currentUser?.username ? '' : val;
-  _paginaAtual = 0; renderObras();
-}
-
-function limparPeriodo() {
-  _filtroPeriodoDe = ''; _filtroPeriodoAte = ''; _filtroUsuarioPendencia = '';
-  const de = document.getElementById('periodo-de'), ate = document.getElementById('periodo-ate');
-  if (de) de.value = ''; if (ate) ate.value = '';
-  _filtroMinhasPendencias = false; _dropdownAberto = false;
-  const btn = document.getElementById('btn-minhas-pendencias');
-  const perDrop = document.getElementById('periodo-dropdown');
-  const pDrop = document.getElementById('pendencias-dropdown');
-  if (perDrop) perDrop.style.display = 'none';
-  if (pDrop) pDrop.style.display = 'none';
-  if (btn) { btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = ''; }
-  const btnPer = document.getElementById('btn-periodo');
-  if (btnPer) { btnPer.style.background = ''; btnPer.style.color = ''; btnPer.style.borderColor = ''; }
-  renderObras();
-}
-
 // Fechar dropdown ao clicar fora
 document.addEventListener('click', e => {
   if (!_dropdownAberto) return;
@@ -5016,7 +4662,6 @@ document.addEventListener('click', e => {
     wrap.style.display = 'none';
   }
 });
-
 
 let _cToast = null;
 function showComercialToast(msg, type = 'success') {

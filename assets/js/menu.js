@@ -1,21 +1,3 @@
-function getSectorBadge(user) {
-  const SETOR_ICON = {
-    'TI': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>',
-    'Contabilidade': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v16"/><path d="M17.196 5.804 6.804 18.196"/><path d="M4 8h16"/><path d="M4 16h16"/></svg>',
-    'Engenharia': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a6 6 0 0 1 6-6h0"/><path d="M14 6h0a6 6 0 0 1 6 6v3"/></svg>',
-    'Comercial': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17 2 2a1 1 0 1 0 3-3"/><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4"/><path d="m21 3 1 11h-1"/><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3"/><path d="M3 4h8"/></svg>',
-    'Financeiro': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
-    'PCP': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h10"/><path d="M6 12h9"/><path d="M11 18h7"/></svg>',
-    'Orçamento': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/></svg>',
-    'Segurança do Trabalho': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>',
-    'Suprimentos': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect width="13" height="13" x="9" y="11" rx="2"/><path d="M9 17H8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h1"/><path d="M21 17h1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1"/></svg>',
-    'RH': '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg>',
-  };
-  const icon = SETOR_ICON[user.setor] || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke-dasharray="4 2"/></svg>';
-  const label = user.setor || 'Sem setor';
-  return `<span style="display:inline-flex;align-items:center;gap:5px;">${icon} ${label}</span>`;
-}
-
 // ===== MENU PRINCIPAL — Lógica de navegação =====
 
 let menuCurrentUser = null;
@@ -138,41 +120,6 @@ function updateGreetingClock() {
 }
 
 // ── Módulos Pai ──
-function toggleModPai(id) {
-  const isCollapsed = document.getElementById('chamados-sidebar')?.classList.contains('collapsed');
-  if (isCollapsed) {
-    _toggleModPaiFloat(id);
-  } else {
-    _openModPai(id);
-  }
-}
-
-function _openModPai(id) {
-  const btn = document.getElementById('mod-pai-' + id + '-btn');
-  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
-  if (!btn || !submenu) return;
-  const isOpen = submenu.classList.contains('open');
-  // Fecha todos os outros
-  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open'));
-  document.querySelectorAll('.mod-pai-btn').forEach(b => b.classList.remove('open'));
-  if (!isOpen) {
-    submenu.classList.add('open');
-    btn.classList.add('open');
-  }
-}
-
-function _toggleModPaiFloat(id) {
-  const btn = document.getElementById('mod-pai-' + id + '-btn');
-  const submenu = document.getElementById('mod-pai-' + id + '-submenu');
-  if (!btn || !submenu) return;
-  // Posiciona o float ao lado do botão
-  const rect = btn.getBoundingClientRect();
-  submenu.style.top = rect.top + 'px';
-  const isOpen = submenu.classList.contains('open-float');
-  // Fecha todos
-  document.querySelectorAll('.mod-pai-submenu').forEach(s => s.classList.remove('open-float'));
-  if (!isOpen) submenu.classList.add('open-float');
-}
 
 // Fecha submenu flutuante ao clicar fora
 document.addEventListener('click', e => {
@@ -186,21 +133,11 @@ document.addEventListener('click', e => {
   }
 });
 
-function goToChamados() {
-  window.location.href = 'index.html';
-}
-
 async function menuLogout() {
   if (!await showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' })) return;
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'index.html';
-}
-
-function menuAutoLogout() {
-  if (typeof stopSessionTimer === 'function') stopSessionTimer();
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
-  window.location.href = 'index.html?reason=inatividade';
 }
 
 // Inicializar ao carregar

@@ -39,12 +39,6 @@ function saveTickets() {
     .catch(err => { console.error('[Tickets] Erro ao salvar:', err); _pendingWrite = false; });
 }
 
-async function saveTicket(ticketId) {
-  const ticket = tickets.find(t => t.id === ticketId);
-  if (!ticket) return;
-  await db.collection('tickets').doc(ticketId).set(ticket);
-}
-
 function filterTickets(filter, event) {
   currentFilter = filter;
   // Resetar filtro de setor ao trocar de aba
@@ -70,7 +64,6 @@ function updateStats() {
   // Arquivados também contam como concluídos — todo arquivado já passou pelo estado concluído
   document.getElementById('stat-completed').textContent = src.filter(t => t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed').length;
 }
-
 
 // Verifica se o usuário atual é mencionado num chamado (e ele está ativo)
 function isMentionedIn(ticket) {
@@ -475,7 +468,6 @@ function renderTicketsList(board, list) {
         '<div class="arc-empty">Nenhum chamado encontrado com os filtros selecionados.</div>');
     return;
   }
-
 
   board.innerHTML = `<div class="tl-header"><span class="tl-col tl-num">#</span><span class="tl-col tl-title">Título / Descrição</span><span class="tl-col tl-setor">Setor</span><span class="tl-col tl-prio">Prioridade</span><span class="tl-col tl-status">Status</span><span class="tl-col tl-date">Datas</span><span class="tl-col tl-actions"></span></div>
   ${list.map(ticket => {
@@ -908,23 +900,6 @@ async function deleteTicket(id) {
 // CHAMADOS DE TESTE
 // ════════════════════════════════════════════
 
-async function clearTestTickets() {
-  const testList = tickets.filter(t => t.ticketType === 'test');
-  if (!testList.length) { showNotification('Nenhum chamado de teste para limpar.', 'error'); return; }
-  if (!await showConfirm('Excluir chamados de teste', `Excluir ${testList.length} chamado(s) de teste? Esta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
-  const batch = db.batch();
-  testList.forEach(t => batch.delete(db.collection('tickets').doc(t.id)));
-  batch.commit()
-    .then(() => {
-      tickets = tickets.filter(t => t.ticketType !== 'test');
-      showNotification(`${testList.length} chamado(s) de teste removidos! 🗑️`, 'success');
-      if (currentFilter === 'test') filterTickets('all', null);
-      else renderTickets();
-      updateStats();
-    })
-    .catch(err => { console.error('[Test] Erro ao limpar:', err); showNotification('Erro ao limpar testes.', 'error'); });
-}
-
 // ════════════════════════════════════════════
 // MESCLAR CHAMADOS
 // ════════════════════════════════════════════
@@ -1256,21 +1231,6 @@ async function startSlaTimer(ticket) {
   ticket.slaSobrevida = false;
   ticket.slaPaused = false;
   ticket.slaPausedMs = 0;
-}
-
-function pauseSlaTimer(ticket) {
-  if (!ticket.slaDeadline || ticket.slaPaused) return;
-  ticket.slaPaused = true;
-  ticket.slaPausedAt = new Date().toISOString();
-}
-
-function resumeSlaTimer(ticket) {
-  if (!ticket.slaPaused || !ticket.slaPausedAt) return;
-  const pausedMs = Date.now() - new Date(ticket.slaPausedAt).getTime();
-  ticket.slaPausedMs = (ticket.slaPausedMs || 0) + pausedMs;
-  ticket.slaDeadline = new Date(new Date(ticket.slaDeadline).getTime() + pausedMs).toISOString();
-  ticket.slaPaused = false;
-  ticket.slaPausedAt = null;
 }
 
 function getSlaStatus(ticket) {

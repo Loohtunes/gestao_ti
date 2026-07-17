@@ -38,7 +38,6 @@ function getUnseenCount(ticket) {
   return Math.max(0, countNotifiableEvents(ticket) - getSeenCount(ticket.id));
 }
 
-
 // ── @ Menções ──
 
 // Extrai @nomes de um HTML de comentário
@@ -62,9 +61,6 @@ function formatMentions(html) {
 }
 
 // Verifica se o usuário atual tem menção pendente (ack=false)
-function getMentionKey(ticketId) {
-  return 'mentionAck:' + ticketId + ':' + (currentUser?.username || '');
-}
 
 // Reconhece a menção — chamado pelo banner "Ciente"
 function ackMention(ticketId) {
@@ -420,7 +416,6 @@ function renderMessagesHTML(ticket) {
       </div>`;
   }).join('');
 }
-
 
 // ── Dropdown de @ menção no editor ──
 function removeMentionDropdown() {

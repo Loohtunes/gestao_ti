@@ -980,19 +980,6 @@ async function saveAtivo() {
   }
 }
 
-async function deleteAtivo(id) {
-  const ativo = _ativos.find(a => a.id === id);
-  if (!ativo) return;
-  if (!await showConfirm('Excluir ativo', `Excluir o ativo "${ativo.nomeAmigavel || ativo.nome}"?\nEsta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true })) return;
-  try {
-    await db.collection('ativos').doc(id).delete();
-    showNotification('Ativo excluído.', 'success');
-    await renderAtivos();
-  } catch (e) {
-    showNotification('Erro ao excluir ativo.', 'error');
-  }
-}
-
 // ── Inicialização própria — mesmo padrão de configuracoes.js e menu.js ──────
 async function _initInventarioPage() {
   await loadUsers();

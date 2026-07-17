@@ -8,12 +8,10 @@
  * NAV_MODULOS em ui.js — não recrie listas de abas aqui.
  * ========================================================================== */
 
-
 function dashLogout() {
     if (typeof logout === 'function') logout();
     else { sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
 }
-
 
 // ===== Painel Comercial: dados, métricas e alertas =====
 const ETAPA_LABELS = { proposta: 'Proposta', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos', medicao: 'Medição' };
@@ -209,13 +207,6 @@ function _bindPostit(el) {
         if (!await showConfirm('Excluir aviso', 'Excluir este aviso?', { okText: 'Excluir', danger: true })) return;
         try { await db.collection('avisos').doc(id).delete(); } catch (err) { console.error(err); }
     });
-}
-function _etapasAtivasTxt(obraId) {
-    const o = _dashObras.find(x => x.id === obraId);
-    if (!o || !o.etapas) return '—';
-    if (o.concluida) return 'Concluída';
-    const ativas = Object.keys(o.etapas).filter(k => { const e = o.etapas[k]; return e && e.ativa && e.status === 'active'; }).map(k => ETAPA_LABELS[k] || k);
-    return ativas.length ? ativas.join(', ') : 'Sem etapa ativa';
 }
 function _statusEtapaObra(o, etapaKey, hoje) {
     const e = o.etapas[etapaKey];

@@ -1277,7 +1277,6 @@ function renderHistoricoTable() {
   }).join('');
 }
 
-function toggleHistDetail(id) { _histExp[id] = !_histExp[id]; renderHistoricoTable(); }
 function setHistFiltroModulo(v) { _histFiltroModulo = v; loadHistorico(); }
 function setHistFiltroMes(v) { _histFiltroMes = v; loadHistorico(); }
 

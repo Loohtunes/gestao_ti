@@ -65,7 +65,6 @@ function closeUserModal() {
   resetUserForm();
 }
 
-
 function openUserFormCard(title) {
   document.getElementById('user-form-modal-title').textContent = title;
   document.getElementById('user-form-modal').classList.add('open');
@@ -331,20 +330,6 @@ function applyRoleUI() {
     const label = document.getElementById('filter-dropdown-label');
     if (label) label.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;vertical-align:middle"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg> Todos';
   }
-}
-
-function performAutoLogout() {
-  closeTicketDetail();
-  if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
-  currentUser = null;
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
-  localStorage.setItem('premovale-logout-reason', 'inatividade');
-  // Redirecionar para login com mensagem de inatividade
-  window.location.href = 'login.html?reason=inatividade';
-  loadUsers().then(() => {
-    const hasSA = users.some(u => u.isSuperAdmin);
-    document.getElementById('first-user-btn').style.display = (!hasSA) ? 'inline-block' : 'none';
-  });
 }
 
 async function performLogout() {

@@ -98,23 +98,6 @@ function closeActionsDropdownOutside(e) {
 // AUTO FORMATAR
 // ══════════════════════════════════════════════════════
 
-function formatWhatsApp(input) {
-  let v = input.value.replace(/\D/g, '').slice(0, 11);
-  if (v.length <= 2) input.value = v.length ? '(' + v : v;
-  else if (v.length <= 3) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2);
-  else if (v.length <= 7) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3);
-  else if (v.length <= 11) input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3, 7) + '-' + v.slice(7);
-  else input.value = '(' + v.slice(0, 2) + ') ' + v.slice(2, 3) + ' ' + v.slice(3, 7) + '-' + v.slice(7, 11);
-}
-
-function formatAnyDesk(input) {
-  let v = input.value.replace(/\D/g, '').slice(0, 10);
-  if (v.length <= 1) input.value = v;
-  else if (v.length <= 4) input.value = v.slice(0, 1) + ' ' + v.slice(1);
-  else if (v.length <= 7) input.value = v.slice(0, 1) + ' ' + v.slice(1, 4) + ' ' + v.slice(4);
-  else input.value = v.slice(0, 1) + ' ' + v.slice(1, 4) + ' ' + v.slice(4, 7) + ' ' + v.slice(7);
-}
-
 // ══════════════════════════════════════════════════════
 // ALTERNAR VISUALIZAÇÃO CARDS / LISTA
 // ══════════════════════════════════════════════════════
@@ -251,19 +234,6 @@ function openChangelogManager() {
 function closeChangelogManager() {
   const modal = document.getElementById('changelog-modal');
   if (modal) { modal.classList.remove('open'); delete modal.dataset.editId; }
-}
-
-function newChangelogEntry() {
-  // Limpar campos e abrir modal para nova entrada
-  const modal = document.getElementById('changelog-modal');
-  if (modal) delete modal.dataset.editId;
-  const versionInput = document.getElementById('cl-version-input');
-  const dateInput = document.getElementById('cl-date-input');
-  const notesInput = document.getElementById('cl-notes-input');
-  if (versionInput) versionInput.value = '';
-  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-  if (notesInput) notesInput.value = '';
-  document.getElementById('changelog-modal').classList.add('open');
 }
 
 async function saveChangelog() {
@@ -1057,7 +1027,6 @@ function showConfirm(title, message, opts) {
     requestAnimationFrame(() => { ov.classList.add('show'); btnOk.focus(); });
   });
 }
-
 
 /* ============================================================================
  * ACESSOS DO MÓDULO — botão na navbar + modal de abas por usuário
