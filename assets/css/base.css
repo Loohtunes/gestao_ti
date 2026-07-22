@@ -226,3 +226,34 @@ body.dark-mode::before {
     opacity: 1;
   }
 }
+
+/* Contador de obra em espera (compartilhado) */
+.obra-esp-cont {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.obra-esp-cont svg {
+  flex-shrink: 0;
+}
+
+.obra-esp-cont.esp-normal {
+  background: rgba(245, 158, 11, 0.15);
+  color: #b45309;
+}
+
+.obra-esp-cont.esp-vencido {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.obra-esp-cont.esp-discreto {
+  background: var(--surface2, rgba(148, 163, 184, 0.12));
+  color: var(--muted);
+}

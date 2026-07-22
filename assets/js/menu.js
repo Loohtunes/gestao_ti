@@ -136,7 +136,7 @@ document.addEventListener('click', e => {
 async function menuLogout() {
   if (!await showConfirm('Sair do sistema', 'Deseja realmente sair do sistema?', { okText: 'Sair' })) return;
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
+  localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'index.html';
 }
 

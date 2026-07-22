@@ -48,7 +48,7 @@ function initInventario() {
 
 function invLogout() {
   if (typeof logout === 'function') logout();
-  else { sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
+  else { localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
 }
 
 // ── Abas ───────────────────────────────────────────────────────────────────

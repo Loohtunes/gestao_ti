@@ -120,7 +120,7 @@ async function matLogout() {
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   if (matUnsubscribe) { matUnsubscribe(); matUnsubscribe = null; }
   if (matDetailUnsub) { matDetailUnsub(); matDetailUnsub = null; }
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
+  localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'login.html';
 }
 

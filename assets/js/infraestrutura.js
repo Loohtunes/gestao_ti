@@ -16,7 +16,7 @@ function toggleMenuSidebar() {
 function infraLogout() {
     if (typeof logout === 'function') logout();
     else {
-        sessionStorage.removeItem('chamados-current-user-id');
+        localStorage.removeItem('chamados-current-user-id');
         if (typeof broadcastLogout === 'function') broadcastLogout();
         window.location.href = 'login.html';
     }
@@ -528,4 +528,4 @@ function _infraConfirm(title, msg, opts) {
         const no = ov.querySelector('#_infra-cf-no');
         if (no) no.onclick = () => { close(); resolve(false); };
     });
-} e
+}

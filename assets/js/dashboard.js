@@ -10,7 +10,7 @@
 
 function dashLogout() {
     if (typeof logout === 'function') logout();
-    else { sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
+    else { localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout(); window.location.href = 'login.html'; }
 }
 
 // ===== Painel Comercial: dados, métricas e alertas =====
@@ -54,7 +54,7 @@ function _renderTarefas(obras, hoje, dHoje) {
     if (!cont) return;
     const u = currentUser?.username;
     const tarefas = [];
-    if (u) obras.filter(o => !o.concluida).forEach(o => {
+    if (u) obras.filter(o => !_obraFinalizada(o)).forEach(o => {
         Object.entries(o.etapas || {}).forEach(([etapaKey, e]) => {
             if (!e || !e.ativa || e.status === 'pulada') return;
             if (Array.isArray(e.lista)) {
@@ -259,6 +259,7 @@ function _renderObraCard(a, me) {
             ${canDel ? `<button data-act="del" title="Desfixar">\u00d7</button>` : ''}
           </div>
           <div class="cpain-obra-nome" title="${_escAviso(a.nome || '')}">${_escAviso(a.nome || '')}</div>
+          ${(() => { const _o = _dashObras.find(x => x.id === a.obraId); return (_o && _o.emEspera) ? _esperaContadorHTML(_o) : ''; })()}
           <div class="cpain-obra-etapas">${_etapasObraHtml(a.obraId)}</div>
           <button class="cpain-obra-abrir" data-act="abrir">Abrir obra \u2192</button>
         </div>`;
@@ -339,12 +340,12 @@ async function renderPainelComercial() {
     const dHoje = new Date(hoje + 'T12:00:00');
     let mObras = 0, mAnd = 0, mAtr = 0, mConc = 0;
     obras.forEach(o => {
-        if (!o.concluida) mObras++;
+        if (!_obraFinalizada(o)) mObras++;
         Object.values(o.etapas || {}).forEach(e => {
             if (!e) return;
             if (e.status === 'done') mConc++;
             if (e.ativa && e.status === 'active') mAnd++;
-            if (!o.concluida && e.ativa && e.status !== 'done' && e.status !== 'pulada' && _etapaEmAtraso(e, hoje)) mAtr++;
+            if (!_obraFinalizada(o) && e.ativa && e.status !== 'done' && e.status !== 'pulada' && _etapaEmAtraso(e, hoje)) mAtr++;
         });
     });
     const mets = [
@@ -356,7 +357,7 @@ async function renderPainelComercial() {
     document.getElementById('cpain-metricas').innerHTML = mets.map(m =>
         `<div class="cpain-metrica"><div class="cpain-metrica-num" style="color:${m.c};">${m.n}</div><div class="cpain-metrica-label">${m.l}</div></div>`).join('');
     const alertas = [];
-    obras.filter(o => !o.concluida).forEach(o => {
+    obras.filter(o => !_obraFinalizada(o)).forEach(o => {
         let pAtr = null, pVenc = null, diasVenc = null;
         _coletarPrazosObra(o).forEach(p => {
             if (p.status === 'done' || p.status === 'pulada' || !p.ref) return;

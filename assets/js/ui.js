@@ -326,14 +326,14 @@ const _SESSION_KEY = 'chamados-current-user-id';
 const _SETOR_KEY = 'premovale-current-setor';
 let _sessionSyncReady = false;
 
-function _sessionGet() { return sessionStorage.getItem(_SESSION_KEY); }
+function _sessionGet() { return localStorage.getItem(_SESSION_KEY); }
 function _sessionSet(id, setor) {
-  if (id != null) sessionStorage.setItem(_SESSION_KEY, id);
-  if (setor != null) sessionStorage.setItem(_SETOR_KEY, setor);
+  if (id != null) localStorage.setItem(_SESSION_KEY, id);
+  if (setor != null) localStorage.setItem(_SETOR_KEY, setor);
 }
 function _sessionClear() {
-  sessionStorage.removeItem(_SESSION_KEY);
-  sessionStorage.removeItem(_SETOR_KEY);
+  localStorage.removeItem(_SESSION_KEY);
+  localStorage.removeItem(_SETOR_KEY);
 }
 
 function _requestSessionFromTabs(timeout) {
@@ -371,7 +371,7 @@ function setupSessionSync() {
         try {
           var req = JSON.parse(e.newValue);
           localStorage.setItem('premovale-session-response', JSON.stringify({
-            reqId: req.reqId, userId: id, setor: sessionStorage.getItem(_SETOR_KEY) || ''
+            reqId: req.reqId, userId: id, setor: localStorage.getItem(_SETOR_KEY) || ''
           }));
           localStorage.removeItem('premovale-session-response');
         } catch (_) { }
@@ -406,9 +406,9 @@ function broadcastLogout() {
 }
 
 const SESSION_CONFIG = {
-  requester: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 15min / aviso 3min
-  attendant: { bgTimeout: 30 * 60 * 1000, warnBefore: 5 * 60 * 1000 }, // 30min / aviso 5min
-  default: { bgTimeout: 15 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // fallback
+  requester: { bgTimeout: 60 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 1h / aviso 3min
+  attendant: { bgTimeout: 60 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 1h / aviso 3min
+  default: { bgTimeout: 60 * 60 * 1000, warnBefore: 3 * 60 * 1000 }, // 1h / aviso 3min
 };
 
 let _inacTimeout = SESSION_CONFIG.default.bgTimeout;   // limite de INATIVIDADE
@@ -858,6 +858,34 @@ function montarSubmodTabs(containerId, moduloAtivo, paginaAtiva, user) {
  * Super Admin acessa TUDO, sem exceção.
  * Regra: função nova sem módulo pai natural entra no T.I.
  * ------------------------------------------------------------------------- */
+// Obra em estado terminal/pausado: concluída, em espera ou cancelada.
+// (fica no ui.js para dashboard/widgets, que não carregam o comercial.js)
+function _obraFinalizada(o) { return !!(o && (o.concluida || o.emEspera || o.cancelada)); }
+
+// ── Contador de obra em espera (dias corridos) ──────────────────────────────
+function _diasCorridos(de, ate) { return Math.round((new Date(ate + 'T00:00:00') - new Date(de + 'T00:00:00')) / 86400000); }
+function _fmtDiaMes(d) { const p = String(d).split('-'); return p.length === 3 ? p[2] + '/' + p[1] : d; }
+function _esperaPulsa(obra) {
+  if (!obra.emEspera || !obra.dataLembrete) return false;
+  return obra.dataLembrete <= new Date().toISOString().slice(0, 10);
+}
+function _esperaContadorHTML(obra) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const _ico = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+  const _pause = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+  if (obra.dataLembrete) {
+    const dias = _diasCorridos(hoje, obra.dataLembrete);
+    if (dias > 0) return `<span class="obra-esp-cont esp-normal">${_ico} Retomar em ${_fmtDiaMes(obra.dataLembrete)} · faltam ${dias} dia${dias > 1 ? 's' : ''}</span>`;
+    if (dias === 0) return `<span class="obra-esp-cont esp-vencido">${_ico} Retomada hoje · ${_fmtDiaMes(obra.dataLembrete)}</span>`;
+    const at = -dias;
+    return `<span class="obra-esp-cont esp-vencido">${_ico} Retomada vencida há ${at} dia${at > 1 ? 's' : ''} · era ${_fmtDiaMes(obra.dataLembrete)}</span>`;
+  }
+  const desde = obra.emEsperaDesde || hoje;
+  const d = Math.max(0, _diasCorridos(desde, hoje));
+  return `<span class="obra-esp-cont esp-discreto">${_pause} ${d} dia${d !== 1 ? 's' : ''} em espera</span>`;
+}
+
+
 const MODULOS_PAI = ['ti', 'comercial'];
 
 // Abas/permissões que pertencem a cada módulo pai (usado no fallback e no modal)
@@ -915,7 +943,7 @@ function aplicarSidebarPai(moduloAtivo, user) {
 // sem precisar editar o init de cada uma. Resolve o usuário pela sessão.
 function _navResolveUser() {
   try {
-    const id = sessionStorage.getItem('chamados-current-user-id');
+    const id = localStorage.getItem('chamados-current-user-id');
     if (id && typeof users !== 'undefined' && Array.isArray(users)) {
       const u = users.find(x => x.id === id);
       if (u) return u;

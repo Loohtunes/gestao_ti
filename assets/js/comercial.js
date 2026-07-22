@@ -7,7 +7,7 @@ async function performLogout() {
   if (_unsubObras) { _unsubObras(); _unsubObras = null; }
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   currentUser = null;
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
+  localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'login.html';
 }
 
@@ -537,6 +537,9 @@ function _migrateObraToV11(obra) {
   if (obra.excluida === undefined) out.excluida = false;
   if (obra.emEspera === undefined) out.emEspera = false;
   if (obra.cancelada === undefined) out.cancelada = false;
+  if (obra.dataLembrete === undefined) out.dataLembrete = null;
+  if (obra.emEsperaDesde === undefined) out.emEsperaDesde = null;
+  if (obra.numeroAnterior === undefined) out.numeroAnterior = null;
   return out;
 }
 async function migrateObras() {
@@ -839,8 +842,6 @@ function hasEtapaAtrasadaPorId(obra, etapaId) {
 // Stripe do card — fonte única: semáforo vermelho > amarelo > azul > verde.
 // Percorre TODAS as etapas ativas (listas, normais e Docs independentes),
 // descartando sub-etapas/itens pulados e concluídos.
-// Obra em estado terminal/parado: concluída, em espera ou cancelada.
-function _obraFinalizada(o) { return !!(o && (o.concluida || o.emEspera || o.cancelada)); }
 
 function getCorStripe(obra) {
   if (obra.cancelada) return '#7f1d1d'; // vinho escuro
@@ -921,7 +922,7 @@ function renderObras() {
     if (o.excluida) return _view === 'lixeira';
     if (o.arquivada) return _view === 'arquivo';
     if (_F.etapaStVal && (_view === 'ativas' || _view === 'concluidos')) return true; // filtro de status vence a divisão ativas/concluidos
-    if (_obraFinalizada(o)) return _view === 'concluidos';
+    if (o.concluida || o.cancelada) return _view === 'concluidos';
     return _view === 'ativas';
   });
   // Ordenação
@@ -936,6 +937,11 @@ function renderObras() {
       return c === '#ef4444' ? 0 : c === '#f59e0b' ? 1 : c === '#3b82f6' ? 2 : c === '#d1d5db' ? 3 : 4;
     };
     lista = [...lista].sort((a, b) => _rankStripe(a) - _rankStripe(b));
+  }
+
+  // Obras 'em espera' vão para o fim da lista principal (Ativas)
+  if (_view === 'ativas') {
+    lista = [...lista].sort((a, b) => (a.emEspera ? 1 : 0) - (b.emEspera ? 1 : 0));
   }
 
   const total = lista.length;
@@ -1132,15 +1138,16 @@ function renderObras() {
     }).join('');
 
     return `
-    <div class="obra-card" data-obra-id="${obra.id}" style="border-left:4px solid ${corBorda};position:relative;" onclick="openObraModal('${obra.id}')">
-      ${(() => {
+    <div class="obra-card${_esperaPulsa(obra) ? ' esp-pulsando' : ''}" data-obra-id="${obra.id}" style="border-left:4px solid ${corBorda};position:relative;" onclick="openObraModal('${obra.id}')">
+      <div class="obra-card-topo">
+        <div class="obra-card-topo-lado obra-card-topo-esq">${(() => {
+        if (obra.emEspera) return '';
         const azul = _contarTarefasAtribuidas(obra);
-        return azul > 0
-          ? `<span style="position:absolute;top:-7px;left:8px;background:#3b82f6;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${azul} tarefa${azul > 1 ? 's' : ''} atribuída${azul > 1 ? 's' : ''} a você">${azul}</span>`
-          : '';
-      })()}
-      ${(() => {
-        // Badge vermelho — sub-etapas em atraso
+        return azul > 0 ? `<span class="obra-dot obra-dot-azul" title="${azul} pendência${azul > 1 ? 's' : ''} atribuída${azul > 1 ? 's' : ''} a você">${azul}</span>` : '';
+      })()}</div>
+        <div class="obra-card-numero">#${obra.numero || obra.id.slice(-6).toUpperCase()}</div>
+        <div class="obra-card-topo-lado obra-card-topo-dir">${(() => {
+        if (obra.emEspera) return '';
         let atraso = 0;
         const hj = new Date().toISOString().slice(0, 10);
         ETAPAS_ORDER.forEach(etapaId => {
@@ -1157,10 +1164,9 @@ function renderObras() {
             (e.cocLista || []).forEach(ci => { if (_vencido(ci.dataPrevista, ci.status, hj)) atraso++; });
           }
         });
-        return atraso > 0
-          ? `<span style="position:absolute;top:-7px;right:8px;background:#ef4444;color:#fff;font-size:0.58rem;font-family:var(--font-mono);font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${atraso} sub-etapa${atraso > 1 ? 's' : ''} em atraso">${atraso}</span>`
-          : '';
-      })()}
+        return atraso > 0 ? `<span class="obra-dot obra-dot-vermelho" title="${atraso} sub-etapa${atraso > 1 ? 's' : ''} em atraso">${atraso}</span>` : '';
+      })()}</div>
+      </div>
       ${(() => {
         const _inc = _obraInconsistencias(obra);
         if (!_inc.length) return '';
@@ -1168,18 +1174,10 @@ function renderObras() {
         return `<span style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:#f59e0b;color:#fff;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;gap:2px;padding:0 5px;box-shadow:0 2px 6px #00000040;z-index:2;" title="${_inc.length} inconsist\u00eancia${_inc.length > 1 ? 's' : ''} de migra\u00e7\u00e3o: ${_t}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span style="font-size:0.58rem;font-family:var(--font-mono);font-weight:800;">${_inc.length}</span></span>`;
       })()}
       <div class="obra-card-header">
-        <div>
-          <div class="obra-card-numero">#${obra.numero || obra.id.slice(-6).toUpperCase()}</div>
-          <div class="obra-card-nome">${obra.nome}</div>
-        </div>
+        <div class="obra-card-nome">${obra.nome}</div>
         ${obra.concluida ? '<span class="obra-etapa-badge etapa-concluida">Concluída</span>' : ''}
       </div>
-      ${(() => {
-        const n = _contarTarefasAtribuidas(obra);
-        return n > 0
-          ? `<div style="font-size:0.65rem;color:var(--accent);font-weight:700;margin-bottom:0.2rem;display:flex;align-items:center;gap:0.3rem;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> ${n} pendência${n > 1 ? 's' : ''} atribuída${n > 1 ? 's' : ''} a você</div>`
-          : '';
-      })()}
+      ${obra.emEspera ? _esperaContadorHTML(obra) : ''}
       <div class="obra-card-rep" style="justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:0.35rem;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1264,7 +1262,7 @@ async function saveNovaObra() {
   const fechamento = document.getElementById('nova-obra-fechamento')?.value;
   const prazo = document.getElementById('nova-obra-prazo')?.value;
   if (!numero) { showComercialToast('Informe o número da obra.', 'error'); return; }
-  if (_obras.some(o => String(o.numero).trim() === String(numero).trim())) {
+  if (_obras.some(o => o.numero && String(o.numero).trim() === String(numero).trim())) {
     showComercialToast(`Já existe uma obra com o número #${numero}.`, 'error');
     return;
   }
@@ -1541,6 +1539,7 @@ function _renderObraFooter(obra, canAdmin) {
   if (_obraFinalizada(obra)) {
     footer.innerHTML = `
       <div style="display:flex;gap:0.6rem;flex:1;flex-wrap:wrap;">${adminBtns}
+        ${obra.emEspera && canAdmin ? `<button class="btn-secondary" onclick="estenderLembrete('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Ajustar lembrete</button>` : ''}
         ${canAdmin ? `<button class="btn-secondary" onclick="reabrirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">↩ Reabrir</button>` : ''}
         ${histBtn}
       </div>
@@ -1584,21 +1583,60 @@ function _closeFinalizar() { if (_finalizarOv) { _finalizarOv.remove(); _finaliz
 async function _finalizarEscolha(obraId, tipo) {
   _closeFinalizar();
   if (tipo === 'concluir') { concluirObraManual(obraId); return; }
+  if (tipo === 'espera') { _openEsperaData(obraId, false); return; }
+  // cancelada — libera o número para reuso
   const obra = _obras.find(o => o.id === obraId); if (!obra) return;
-  const nome = tipo === 'espera' ? 'em espera' : 'cancelada';
-  const ok = await _showConfirm(tipo === 'espera' ? 'Obra em espera' : 'Obra cancelada',
-    `Marcar a obra "${obra.numero}" como ${nome}? Ela irá para "Finalizadas/Canceladas".`,
+  const ok = await _showConfirm('Obra cancelada',
+    `Cancelar a obra "${obra.numero || ''}"? Ela irá para "Finalizadas/Canceladas"` +
+    (obra.numero ? ` e o número #${obra.numero} será liberado para reuso.` : '.'),
     { okText: 'Confirmar' });
   if (!ok) return;
-  const patch = tipo === 'espera'
-    ? { emEspera: true, cancelada: false, concluida: false }
-    : { cancelada: true, emEspera: false, concluida: false };
+  const patch = { cancelada: true, emEspera: false, concluida: false, dataLembrete: null, emEsperaDesde: null };
+  if (obra.numero) { patch.numeroAnterior = obra.numero; patch.numero = null; }
   try {
     await db.collection('obras').doc(obraId).update(patch);
-    showComercialToast(`Obra marcada como ${nome}. ✅`, 'success');
+    showComercialToast(obra.numero ? 'Obra cancelada. Número liberado. ✅' : 'Obra cancelada. ✅', 'success');
     closeObraModal();
-  } catch (e) { console.error('[finalizarObra]', e); showComercialToast('Erro ao salvar. Tente novamente.', 'error'); }
+  } catch (e) { console.error('[cancelarObra]', e); showComercialToast('Erro ao salvar. Tente novamente.', 'error'); }
 }
+
+// Modal compacto para data de lembrete (em espera / extensão)
+function _openEsperaData(obraId, ehExtensao) {
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const atual = obra.dataLembrete || '';
+  const ov = document.createElement('div');
+  ov.className = 'finalizar-ov';
+  ov.innerHTML =
+    '<div class="finalizar-box">'
+    + '<div class="finalizar-title">' + (ehExtensao ? 'Ajustar lembrete' : 'Obra em espera') + '</div>'
+    + '<div class="finalizar-sub">Data de lembrete (opcional) — quando cobrar o cliente</div>'
+    + '<input type="date" id="espera-data-input" class="espera-data" value="' + atual + '">'
+    + '<button class="finalizar-opt" onclick="_salvarEspera(\'' + obraId + '\', true, ' + (ehExtensao ? 'true' : 'false') + ')"><span class="finalizar-dot" style="background:#f97316"></span>Confirmar com data</button>'
+    + '<button class="finalizar-opt" onclick="_salvarEspera(\'' + obraId + '\', false, ' + (ehExtensao ? 'true' : 'false') + ')"><span class="finalizar-dot" style="background:var(--muted)"></span>Sem data</button>'
+    + '<button class="finalizar-cancel" onclick="_closeFinalizar()">Cancelar</button>'
+    + '</div>';
+  ov.addEventListener('mousedown', e => { if (e.target === ov) _closeFinalizar(); });
+  document.body.appendChild(ov);
+  _finalizarOv = ov;
+  requestAnimationFrame(() => ov.classList.add('show'));
+}
+
+async function _salvarEspera(obraId, comData, ehExtensao) {
+  const inp = document.getElementById('espera-data-input');
+  const data = (comData && inp && inp.value) ? inp.value : null;
+  _closeFinalizar();
+  const obra = _obras.find(o => o.id === obraId); if (!obra) return;
+  const patch = ehExtensao
+    ? { dataLembrete: data }
+    : { emEspera: true, cancelada: false, concluida: false, dataLembrete: data, emEsperaDesde: new Date().toISOString().slice(0, 10) };
+  try {
+    await db.collection('obras').doc(obraId).update(patch);
+    showComercialToast(ehExtensao ? 'Lembrete atualizado. ✅' : 'Obra marcada como em espera. ✅', 'success');
+    closeObraModal();
+  } catch (e) { console.error('[salvarEspera]', e); showComercialToast('Erro ao salvar. Tente novamente.', 'error'); }
+}
+
+function estenderLembrete(obraId) { _openEsperaData(obraId, true); }
 
 // ── Concluir com data retroativa ─────────────────────────────────────────────
 let _conclObraId = null, _conclEtapaId = null, _conclSubId = null, _conclItemId = null, _conclCocIdx = null;
@@ -3072,7 +3110,14 @@ async function reabrirObra(obraId) {
   const _ok = await _showConfirm('Reabrir obra', `Reabrir a obra "${obra.numero}"? Ela voltará para o campo de obras ativas.`, { okText: 'Reabrir' });
   if (!_ok) return;
   try {
-    await db.collection('obras').doc(obraId).update({ concluida: false, emEspera: false, cancelada: false, dataConclusao: null, concluidaManual: false, arquivada: false, caixaId: null });
+    const _patch = { concluida: false, emEspera: false, cancelada: false, dataConclusao: null, concluidaManual: false, arquivada: false, caixaId: null, dataLembrete: null, emEsperaDesde: null };
+    // Se a obra era cancelada e teve o número liberado, tenta restaurá-lo (se ainda estiver livre)
+    if (!obra.numero && obra.numeroAnterior) {
+      const _livre = !_obras.some(o => o.id !== obraId && o.numero && String(o.numero).trim() === String(obra.numeroAnterior).trim());
+      if (_livre) { _patch.numero = obra.numeroAnterior; _patch.numeroAnterior = null; }
+    }
+    await db.collection('obras').doc(obraId).update(_patch);
+    if (!obra.numero && !_patch.numero) showComercialToast('Obra reaberta sem número (o anterior já está em uso). Atribua um novo em Editar.', 'info');
     _audit(obraId, 'reabertura', 'Obra reaberta (progresso preservado)');
     showComercialToast('Obra reaberta! ✅', 'success');
   } catch (e) { console.error('[reabrir obra]', e); showComercialToast('Erro ao reabrir a obra.', 'error'); }
@@ -3389,6 +3434,42 @@ function _openCaixa(caixaId) {
   document.getElementById('caixa-modal').style.display = 'flex';
 }
 function _closeCaixaModal() { const m = document.getElementById('caixa-modal'); if (m) m.style.display = 'none'; _caixaAtual = null; }
+
+function _editarCaixa(caixaId) {
+  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode editar caixas.', 'error'); return; }
+  const cx = _caixas.find(c => c.id === caixaId); if (!cx) return;
+  const ov = document.createElement('div');
+  ov.className = 'finalizar-ov';
+  ov.innerHTML =
+    '<div class="finalizar-box">'
+    + '<div class="finalizar-title">Editar caixa</div>'
+    + '<div class="finalizar-sub">Número e nome da caixa</div>'
+    + '<input type="text" id="edit-caixa-num" class="espera-data" placeholder="Número" value="' + _escObs(cx.numero || '') + '">'
+    + '<input type="text" id="edit-caixa-nome" class="espera-data" placeholder="Nome (opcional)" value="' + _escObs(cx.nome || '') + '">'
+    + '<button class="finalizar-opt" onclick="_salvarEdicaoCaixa(\'' + caixaId + '\')"><span class="finalizar-dot" style="background:#22c55e"></span>Salvar</button>'
+    + '<button class="finalizar-cancel" onclick="_closeFinalizar()">Cancelar</button>'
+    + '</div>';
+  ov.addEventListener('mousedown', e => { if (e.target === ov) _closeFinalizar(); });
+  document.body.appendChild(ov);
+  _finalizarOv = ov;
+  requestAnimationFrame(() => ov.classList.add('show'));
+}
+
+async function _salvarEdicaoCaixa(caixaId) {
+  const numero = (document.getElementById('edit-caixa-num').value || '').trim();
+  const nome = (document.getElementById('edit-caixa-nome').value || '').trim();
+  if (!numero) { showComercialToast('Informe o número da caixa.', 'error'); return; }
+  if (_caixas.some(c => c.id !== caixaId && String(c.numero).trim() === numero)) {
+    showComercialToast('Já existe uma caixa com esse número.', 'error'); return;
+  }
+  _closeFinalizar();
+  try {
+    await db.collection('caixas').doc(caixaId).update({ numero, nome });
+    const _cx = _caixas.find(c => c.id === caixaId); if (_cx) { _cx.numero = numero; _cx.nome = nome; }
+    showComercialToast('Caixa atualizada. ✅', 'success');
+    _renderCaixaModalBody();
+  } catch (e) { console.error('[editarCaixa]', e); showComercialToast('Erro ao salvar a caixa.', 'error'); }
+}
 function _refreshCaixaModalIfOpen() {
   if (!_caixaAtual) return;
   const m = document.getElementById('caixa-modal');
@@ -3398,6 +3479,8 @@ function _refreshCaixaModalIfOpen() {
 }
 function _renderCaixaModalBody() {
   const cx = _caixas.find(c => c.id === _caixaAtual); if (!cx) return;
+  const _edBtn = document.getElementById('caixa-editar-btn');
+  if (_edBtn) _edBtn.style.display = podeEditarComercial() ? '' : 'none';
   document.getElementById('caixa-modal-title').innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c79a5a" stroke-width="2"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> Caixa Nº ${cx.numero}${cx.nome ? ` · <span style="color:var(--muted);font-weight:600;">${cx.nome}</span>` : ''}`;
   const body = document.getElementById('caixa-modal-body');
   const obras = _obrasDaCaixa(_caixaAtual);
@@ -3791,7 +3874,6 @@ function openRelatorioModal() {
     });
   });
   const opts = '<option value="">Todos</option>' + [...resps].sort().map(r => `<option value="${r}">${r}</option>`).join('');
-  const sel = document.getElementById('rel-responsavel'); if (sel) sel.innerHTML = opts;
   const sel2 = document.getElementById('rel-responsavel-pend'); if (sel2) sel2.innerHTML = opts.replace('Todos', 'Todos os responsáveis');
   const _isArq = (_view === 'arquivo' || _view === 'lixeira');
   const _tg = document.getElementById('rel-tab-geral'); if (_tg) _tg.style.display = _isArq ? 'none' : '';
@@ -3895,7 +3977,24 @@ function _gerarDadosRelatorio() {
   const linhas = [];
   const NOMES_ETAPA = { proposta: 'Proposta Consolidada', contrato: 'Contrato', documentacoes: 'Documentações', aditivos: 'Aditivos/Termo', medicao: 'Medição' };
 
-  _obras.filter(o => !o.concluida && (!filtroRep || o.representante === filtroRep)).forEach(obra => {
+  _obras.filter(o => !o.concluida && !o.cancelada && (!filtroRep || o.representante === filtroRep)).forEach(obra => {
+    // Obra em espera: uma linha própria (etapa/sub/responsável em branco)
+    if (obra.emEspera) {
+      const _venc = obra.dataLembrete && obra.dataLembrete < hoje;
+      const _dAtr = _venc ? _diasCorridos(obra.dataLembrete, hoje) : 0;
+      linhas.push({
+        numero: obra.numero || obra.id.slice(-6), nome: obra.nome,
+        representante: _capRel(obra.representante),
+        responsaveis: [], responsavel: '',
+        etapa: '', subEtapa: '',
+        status: 'Em Espera',
+        dataInicio: obra.emEsperaDesde ? new Date(obra.emEsperaDesde + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+        dataConclusao: '',
+        dataLimite: obra.dataLembrete ? new Date(obra.dataLembrete + 'T12:00:00').toLocaleDateString('pt-BR') : '—',
+        diasAtraso: _venc ? `${_dAtr} dia${_dAtr > 1 ? 's' : ''}` : '',
+      });
+      return;
+    }
     ETAPAS_ORDER.forEach(etapaId => {
       const e = obra.etapas?.[etapaId];
       const cfg = ETAPAS_CONFIG[etapaId];
@@ -3997,10 +4096,10 @@ function exportarRelatorioXLS() {
     const escXml = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const headerRow = headers.map(h => `<th style="background:#374151;color:#fff;padding:6px 8px;border:1px solid #d1d5db;">${escXml(h)}</th>`).join('');
     const dataRows = linhas.map((l, rowIdx) => {
-      const cols = [l.numero, l.nome, l.representante, l.responsavel || '—', l.etapa, l.subEtapa, l.status, l.dataInicio || '—', l.dataConclusao || '—', l.dataLimite, l.diasAtraso];
+      const cols = [l.numero, l.nome, l.representante, (l.responsavel || (l.status === 'Em Espera' ? '' : '—')), l.etapa, l.subEtapa, l.status, l.dataInicio || '—', (l.dataConclusao || (l.status === 'Em Espera' ? '' : '—')), l.dataLimite, l.diasAtraso];
       return `<tr>${cols.map((v, ci) => {
         const isAtraso = ci === cols.length - 1;
-        const cellBg = l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
+        const cellBg = l.status === 'Em Espera' ? '#ffedd5' : l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
         const cellColor = isAtraso && l.status === 'Em atraso' && l.diasAtraso && l.diasAtraso !== '—' ? '#dc2626' : '#1f2937';
         const cellWeight = isAtraso && l.status === 'Em atraso' && l.diasAtraso && l.diasAtraso !== '—' ? 'bold' : 'normal';
         return `<td style="padding:5px 8px;border:1px solid #e5e7eb;background:${cellBg};color:${cellColor};font-weight:${cellWeight};">${escXml(v)}</td>`;
@@ -4029,7 +4128,7 @@ function exportarRelatorioPDF() {
   if (!linhas.length) { showComercialToast('Nenhuma obra encontrada para o relatório.', 'error'); return; }
   const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
   const rows = linhas.map((l, ri) => {
-    const bg = l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : l.status === 'Cancelada' ? '#f3f4f6' : ri % 2 === 0 ? '#ffffff' : '#f9fafb';
+    const bg = l.status === 'Em Espera' ? '#ffedd5' : l.status === 'Em atraso' ? '#fee2e2' : l.status === 'Perto de vencer' ? '#fef3c7' : l.status === 'Concluída' ? '#dcfce7' : l.status === 'Cancelada' ? '#f3f4f6' : ri % 2 === 0 ? '#ffffff' : '#f9fafb';
     const td = `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};"`;
     const tdRed = l.status === 'Em atraso' && l.diasAtraso && l.diasAtraso !== '—'
       ? `style="padding:6px 8px;border-bottom:1px solid #e5e7eb;background:${bg};color:#dc2626;font-weight:700;"`
@@ -4038,12 +4137,12 @@ function exportarRelatorioPDF() {
       <td ${td}>#${l.numero}</td>
       <td ${td}><strong>${l.nome}</strong></td>
       <td ${td}>${l.representante}</td>
-      <td ${td}>${l.responsavel || '—'}</td>
+      <td ${td}>${(l.responsavel || (l.status === 'Em Espera' ? '' : '—'))}</td>
       <td ${td}>${l.etapa}</td>
       <td ${td}>${l.subEtapa}</td>
-      <td ${td}><span class="badge ${l.status === 'Em atraso' ? 'red' : l.status === 'Perto de vencer' ? 'amber' : l.status === 'Concluída' ? 'green' : l.status === 'Cancelada' ? 'gray' : 'blue'}">${l.status}</span></td>
+      <td ${td}><span class="badge ${l.status === 'Em Espera' ? 'amber' : l.status === 'Em atraso' ? 'red' : l.status === 'Perto de vencer' ? 'amber' : l.status === 'Concluída' ? 'green' : l.status === 'Cancelada' ? 'gray' : 'blue'}">${l.status}</span></td>
       <td ${td}>${l.dataInicio || '—'}</td>
-      <td ${td}>${l.dataConclusao || '—'}</td>
+      <td ${td}>${(l.dataConclusao || (l.status === 'Em Espera' ? '' : '—'))}</td>
       <td ${td}>${l.dataLimite}</td>
       <td ${tdRed}>${l.diasAtraso}</td>
     </tr>`;
@@ -4436,9 +4535,9 @@ async function saveAtribuicao() {
 function exportarRelatorioPendencias() {
   const hoje = new Date().toISOString().slice(0, 10);
   const hojeFormatado = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-  const respFiltro = document.getElementById('rel-responsavel-pend')?.value || document.getElementById('rel-responsavel')?.value || '';
+  const respFiltro = document.getElementById('rel-responsavel-pend')?.value || '';
   const rows = [];
-  _obras.filter(o => !o.concluida).forEach(obra => {
+  _obras.filter(o => !_obraFinalizada(o)).forEach(obra => {
     ETAPAS_ORDER.forEach(etapaId => {
       const e = obra.etapas?.[etapaId];
       const cfg = ETAPAS_CONFIG[etapaId];
@@ -4524,7 +4623,7 @@ function _gerarDadosPorRepresentante() {
   const lim = new Date(ag); lim.setDate(lim.getDate() + 3);
   const limStr = lim.toISOString().slice(0, 10);
   const grupos = {};
-  _obras.filter(o => !o.concluida).forEach(obra => {
+  _obras.filter(o => !_obraFinalizada(o)).forEach(obra => {
     const rep = obra.representante || 'Sem representante';
     ETAPAS_ORDER.forEach(etapaId => {
       const e = obra.etapas?.[etapaId];

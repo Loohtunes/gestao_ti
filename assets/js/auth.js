@@ -194,7 +194,7 @@ async function saveUser() {
     saveUsers();
     if (currentUser && currentUser.id === editingUserId) {
       currentUser = users.find(u => u.id === editingUserId);
-      sessionStorage.setItem('chamados-current-user-id', currentUser.id);
+      localStorage.setItem('chamados-current-user-id', currentUser.id);
     }
     closeUserFormCard();
     openUserManagerModal();
@@ -266,10 +266,10 @@ async function performLogin() {
   const user = users.find(u => u.username.toLowerCase() === name && u.password === hashedPass);
   if (!user) { showNotification('Usuário ou senha incorretos.', 'error'); return; }
   currentUser = user;
-  sessionStorage.setItem('chamados-current-user-id', user.id);
+  localStorage.setItem('chamados-current-user-id', user.id);
   document.getElementById('attendant-pass').value = '';
   // Salvar setor no localStorage para uso nos módulos
-  sessionStorage.setItem('premovale-current-setor', user.setor || '');
+  localStorage.setItem('premovale-current-setor', user.setor || '');
   // Redirecionar para menu principal após login
   window.location.href = 'menu.html';
 }
@@ -338,7 +338,7 @@ async function performLogout() {
   if (window._ticketsUnsubscribe) { window._ticketsUnsubscribe(); window._ticketsUnsubscribe = null; }
   if (typeof stopSessionTimer === 'function') stopSessionTimer();
   currentUser = null;
-  sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
+  localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
   window.location.href = 'login.html';
 }
 
@@ -356,7 +356,7 @@ async function checkLoginStatus() {
 
   const fresh = users.find(u => u.id === savedId);
   if (!fresh) {
-    sessionStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
+    localStorage.removeItem('chamados-current-user-id'); if (typeof broadcastLogout === 'function') broadcastLogout();
     window.location.href = 'login.html';
     return;
   }

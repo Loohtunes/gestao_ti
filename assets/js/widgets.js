@@ -134,7 +134,7 @@ const WIDGETS_DISPONIVEIS = {
 
       snap.docs.forEach(doc => {
         const obra = { id: doc.id, ...doc.data() };
-        if (!obra.etapas || obra.concluida) return;
+        if (!obra.etapas || _obraFinalizada(obra)) return;
         const ativas = ETAPAS_IDS.filter(id => obra.etapas[id]?.ativa);
         const todasDone = ativas.length > 0 && ativas.every(id => obra.etapas[id]?.status === 'done');
         if (todasDone) return;
@@ -226,7 +226,7 @@ const WIDGETS_LAYOUT_PADRAO = {
 // ── Resolução do usuário atual (sessão) ─────────────────────────────────────────
 function _wgtUsuarioAtual() {
   try {
-    const id = sessionStorage.getItem('chamados-current-user-id');
+    const id = localStorage.getItem('chamados-current-user-id');
     if (id && typeof users !== 'undefined' && Array.isArray(users)) {
       const u = users.find(x => x.id === id);
       if (u) return u;
