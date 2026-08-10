@@ -113,7 +113,7 @@ async function saveTicket() {
   const title = document.getElementById('ticket-title-input').value.trim();
   const desc = document.getElementById('ticket-description-input').value.trim();
   const setor = document.getElementById('ticket-setor-input').value;
-  const isRequester = currentUser?.role === 'requester';
+  const isRequester = !(typeof isUsuarioPrivilegiado === 'function' ? isUsuarioPrivilegiado(currentUser) : currentUser?.role !== 'requester');
   const prio = isRequester ? 'medium' : document.getElementById('ticket-priority-input').value;
   const rawType = document.getElementById('ticket-type-input')?.value || 'error';
   const ticketType = rawType === 'test' ? 'error' : rawType;

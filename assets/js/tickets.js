@@ -58,11 +58,29 @@ function filterTickets(filter, event) {
 
 function updateStats() {
   if (!currentUser) return;
-  const src = currentUser.role === 'requester' ? tickets.filter(t => t.requester === currentUser.username) : tickets;
+  const src = ticketsVisiveis(currentUser);
   document.getElementById('stat-available').textContent = src.filter(t => t.status === 'available').length;
   document.getElementById('stat-in-progress').textContent = src.filter(t => t.status === 'in-progress' || SUB_STATUS.has(t.status)).length;
   // Arquivados também contam como concluídos — todo arquivado já passou pelo estado concluído
   document.getElementById('stat-completed').textContent = src.filter(t => t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed').length;
+}
+
+// ── Porteira de visibilidade ───────────────────────────────────────────
+// Privilegiado = superadmin, admin ou atendente declarado. QUALQUER outro caso
+// (inclusive role ausente, nula ou desconhecida) e tratado como solicitante.
+// Falha fechando: nenhum ramo de filtro consegue vazar chamado alheio.
+function isUsuarioPrivilegiado(user) {
+  const u = user || currentUser;
+  if (!u) return false;
+  return !!(u.isSuperAdmin || u.isAdmin || u.role === 'attendant');
+}
+
+// Fonte unica dos chamados que o usuario atual pode enxergar.
+function ticketsVisiveis(user) {
+  const u = user || currentUser;
+  if (!u) return [];
+  if (isUsuarioPrivilegiado(u)) return tickets;
+  return tickets.filter(t => t.requester === u.username || isMentionedIn(t));
 }
 
 // Verifica se o usuário atual é mencionado num chamado (e ele está ativo)
@@ -272,39 +290,41 @@ function renderTickets() {
   const board = document.getElementById('tickets-board');
   const empty = document.getElementById('empty-state');
   if (!currentUser) return;
-  let list = tickets;
-  const isRequester = currentUser.role === 'requester';
+  // Porteira: todo ramo abaixo opera sobre o que o usuario PODE ver
+  const _visiveis = ticketsVisiveis(currentUser);
+  let list = _visiveis;
+  const isRequester = !isUsuarioPrivilegiado(currentUser);
 
   if (currentFilter === 'my-requests') {
     // Meus chamados abertos + chamados onde fui mencionado
-    list = tickets.filter(t =>
+    list = _visiveis.filter(t =>
       (t.requester === currentUser.username || isMentionedIn(t)) &&
       t.status !== 'archived' && t.status !== 'completed'
     );
   } else if (currentFilter === 'my-completed') {
     // Meus chamados concluídos — disponível para solicitantes
-    list = tickets.filter(t =>
+    list = _visiveis.filter(t =>
       t.requester === currentUser.username &&
       (t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed')
     );
   } else if (isRequester && currentFilter === 'completed') {
     // Solicitante vendo seus concluídos — inclui archived (auto-arquivados)
-    list = tickets.filter(t => t.requester === currentUser.username && (t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed'));
+    list = _visiveis.filter(t => t.requester === currentUser.username && (t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed'));
   } else if (isRequester && currentFilter === 'archived') {
     // fallback — não usado mais, absorbed pelo completed
-    list = tickets.filter(t => t.requester === currentUser.username && t.status === 'archived');
-  } else if (currentFilter === 'available') { list = tickets.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
-  else if (currentFilter === 'material') { list = tickets.filter(t => t.ticketType === 'material' && t.status !== 'archived'); }
-  else if (currentFilter === 'in-progress') { list = tickets.filter(t => (t.status === 'in-progress' || t.status === 'assigned' || SUB_STATUS.has(t.status)) && t.ticketType !== 'material'); }
-  else if (currentFilter === 'completed') { list = tickets.filter(t => (t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed') && t.ticketType !== 'test'); }
-  else if (currentFilter === 'test') { list = tickets.filter(t => t.ticketType === 'test'); }
-  else if (currentFilter === 'archived') { list = tickets.filter(t => t.status === 'archived'); }  // fallback
-  else { list = tickets.filter(t => t.status !== 'archived' && t.status !== 'force-closed' && t.ticketType !== 'test'); }
+    list = _visiveis.filter(t => t.requester === currentUser.username && t.status === 'archived');
+  } else if (currentFilter === 'available') { list = _visiveis.filter(t => t.status === 'available' && t.ticketType !== 'material'); }
+  else if (currentFilter === 'material') { list = _visiveis.filter(t => t.ticketType === 'material' && t.status !== 'archived'); }
+  else if (currentFilter === 'in-progress') { list = _visiveis.filter(t => (t.status === 'in-progress' || t.status === 'assigned' || SUB_STATUS.has(t.status)) && t.ticketType !== 'material'); }
+  else if (currentFilter === 'completed') { list = _visiveis.filter(t => (t.status === 'completed' || t.status === 'archived' || t.status === 'force-closed') && t.ticketType !== 'test'); }
+  else if (currentFilter === 'test') { list = _visiveis.filter(t => t.ticketType === 'test'); }
+  else if (currentFilter === 'archived') { list = _visiveis.filter(t => t.status === 'archived'); }  // fallback
+  else { list = _visiveis.filter(t => t.status !== 'archived' && t.status !== 'force-closed' && t.ticketType !== 'test'); }
 
   // Garantir que chamados onde o usuário foi mencionado sempre apareçam (exceto concluídos)
   if (!['archived', 'completed', 'test'].includes(currentFilter)) {
     const mentionedIds = new Set(list.map(t => t.id));
-    tickets.forEach(t => {
+    _visiveis.forEach(t => {
       if (!mentionedIds.has(t.id) && isMentionedIn(t)) list = [...list, t];
     });
   }
@@ -319,7 +339,7 @@ function renderTickets() {
 
   // Filtro por setor — nunca para solicitantes, nunca na aba Concluídos
   const isCompletedFilter = currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed';
-  const isAttendantUser = currentUser.role !== 'requester';
+  const isAttendantUser = isUsuarioPrivilegiado(currentUser);
   const setorWrapper = document.getElementById('setor-filter-wrapper');
   if (setorWrapper) {
     setorWrapper.style.display = (isAttendantUser && !isCompletedFilter) ? 'flex' : 'none';
@@ -337,7 +357,7 @@ function renderTickets() {
   empty.style.display = 'none';
   // Forçar lista se viewMode = list (exceto filtros que já são lista)
   const forceList = (typeof viewMode !== 'undefined') && viewMode === 'list';
-  const useList = currentUser.role === 'requester' || currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed' || (list.length > 0 && list.every(t => t.status === 'force-closed' || t.status === 'completed' || t.status === 'archived'));
+  const useList = !isUsuarioPrivilegiado(currentUser) || currentFilter === 'archived' || currentFilter === 'completed' || currentFilter === 'my-completed' || (list.length > 0 && list.every(t => t.status === 'force-closed' || t.status === 'completed' || t.status === 'archived'));
 
   if (useList) {
     renderTicketsList(board, list);

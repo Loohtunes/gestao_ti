@@ -1177,3 +1177,297 @@ body.dark-mode .cftv-dvr-status-btn.intermitente.selected {
   border-color: #854d0e;
   color: #fde68a;
 }
+
+/* ── Faturamento: histórico de valores anteriores ───────────────────────────── */
+.imp-fat-hist {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border2);
+}
+
+.imp-fat-hist-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 0.55rem;
+}
+
+.imp-fat-hist-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--surface2);
+  margin-bottom: 0.35rem;
+}
+
+.imp-fat-hist-vals {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text);
+}
+
+.imp-fat-hist-meta {
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+
+/* ── Seletor de exportação do Histórico ────────────────────────────────────── */
+.exp-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 1.25rem;
+}
+
+.exp-modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.exp-head {
+  padding: 1.1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border2);
+}
+
+.exp-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.exp-desc {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.exp-formatos {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--border2);
+  background: var(--surface2);
+}
+
+.exp-fmt {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.79rem;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.exp-fmt:has(input:checked) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.exp-body {
+  overflow-y: auto;
+  padding: 0.9rem 1.25rem;
+  flex: 1;
+}
+
+.exp-grupo {
+  margin-bottom: 1.1rem;
+}
+
+.exp-grupo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+}
+
+.exp-grupo-nome {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.exp-grupo-cont {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.66rem;
+  letter-spacing: 0;
+}
+
+.exp-grupo-todos {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0.15rem 0.2rem;
+}
+
+.exp-grupo-todos:hover {
+  text-decoration: underline;
+}
+
+.exp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  margin-bottom: 0.35rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.exp-item:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+
+.exp-item input {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.exp-item-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.exp-item-txt strong {
+  font-size: 0.79rem;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.exp-item-txt span {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.exp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border2);
+  background: var(--surface2);
+}
+
+.exp-contador {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.exp-acoes {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.exp-acoes button {
+  padding: 0.45rem 0.95rem;
+  font-size: 0.79rem;
+}
+
+.exp-acoes button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* ── Servidor: leitura anterior e variação ─────────────────────────────────── */
+.srv-ant-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.45rem;
+  font-size: 0.69rem;
+  color: var(--muted);
+}
+
+.srv-ant-line.vazio {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.srv-ant-label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 0.62rem;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 0.05rem 0.4rem;
+}
+
+.srv-ant-val {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.srv-ant-meta {
+  margin-left: auto;
+  opacity: 0.85;
+}
+
+.srv-delta {
+  margin-top: 0.25rem;
+  font-size: 0.69rem;
+  font-weight: 600;
+  min-height: 0.9rem;
+}
+
+.srv-delta.consumiu {
+  color: #ef4444;
+}
+
+.srv-delta.liberou {
+  color: #22c55e;
+}
+
+.srv-delta.igual {
+  color: var(--muted);
+  font-weight: 500;
+}

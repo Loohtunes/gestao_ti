@@ -107,13 +107,25 @@ function openTicketDetail(id) {
   const ticket = tickets.find(t => t.id === id);
   if (!ticket) return;
 
+  // Porteira: solicitante so abre o proprio chamado (ou onde foi mencionado)
+  if (typeof isUsuarioPrivilegiado === 'function' && !isUsuarioPrivilegiado(currentUser)) {
+    const meu = ticket.requester === currentUser?.username
+      || (typeof isMentionedIn === 'function' && isMentionedIn(ticket));
+    if (!meu) {
+      if (typeof showNotification === 'function') {
+        showNotification('Você não tem acesso a este chamado.', 'error');
+      }
+      return;
+    }
+  }
+
   activeDetailId = id;
   markTicketSeen(ticket);
   renderTickets(); // Garante que o badge some imediatamente
 
   // Material visto automaticamente
   if (ticket.ticketType === 'material' && ticket.status === 'available' &&
-    currentUser && currentUser.role !== 'requester') {
+    currentUser && (typeof isUsuarioPrivilegiado === 'function' ? isUsuarioPrivilegiado(currentUser) : currentUser.role !== 'requester')) {
     ticket.status = 'mat-seen';
     logTicketEvent(ticket, 'Visualizado por ' + capitalizeName(currentUser.username));
     updateStats();

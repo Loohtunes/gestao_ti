@@ -78,7 +78,7 @@ const ETAPAS_CONFIG = {
     id: 'aditivos', nome: 'Aditivos / Termo', short: 'Aditivos', opcional: true, cor: '#ec4899',
     isLista: true,
     subEtapasTemplate: [
-      { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true },
+      { id: 'comparativo_recebimento', nome: 'Recebimento do Comparativo', dias: 0, dateLivre: true, podeEncerrar: true, encerramentoRecebimento: true },
       { id: 'elaboracao', nome: 'Elaboração', dias: 2, dateLivre: false },
       { id: 'analise_comparativo', nome: 'Em Análise', dias: 0, dateLivre: true },
       { id: 'carta_envio', nome: 'Envio da Carta Aditiva', dias: 2, dateLivre: false },
@@ -1798,19 +1798,31 @@ async function saveRecusaLista() {
 }
 
 // ── Encerrar aditivo sem termo (conclui na carta_aprovacao) ──────────────────
-let _encerrarObraId = null, _encerrarEtapaId = null, _encerrarItemId = null;
+let _encerrarObraId = null, _encerrarEtapaId = null, _encerrarItemId = null, _encerrarSubId = null;
 
-function openEncerrarAditivoModal(obraId, etapaId, itemId) {
-  _encerrarObraId = obraId; _encerrarEtapaId = etapaId; _encerrarItemId = itemId;
+function openEncerrarAditivoModal(obraId, etapaId, itemId, subId) {
+  _encerrarObraId = obraId; _encerrarEtapaId = etapaId; _encerrarItemId = itemId; _encerrarSubId = subId || null;
   const obra = _obras.find(o => o.id === obraId);
   const item = (obra?.etapas?.[etapaId]?.lista || []).find(i => i.id === itemId);
   const titleEl = document.getElementById('encerrar-aditivo-title');
   if (titleEl) titleEl.textContent = `Encerrar: ${item?.titulo || 'Aditivo'}`;
+  // Texto contextual conforme a sub-etapa em que o encerramento foi acionado
+  const cfg = ETAPAS_CONFIG[etapaId];
+  const subCfg = (cfg?.subEtapasTemplate || []).find(s => s.id === subId);
+  const p1 = document.getElementById('encerrar-aditivo-texto1');
+  const p2 = document.getElementById('encerrar-aditivo-texto2');
+  if (subCfg && subCfg.encerramentoRecebimento) {
+    if (p1) p1.innerHTML = 'A Engenharia indicou que <strong>este aditivo n\u00e3o \u00e9 necess\u00e1rio</strong>.';
+    if (p2) p2.textContent = 'O Recebimento do Comparativo ser\u00e1 conclu\u00eddo e todas as etapas seguintes ser\u00e3o puladas.';
+  } else {
+    if (p1) p1.innerHTML = 'Este aditivo ser\u00e1 <strong>encerrado sem Termo Aditivo</strong>.';
+    if (p2) p2.textContent = 'A Aprova\u00e7\u00e3o da Carta Aditiva ser\u00e1 marcada como conclu\u00edda. O Envio e Assinatura do Termo ser\u00e3o marcados como pulados.';
+  }
   document.getElementById('encerrar-aditivo-modal').style.display = 'flex';
 }
 function closeEncerrarAditivoModal() {
   document.getElementById('encerrar-aditivo-modal').style.display = 'none';
-  _encerrarObraId = _encerrarEtapaId = _encerrarItemId = null;
+  _encerrarObraId = _encerrarEtapaId = _encerrarItemId = _encerrarSubId = null;
 }
 async function confirmarEncerrarAditivo() {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -1821,13 +1833,18 @@ async function confirmarEncerrarAditivo() {
   const etapas = JSON.parse(JSON.stringify(obra.etapas));
   const item = etapas[etapaId].lista.find(i => i.id === itemId); if (!item) return;
   const cfg = ETAPAS_CONFIG[etapaId];
-  // Marcar sub-etapa atual (carta_aprovacao) como done e as posteriores como pulada
   const subs = cfg.subEtapasTemplate || [];
+  // A sub-etapa de encerramento é a que foi clicada. Se não veio subId (chamada
+  // antiga), cai no comportamento original: a primeira sub com podeEncerrar.
+  const subEncerramento = _encerrarSubId
+    || (subs.find(s => s.podeEncerrar) || {}).id;
+  // Marcar a sub de encerramento como done, as posteriores como pulada e as
+  // anteriores ainda ativas como done.
   let passouEncerramento = false;
   subs.forEach(s => {
     if (!item.subEtapas[s.id]) item.subEtapas[s.id] = { status: 'pending', dataLimite: null, dataConclusao: null };
-    if (s.podeEncerrar) {
-      // Concluir a sub-etapa de encerramento (carta_aprovacao)
+    if (s.id === subEncerramento) {
+      // Concluir a sub-etapa em que o encerramento foi acionado
       item.subEtapas[s.id].status = 'done';
       item.subEtapas[s.id].dataConclusao = hoje;
       item.subEtapas[s.id].concluidoPor = currentUser.username;
@@ -1845,17 +1862,21 @@ async function confirmarEncerrarAditivo() {
       item.subEtapas[s.id].dataConclusao = hoje;
     }
   });
-  item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username; item.encerradoSemTermo = true;
+  const _noRecebimento = subEncerramento === 'comparativo_recebimento';
+  item.status = 'done'; item.dataConclusao = hoje; item.concluidoPor = currentUser.username;
+  item.encerradoSemTermo = true;
+  if (_noRecebimento) item.encerradoNoRecebimento = true;
   const todosItemsDone = (etapas[etapaId].lista || []).every(i => i.status === 'done');
   if (todosItemsDone) etapas[etapaId].status = 'done';
-  _audit(obraId, 'conclusao', `${item.titulo} encerrado sem Termo Aditivo`);
+  const _motivo = _noRecebimento ? 'encerrado no recebimento (aditivo não necessário)' : 'encerrado sem Termo Aditivo';
+  _audit(obraId, 'conclusao', `${item.titulo} ${_motivo}`);
   await db.collection('obras').doc(obraId).update({ etapas });
   showComercialToast('Aditivo encerrado! ✅', 'success');
 }
 
-async function encerrarItemLista(obraId, etapaId, itemId) {
+async function encerrarItemLista(obraId, etapaId, itemId, subId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  openEncerrarAditivoModal(obraId, etapaId, itemId);
+  openEncerrarAditivoModal(obraId, etapaId, itemId, subId);
 }
 
 async function saveRecusa() {
@@ -2617,7 +2638,7 @@ function _initAcaoDelegate() {
       case 'dataprevista': openDataPrevistaModal(obraId, etapaId, subId); break;
       case 'aprovado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'aprovado'); break;
       case 'recusado-lista': processarAprovacaoRecusaLista(obraId, etapaId, itemId, subId, 'recusado'); break;
-      case 'encerrar-lista': encerrarItemLista(obraId, etapaId, itemId); break;
+      case 'encerrar-lista': encerrarItemLista(obraId, etapaId, itemId, subId); break;
     }
   });
 }

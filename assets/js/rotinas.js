@@ -29,6 +29,11 @@ function openChecklistSubTab(sub) {
 // ── Config ───────────────────────────────────────────────────────────────────
 async function loadRotinasConfig() {
   try {
+    // Faturamento dispara junto (paralelo), mas com catch proprio: uma falha
+    // nele nunca derruba impressoras, DVRs, cameras e servidores.
+    _pFatPendente = db.collection('rotinas_config').doc('faturamento').get()
+      .catch(e => { console.error('[Rotinas] Falha ao carregar o faturamento (o resto segue normal):', e); return null; });
+
     const [i, dv, c, s] = await Promise.all([
       db.collection('rotinas_config').doc('impressoras').get(),
       db.collection('rotinas_config').doc('dvrs').get(),
@@ -39,7 +44,28 @@ async function loadRotinasConfig() {
     _dvrs = dv.exists ? (dv.data().lista || []) : [];
     _cameras = c.exists ? (c.data().lista || []) : [];
     _servidores = s.exists ? (s.data().lista || []) : [];
-  } catch (e) { _impressoras = []; _dvrs = []; _cameras = []; _servidores = []; }
+  } catch (e) {
+    console.error('[Rotinas] Falha ao carregar a configuracao:', e);
+    _impressoras = []; _dvrs = []; _cameras = []; _servidores = [];
+  }
+
+  // Aplica o faturamento (ou os zeros, se a leitura dele tiver falhado)
+  try {
+    const f = await _pFatPendente;
+    const fd = (f && f.exists) ? (f.data() || {}) : {};
+    const at = fd.atual || {};
+    _impFaturamento = {
+      franquiaPags: at.franquiaPags ?? 0,
+      franquiaValor: at.franquiaValor ?? 0,
+      valorPorPag: at.valorPorPag ?? 0,
+      obs: at.obs ?? ''
+    };
+    _impFatHistorico = Array.isArray(fd.historico) ? fd.historico : [];
+  } catch (e) {
+    console.error('[Rotinas] Falha ao aplicar o faturamento:', e);
+    _impFaturamento = { franquiaPags: 0, franquiaValor: 0, valorPorPag: 0, obs: '' };
+    _impFatHistorico = [];
+  }
 }
 
 // ── Seed ─────────────────────────────────────────────────────────────────────
@@ -207,6 +233,86 @@ function _fmtUnidade(val, unidade) {
   return `${val} ${unidade || 'GB'}`;
 }
 
+// ── Leitura anterior do servidor ─────────────────────────────────────
+// Mesma mecanica ja usada pelas impressoras: guarda o ultimo registro salvo
+// para que o proximo checklist mostre o que havia antes e o que mudou.
+let _servidorAnterior = null;
+let _servidorAnteriorCarregado = false;
+let _pFatPendente = null;
+
+async function loadLeituraAnteriorServidor() {
+  try {
+    const snap = await db.collection('rotinas_servidor')
+      .orderBy('registradoEm', 'desc').limit(1).get();
+    _servidorAnterior = snap.empty ? null : snap.docs[0].data();
+  } catch (e) {
+    console.error('[Rotinas] Erro ao buscar leitura anterior do servidor:', e);
+    _servidorAnterior = null;
+  } finally {
+    _servidorAnteriorCarregado = true;
+  }
+}
+
+// Devolve a leitura anterior de um disco especifico, ou null
+function _discoAnterior(srvId, discoId) {
+  if (!_servidorAnterior) return null;
+  const l = (_servidorAnterior.leituras || []).find(x => x.srvId === srvId);
+  if (!l) return null;
+  const dk = (l.discos || []).find(x => x.discoId === discoId);
+  if (dk) return dk;
+  // Registro antigo, sem discos[]: usa o nivel do servidor
+  if (l.disponivelGB != null) return { disponivelGB: l.disponivelGB, pct: l.pct || 0 };
+  return null;
+}
+
+function _fmtDataCurta(iso) {
+  if (!iso) return '';
+  const dt = new Date(iso + 'T12:00:00');
+  return isNaN(dt) ? '' : dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+// Preenche a linha "Anterior: X GB · dd/mm · por fulano" de UM disco.
+// Pinta o elemento que ja esta na tela, sem redesenhar o checklist — assim
+// nada do que o usuario ja digitou se perde.
+function _pintarLinhaAnterior(srvId, discoId) {
+  const el = document.getElementById(`srv-ant-${srvId}-${discoId}`);
+  if (!el) return;
+
+  if (!_servidorAnteriorCarregado) {
+    el.className = 'srv-ant-line vazio';
+    el.textContent = 'Carregando leitura anterior…';
+    return;
+  }
+
+  const ant = _discoAnterior(srvId, discoId);
+  if (!ant) {
+    el.className = 'srv-ant-line vazio';
+    el.textContent = 'Sem leitura anterior registrada';
+    return;
+  }
+
+  const data = _fmtDataCurta(_servidorAnterior?.data);
+  const por = _servidorAnterior?.registradoPor || '';
+  el.className = 'srv-ant-line';
+  el.innerHTML = `<span class="srv-ant-label">Anterior</span>
+    <span class="srv-ant-val">${(Number(ant.disponivelGB) || 0).toLocaleString('pt-BR')} GB livres${ant.pct != null ? ` · ${ant.pct}% uso` : ''}</span>
+    <span class="srv-ant-meta">${data}${por ? ' · ' + por : ''}</span>`;
+}
+
+// Pinta todas as linhas e recalcula a variação com o que ja estiver digitado.
+function pintarLeituraAnterior() {
+  (_servidores || []).forEach(srv => {
+    const discos = srv.discos?.length ? srv.discos : [{ id: 'disco0', unidade: 'GB' }];
+    discos.forEach(disco => {
+      _pintarLinhaAnterior(srv.id, disco.id);
+      const campo = document.getElementById(`srv-disp-${srv.id}-${disco.id}`);
+      const un = document.getElementById(`srv-disp-un-${srv.id}-${disco.id}`)?.value || disco.unidade || 'GB';
+      const temValor = !!(campo && campo.value !== '');
+      _updateServidorDelta(srv.id, disco.id, _toGB(parseFloat(campo?.value) || 0, un), temValor);
+    });
+  });
+}
+
 function renderServidoresChecklist() {
   const el = document.getElementById('servidores-grid');
   if (!el) return;
@@ -246,6 +352,8 @@ function renderServidoresChecklist() {
             <div class="rotinas-bar-track"><div class="rotinas-bar-fill" id="srv-bar-${srv.id}-${disco.id}" style="width:0%;background:#22c55e;"></div></div>
             <span class="rotinas-bar-pct" id="srv-pct-${srv.id}-${disco.id}">0%</span>
           </div>
+          <div class="srv-ant-line vazio" id="srv-ant-${srv.id}-${disco.id}">Carregando leitura anterior…</div>
+          <div class="srv-delta" id="srv-delta-${srv.id}-${disco.id}"></div>
         </div>`).join('')}
       <div class="form-group" style="margin-top:0.85rem;">
         <label class="form-label">Observações</label>
@@ -259,11 +367,37 @@ function _toGB(val, unidade) {
   return unidade === 'TB' ? val * 1024 : val;
 }
 
+// Compara a leitura digitada com a anterior e descreve a variacao
+function _updateServidorDelta(srvId, discoId, dispGB, temValor) {
+  const el = document.getElementById(`srv-delta-${srvId}-${discoId}`);
+  if (!el) return;
+  const ant = _discoAnterior(srvId, discoId);
+  if (!ant || !temValor) { el.textContent = ''; el.className = 'srv-delta'; return; }
+
+  const antGB = Number(ant.disponivelGB) || 0;
+  const diff = Math.round(dispGB - antGB);
+  const fmt = n => Math.abs(n).toLocaleString('pt-BR');
+
+  if (diff === 0) {
+    el.className = 'srv-delta igual';
+    el.textContent = '= sem alteração desde a última leitura';
+  } else if (diff < 0) {
+    el.className = 'srv-delta consumiu';
+    el.textContent = `▼ consumiu ${fmt(diff)} GB desde a última leitura`;
+  } else {
+    el.className = 'srv-delta liberou';
+    el.textContent = `▲ liberou ${fmt(diff)} GB desde a última leitura`;
+  }
+}
+
 function updateServidorBar(srvId, discoId, totalRaw, totalUnidade) {
-  const disp = parseFloat(document.getElementById(`srv-disp-${srvId}-${discoId}`)?.value) || 0;
+  const _campo = document.getElementById(`srv-disp-${srvId}-${discoId}`);
+  const _temValor = !!(_campo && _campo.value !== '');
+  const disp = parseFloat(_campo?.value) || 0;
   const dispUn = document.getElementById(`srv-disp-un-${srvId}-${discoId}`)?.value || totalUnidade || 'GB';
   const totalGB = _toGB(totalRaw, totalUnidade || 'GB');
   const dispGB = _toGB(disp, dispUn);
+  _updateServidorDelta(srvId, discoId, dispGB, _temValor);
   const pct = totalGB > 0 ? Math.round(((totalGB - dispGB) / totalGB) * 100) : 0;
   const clamped = Math.max(0, Math.min(100, pct));
   const bar = document.getElementById(`srv-bar-${srvId}-${discoId}`);
@@ -306,6 +440,8 @@ async function saveServidorRegisto() {
     showRotinasToast('Registro do servidor salvo! ✅', 'success');
     _ultimosReg.servidor = new Date().toISOString().slice(0, 10); _ultimosReg.servidor_por = currentUser.username;
     renderUltimoReg('servidor');
+    // O registro recem-salvo passa a ser a leitura anterior (em paralelo)
+    loadLeituraAnteriorServidor().then(pintarLeituraAnterior);
     // Reset — direto para 0% sem recalcular
     _servidores.forEach(srv => {
       const discos = srv.discos?.length ? srv.discos : [{ id: 'disco0' }];
@@ -393,6 +529,7 @@ function saveLeituraAnterior(impId) {
 const IMP_PER_PAGE = 4;
 let _impModalPage = 0;
 let _impFaturamento = { franquiaPags: 0, franquiaValor: 0, valorPorPag: 0, obs: '' };
+let _impFatHistorico = [];
 
 function switchModalTab(tab) {
   const tabs = ['impressoras', 'faturamento'];
@@ -420,20 +557,66 @@ function openImpressorasModal() {
   if (modal) { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
 }
 
-function saveFaturamento() {
-  _impFaturamento.franquiaPags = parseFloat(document.getElementById('modal-franquia-pag')?.value) || 0;
-  _impFaturamento.franquiaValor = parseFloat(document.getElementById('modal-franquia-val')?.value) || 0;
-  _impFaturamento.valorPorPag = parseFloat(document.getElementById('modal-valor-pag')?.value) || 0;
-  _impFaturamento.obs = document.getElementById('modal-imp-obs')?.value.trim() || '';
-  const t = document.createElement('div');
-  t.textContent = '✅ Faturamento salvo!';
-  t.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--border2);border-left:3px solid #22c55e;border-radius:8px;padding:0.7rem 1.1rem;font-size:0.82rem;z-index:9999;box-shadow:0 4px 16px #00000018;transition:opacity 0.3s;';
-  document.body.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2000);
+function _lerFaturamentoDoForm() {
+  const el = id => document.getElementById(id);
+  if (!el('modal-franquia-pag')) return null;   // modal nao renderizado
+  return {
+    franquiaPags: parseFloat(el('modal-franquia-pag')?.value) || 0,
+    franquiaValor: parseFloat(el('modal-franquia-val')?.value) || 0,
+    valorPorPag: parseFloat(el('modal-valor-pag')?.value) || 0,
+    obs: el('modal-imp-obs')?.value.trim() || ''
+  };
 }
 
-function closeImpressorasModal() {
-  saveFaturamento();
+function _fatIgual(a, b) {
+  if (!a || !b) return false;
+  return (a.franquiaPags || 0) === (b.franquiaPags || 0)
+    && (a.franquiaValor || 0) === (b.franquiaValor || 0)
+    && (a.valorPorPag || 0) === (b.valorPorPag || 0)
+    && (a.obs || '') === (b.obs || '');
+}
+
+// Persiste os valores de faturamento em rotinas_config/faturamento.
+// Os valores anteriores nao se perdem: entram em historico[] antes da troca.
+async function saveFaturamento(silencioso = false) {
+  const novo = _lerFaturamentoDoForm();
+  if (!novo) return false;
+  if (_fatIgual(novo, _impFaturamento)) {
+    if (!silencioso) showRotinasToast('Nenhuma alteração nos valores.', 'success');
+    return true;
+  }
+
+  const anterior = { ..._impFaturamento };
+  const temAnterior = (anterior.franquiaPags || anterior.franquiaValor
+    || anterior.valorPorPag || anterior.obs);
+
+  try {
+    const historico = temAnterior
+      ? [{ ...anterior, alteradoEm: new Date().toISOString(), alteradoPor: currentUser?.username || '' },
+      ...(_impFatHistorico || [])].slice(0, 50)
+      : (_impFatHistorico || []);
+
+    await db.collection('rotinas_config').doc('faturamento').set({
+      atual: novo,
+      historico,
+      atualizadoEm: new Date().toISOString(),
+      atualizadoPor: currentUser?.username || ''
+    });
+
+    _impFaturamento = novo;
+    _impFatHistorico = historico;
+    renderModalFaturamento();
+    if (!silencioso) showRotinasToast('Faturamento salvo! ✅', 'success');
+    return true;
+  } catch (e) {
+    console.error('[Rotinas] Erro ao salvar faturamento:', e);
+    showRotinasToast('Erro ao salvar o faturamento.', 'error');
+    return false;
+  }
+}
+
+async function closeImpressorasModal() {
+  await saveFaturamento(true);
   const modal = document.getElementById('rotinas-imp-modal');
   if (modal) modal.style.display = 'none';
   document.body.style.overflow = '';
@@ -503,6 +686,32 @@ function renderModalFaturamento() {
     <div class="imp-fat-field" style="margin-top:0.5rem;">
       <label>Observações</label>
       <textarea id="modal-imp-obs" class="form-input" rows="2" placeholder="Troca de toner, manutenção, etc..." style="resize:none;margin-top:0.25rem;">${_impFaturamento.obs || ''}</textarea>
+    </div>
+    ${_fatHistoricoHTML()}`;
+}
+
+// Lista somente-leitura dos valores anteriores de faturamento
+function _fatHistoricoHTML() {
+  if (!_impFatHistorico || !_impFatHistorico.length) return '';
+  const brl = n => (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  const dt = iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  };
+  const linhas = _impFatHistorico.slice(0, 10).map(h => `
+    <div class="imp-fat-hist-row">
+      <div class="imp-fat-hist-vals">
+        <span>${(Number(h.franquiaPags) || 0).toLocaleString('pt-BR')} págs</span>
+        <span>R$ ${brl(h.franquiaValor)}</span>
+        <span>R$ ${brl(h.valorPorPag)}/pág</span>
+      </div>
+      <div class="imp-fat-hist-meta">${dt(h.alteradoEm)}${h.alteradoPor ? ' · ' + h.alteradoPor : ''}</div>
+    </div>`).join('');
+  return `
+    <div class="imp-fat-hist">
+      <div class="imp-fat-hist-title">Valores anteriores</div>
+      ${linhas}
     </div>`;
 }
 
@@ -579,28 +788,144 @@ function calcTotais() {
 }
 
 const _ETIQUETA_B64 = 'data:image/png;base64,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';
-function exportarLevantamentoImpressorasPDF() {
-  const mesAno = document.getElementById('imp-mes-ano')?.value || '';
-  const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// ── Helpers de PDF ──────────────────────────────────────────────────
+const _pdfEsc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const _pdfNum = n => (Number(n) || 0).toLocaleString('pt-BR');
+const _pdfBRL = n => 'R$ ' + (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function _pdfDataBR(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso + 'T12:00:00');
+  return isNaN(d) ? _pdfEsc(iso) : d.toLocaleDateString('pt-BR');
+}
+
+function _pdfMesBR(mesAno) {
+  if (!mesAno) return '—';
+  const [y, m] = String(mesAno).split('-');
+  return `${m}/${y}`;
+}
+
+// Seção de um registro de IMPRESSORAS (a partir do registro salvo)
+function _pdfSecaoImpressoras(reg) {
   let color = 0, mono = 0;
-  const linhas = _impressoras.map(imp => {
-    const antTxt = (document.getElementById(`imp-ant-${imp.id}`)?.textContent || '—');
-    const atual = document.getElementById(`imp-atual-${imp.id}`)?.value || '';
-    const pagTxt = (document.getElementById(`imp-pag-${imp.id}`)?.textContent || '—');
-    const pag = pagTxt === '—' ? 0 : (parseInt(pagTxt.replace(/\./g, '').replace(',', '')) || 0);
-    if (pagTxt !== '—') { imp.tipo === 'COLOR' ? color += pag : mono += pag; }
+  const linhas = (reg.leituras || []).map(l => {
+    const pag = Number(l.paginas) || 0;
+    l.tipo === 'COLOR' ? color += pag : mono += pag;
     return `<tr>
-      <td>${esc(imp.marca)} ${esc(imp.modelo)}</td>
-      <td>${esc(imp.departamento || '—')}</td>
-      <td style="text-align:center;"><span class="tag ${imp.tipo === 'COLOR' ? 'c' : 'm'}">${esc(imp.tipo)}</span></td>
-      <td style="text-align:right;font-family:monospace;">${esc(antTxt)}</td>
-      <td style="text-align:right;font-family:monospace;">${atual !== '' ? esc(atual) : '—'}</td>
-      <td style="text-align:right;font-family:monospace;font-weight:700;">${esc(pagTxt)}</td>
+      <td>${_pdfEsc(l.nome)}</td>
+      <td>${_pdfEsc(l.departamento || '—')}</td>
+      <td style="text-align:center;"><span class="tag ${l.tipo === 'COLOR' ? 'c' : 'm'}">${_pdfEsc(l.tipo)}</span></td>
+      <td style="text-align:right;font-family:monospace;">${_pdfNum(l.anterior)}</td>
+      <td style="text-align:right;font-family:monospace;">${_pdfNum(l.atual)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700;">${_pdfNum(pag)}</td>
     </tr>`;
   }).join('');
-  const fmt = n => n.toLocaleString('pt-BR');
-  const mesFmt = mesAno ? (() => { const [y, m] = mesAno.split('-'); return `${m}/${y}`; })() : '—';
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Levantamento de Impressoras — Premovale</title>
+
+  const f = reg.faturamento;
+  const blocoFat = f ? `
+    <div class="fatbox">
+      <div class="fatbox-title">Faturamento</div>
+      <div class="fatrow"><span>Franquia</span><strong>${_pdfNum(f.franquiaPags)} págs · ${_pdfBRL(f.franquiaValor)}</strong></div>
+      <div class="fatrow"><span>Excedente</span><strong>${_pdfNum(f.excedentePags)} págs · ${_pdfBRL(f.excedenteValor)}</strong></div>
+      <div class="fatrow total"><span>Total da fatura</span><strong>${_pdfBRL(f.totalFatura)}</strong></div>
+      ${f.obs ? `<div class="fatobs">${_pdfEsc(f.obs)}</div>` : ''}
+    </div>` : '';
+
+  return `
+    <div class="secao">
+      <div class="secao-title">🖨️ Levantamento de Impressoras — ${_pdfMesBR(reg.mesAno)}</div>
+      <div class="secao-sub">Registrado por ${_pdfEsc(reg.registradoPor || '—')}</div>
+      <table>
+        <thead><tr><th>Impressora</th><th>Departamento</th><th>Tipo</th><th style="text-align:right;">Anterior</th><th style="text-align:right;">Atual</th><th style="text-align:right;">Páginas</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      <div class="totais">
+        <div class="tot"><span>Total COLOR</span><strong>${_pdfNum(color)} pgs</strong></div>
+        <div class="tot"><span>Total MONO</span><strong>${_pdfNum(mono)} pgs</strong></div>
+        <div class="tot geral"><span>Total Geral (mono)</span><strong>${_pdfNum(mono)} pgs</strong></div>
+      </div>
+      ${blocoFat}
+    </div>`;
+}
+
+// Seção de um registro de SERVIDOR
+function _pdfSecaoServidor(reg) {
+  const linhas = (reg.leituras || []).flatMap(l => {
+    const discos = l.discos?.length ? l.discos
+      : [{ nome: 'C:', total: l.totalGB || 0, unidade: 'GB', disponivelGB: l.disponivelGB || 0, usadoGB: l.usadoGB || 0, pct: l.pct || 0 }];
+    return discos.map(dk => `<tr>
+      <td>${_pdfEsc(l.nome)}</td>
+      <td>${_pdfEsc(dk.nome)}</td>
+      <td style="text-align:right;font-family:monospace;">${_pdfNum(dk.total)} ${_pdfEsc(dk.unidade || 'GB')}</td>
+      <td style="text-align:right;font-family:monospace;">${_pdfNum(dk.disponivelGB)} GB</td>
+      <td style="text-align:right;font-family:monospace;">${_pdfNum(dk.usadoGB)} GB</td>
+      <td style="text-align:right;font-family:monospace;font-weight:700;">${_pdfNum(dk.pct)}%</td>
+    </tr>`);
+  }).join('');
+  const obs = (reg.leituras || []).filter(l => l.obs).map(l => `<div class="fatobs"><strong>${_pdfEsc(l.nome)}:</strong> ${_pdfEsc(l.obs)}</div>`).join('');
+  return `
+    <div class="secao">
+      <div class="secao-title">🖥️ Checklist do Servidor — ${_pdfDataBR(reg.data)}</div>
+      <div class="secao-sub">Registrado por ${_pdfEsc(reg.registradoPor || '—')}</div>
+      <table>
+        <thead><tr><th>Servidor</th><th>Disco</th><th style="text-align:right;">Total</th><th style="text-align:right;">Disponível</th><th style="text-align:right;">Usado</th><th style="text-align:right;">% Uso</th></tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+      ${obs}
+    </div>`;
+}
+
+// Seção de um registro de CFTV — cada DVR em seu próprio bloco,
+// espelhando a estrutura do histórico em tela.
+function _pdfSecaoCFTV(reg) {
+  const blocos = (reg.dvrs || []).map(dvr => {
+    const linhas = (dvr.cameras || []).map(c => `<tr>
+      <td style="text-align:center;font-family:monospace;">${_pdfEsc(c.canal)}</td>
+      <td>${_pdfEsc(c.nome)}</td>
+      <td>${_pdfEsc(c.rack || '—')}</td>
+      <td>${_pdfEsc(c.status)}</td>
+      <td>${_pdfEsc(c.obs || '')}</td>
+    </tr>`).join('');
+    const cont = [
+      `${_pdfNum(dvr.ATIVO)} ativas`,
+      `${_pdfNum(dvr.INATIVO)} inativas`,
+      `${_pdfNum(dvr.INTERMITENTE)} intermitentes`,
+      `${_pdfNum(dvr.NAO_INSTALADO)} não instaladas`
+    ].join(' · ');
+    return `
+      <div class="dvr-bloco">
+        <div class="dvr-nome">${_pdfEsc(dvr.nome)}${dvr.status ? ` <span class="dvr-status">${_pdfEsc(dvr.status)}</span>` : ''}</div>
+        <div class="dvr-cont">${cont}</div>
+        ${dvr.obsD ? `<div class="fatobs">${_pdfEsc(dvr.obsD)}</div>` : ''}
+        <table>
+          <thead><tr><th style="text-align:center;">Canal</th><th>Câmera</th><th>Rack</th><th>Status</th><th>Observação</th></tr></thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="secao">
+      <div class="secao-title">📷 Checklist CFTV — ${_pdfDataBR(reg.data)}</div>
+      <div class="secao-sub">Registrado por ${_pdfEsc(reg.registradoPor || '—')} · Ativas: ${_pdfNum(reg.ATIVO)} · Inativas: ${_pdfNum(reg.INATIVO)} · Intermitentes: ${_pdfNum(reg.INTERMITENTE)} · Não instaladas: ${_pdfNum(reg.NAO_INSTALADO)}</div>
+      ${blocos}
+      ${reg.obs ? `<div class="fatobs"><strong>Observação geral:</strong> ${_pdfEsc(reg.obs)}</div>` : ''}
+    </div>`;
+}
+
+// Monta e abre o PDF (janela de impressao) a partir dos registros escolhidos
+function exportarRegistrosPDF(registros) {
+  if (!registros || !registros.length) { showRotinasToast('Nenhum registro selecionado.', 'error'); return; }
+  const secoes = registros.map(r => {
+    if (r._col === 'impressoras') return _pdfSecaoImpressoras(r);
+    if (r._col === 'servidor') return _pdfSecaoServidor(r);
+    return _pdfSecaoCFTV(r);
+  }).join('<div class="quebra"></div>');
+
+  const titulo = registros.length === 1 && registros[0]._col === 'impressoras'
+    ? 'Levantamento de Impressoras' : 'Relatório de Rotinas';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${titulo} — Premovale</title>
   <style>
     body{font-family:Arial,sans-serif;color:#1f2937;margin:0;padding:28px 28px 120px;}
     .header{border-bottom:2px solid #c0392b;padding-bottom:12px;margin-bottom:14px;}
@@ -618,19 +943,24 @@ function exportarLevantamentoImpressorasPDF() {
     .footer{position:fixed;bottom:0;left:0;right:0;padding:10px 28px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;background:#fff;}
     .footer img{height:46px;}
     .footer .stamp{font-size:8px;color:#9ca3af;text-align:right;line-height:1.4;}
+    .secao{margin-bottom:22px;}
+    .secao-title{font-size:13px;font-weight:800;color:#c0392b;margin-bottom:2px;}
+    .secao-sub{font-size:10px;color:#6b7280;margin-bottom:8px;}
+    .quebra{page-break-after:always;}
+    .fatbox{margin-top:14px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;font-size:11px;max-width:340px;}
+    .fatbox-title{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#475569;font-weight:700;margin-bottom:6px;}
+    .fatrow{display:flex;justify-content:space-between;gap:16px;padding:2px 0;}
+    .fatrow.total{border-top:1px solid #e5e7eb;margin-top:4px;padding-top:5px;color:#c0392b;}
+    .fatobs{margin-top:8px;font-size:10px;color:#6b7280;}
+    .dvr-bloco{margin-top:14px;page-break-inside:avoid;}
+    .dvr-nome{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#1f2937;border-left:3px solid #c0392b;padding-left:7px;}
+    .dvr-status{font-weight:600;font-size:9px;color:#6b7280;letter-spacing:0;}
+    .dvr-cont{font-size:9.5px;color:#6b7280;padding-left:10px;margin-top:2px;margin-bottom:5px;}
   </style></head>
   <body>
-    <div class="header"><h1>Levantamento de Impressoras</h1>
-      <div class="sub">Mês/Ano de referência: <strong>${mesFmt}</strong> · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div></div>
-    <table>
-      <thead><tr><th>Impressora</th><th>Departamento</th><th>Tipo</th><th style="text-align:right;">Anterior</th><th style="text-align:right;">Atual</th><th style="text-align:right;">Páginas</th></tr></thead>
-      <tbody>${linhas}</tbody>
-    </table>
-    <div class="totais">
-      <div class="tot"><span>🎨 Total COLOR</span><strong>${fmt(color)} pgs</strong></div>
-      <div class="tot"><span>⬛ Total MONO</span><strong>${fmt(mono)} pgs</strong></div>
-      <div class="tot geral"><span>📄 Total Geral (mono)</span><strong>${fmt(mono)} pgs</strong></div>
-    </div>
+    <div class="header"><h1>${titulo}</h1>
+      <div class="sub">${registros.length} registro(s) · Gerado em ${new Date().toLocaleDateString('pt-BR')}</div></div>
+    ${secoes}
     <div class="footer">
       <img src="${_ETIQUETA_B64}" alt="Premovale">
       <div class="stamp">Documento gerado pelo sistema Premovale T.I<br>${new Date().toLocaleString('pt-BR')}</div>
@@ -640,6 +970,7 @@ function exportarLevantamentoImpressorasPDF() {
   const w = window.open('', '_blank');
   if (!w) { showRotinasToast('Permita pop-ups para exportar o PDF.', 'error'); return; }
   w.document.write(html); w.document.close();
+  showRotinasToast('Relatório gerado! 📄', 'success');
 }
 
 async function saveImpressorasRegisto() {
@@ -660,11 +991,13 @@ async function saveImpressorasRegisto() {
       };
     });
     const isA = isAdmin;
-    // Faturamento vem do estado _impFaturamento (preenchido no modal)
-    const franquiaPags = isA ? (_impFaturamento.franquiaPags || parseFloat(document.getElementById('modal-franquia-pag')?.value) || 0) : 0;
-    const franquiaVal = isA ? (_impFaturamento.franquiaValor || parseFloat(document.getElementById('modal-franquia-val')?.value) || 0) : 0;
-    const valorPag = isA ? (_impFaturamento.valorPorPag || parseFloat(document.getElementById('modal-valor-pag')?.value) || 0) : 0;
-    const obsImp = isA ? (_impFaturamento.obs || document.getElementById('modal-imp-obs')?.value.trim() || '') : '';
+    // Faturamento vem do estado _impFaturamento (persistido em rotinas_config/faturamento)
+    // ?? no lugar de || para nao descartar um valor legitimo igual a zero
+    const _fatForm = _lerFaturamentoDoForm();
+    const franquiaPags = isA ? (_impFaturamento.franquiaPags ?? _fatForm?.franquiaPags ?? 0) : 0;
+    const franquiaVal = isA ? (_impFaturamento.franquiaValor ?? _fatForm?.franquiaValor ?? 0) : 0;
+    const valorPag = isA ? (_impFaturamento.valorPorPag ?? _fatForm?.valorPorPag ?? 0) : 0;
+    const obsImp = isA ? (_impFaturamento.obs ?? _fatForm?.obs ?? '') : '';
     const totalPags = leituras.reduce((s, l) => s + l.paginas, 0);
     const totalMono = leituras.filter(l => l.tipo === 'MONO').reduce((s, l) => s + l.paginas, 0);
     const excedente = Math.max(0, totalMono - franquiaPags);
@@ -1083,6 +1416,9 @@ async function loadUltimosRegs() {
     db.collection('rotinas_cftv').orderBy('registradoEm', 'desc').limit(1).get(),
   ]);
   if (!s.empty) { const d = s.docs[0].data(); _ultimosReg.servidor = d.data; _ultimosReg.servidor_por = d.registradoPor; }
+  // Mesmo documento serve de leitura anterior do checklist: nao refazer a consulta
+  _servidorAnterior = s.empty ? null : s.docs[0].data();
+  _servidorAnteriorCarregado = true;
   if (!i.empty) { const d = i.docs[0].data(); _ultimosReg.impressoras = d.mesAno; _ultimosReg.impressoras_por = d.registradoPor; }
   if (!c.empty) {
     const d = c.docs[0].data(); _ultimosReg.cftv = d.data; _ultimosReg.cftv_por = d.registradoPor;
@@ -1288,15 +1624,175 @@ async function deleteRotinaRecord(id, col) {
 }
 
 // ── Exportar XLS ──────────────────────────────────────────────────────────────
-function exportHistoricoXLS() {
+// ════ Exportação do Histórico — seletor unificado (XLS / PDF) ═══════════════
+
+// Rótulo curto de um registro, para a lista do seletor
+function _expRotulo(r) {
+  const por = r.registradoPor ? ' · ' + r.registradoPor : '';
+  if (r._col === 'impressoras') {
+    const tc = (r.leituras || []).filter(l => l.tipo === 'COLOR').reduce((s, l) => s + (l.paginas || 0), 0);
+    const tm = (r.leituras || []).filter(l => l.tipo === 'MONO').reduce((s, l) => s + (l.paginas || 0), 0);
+    return { titulo: _pdfMesBR(r.mesAno), sub: `${(tc + tm).toLocaleString('pt-BR')} págs${por}` };
+  }
+  if (r._col === 'servidor') {
+    const pcts = (r.leituras || []).flatMap(l => (l.discos?.length ? l.discos : [{ pct: l.pct || 0 }]).map(dk => dk.pct || 0));
+    const max = pcts.length ? Math.max(...pcts) : 0;
+    return { titulo: _pdfDataBR(r.data), sub: `pico de uso ${max}%${por}` };
+  }
+  return { titulo: _pdfDataBR(r.data), sub: `${r.ATIVO || 0} ativas · ${r.INATIVO || 0} inativas${por}` };
+}
+
+const _EXP_GRUPOS = [
+  { col: 'servidor', label: 'Servidor' },
+  { col: 'impressoras', label: 'Impressoras' },
+  { col: 'cftv', label: 'CFTV' }
+];
+
+function openExportModal() {
+  if (!_historico.length) { showRotinasToast('Nenhum registro para exportar.', 'error'); return; }
+
+  const grupos = _EXP_GRUPOS.map(g => {
+    const regs = _historico.filter(r => r._col === g.col);
+    if (!regs.length) return '';
+    const itens = regs.map(r => {
+      const { titulo, sub } = _expRotulo(r);
+      return `<label class="exp-item">
+        <input type="checkbox" class="exp-chk" data-col="${g.col}" value="${r._id}">
+        <span class="exp-item-txt"><strong>${titulo}</strong><span>${sub}</span></span>
+      </label>`;
+    }).join('');
+    return `<div class="exp-grupo">
+      <div class="exp-grupo-head">
+        <span class="exp-grupo-nome">${g.label}<span class="exp-grupo-cont">${regs.length}</span></span>
+        <button type="button" class="exp-grupo-todos" onclick="toggleExpGrupo('${g.col}')">Marcar todos</button>
+      </div>
+      <div class="exp-grupo-itens">${itens}</div>
+    </div>`;
+  }).join('');
+
+  const bd = document.createElement('div');
+  bd.className = 'exp-backdrop';
+  bd.id = 'exp-backdrop';
+  bd.innerHTML = `
+    <div class="exp-modal" role="dialog" aria-modal="true" aria-label="Exportar registros">
+      <div class="exp-head">
+        <div class="exp-title">Exportar registros</div>
+        <div class="exp-desc">Selecione os registros e o formato.</div>
+      </div>
+      <div class="exp-formatos">
+        <label class="exp-fmt"><input type="radio" name="exp-formato" value="xls" checked> Planilha (XLS)</label>
+        <label class="exp-fmt"><input type="radio" name="exp-formato" value="pdf"> Relatório (PDF)</label>
+      </div>
+      <div class="exp-body">${grupos}</div>
+      <div class="exp-foot">
+        <span class="exp-contador" id="exp-contador">0 selecionado(s)</span>
+        <div class="exp-acoes">
+          <button type="button" class="btn-secondary" onclick="closeExportModal()">Cancelar</button>
+          <button type="button" class="btn-primary" id="exp-confirmar" onclick="confirmarExportacao()" disabled>Exportar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(bd);
+  document.body.style.overflow = 'hidden';
+
+  bd.addEventListener('click', e => { if (e.target === bd) closeExportModal(); });
+  bd.querySelectorAll('.exp-chk').forEach(c => c.addEventListener('change', _expAtualizaContador));
+  document.addEventListener('keydown', _expEsc);
+  _expAtualizaContador();
+}
+
+function _expEsc(e) { if (e.key === 'Escape') closeExportModal(); }
+
+function closeExportModal() {
+  document.removeEventListener('keydown', _expEsc);
+  const bd = document.getElementById('exp-backdrop');
+  if (bd) bd.remove();
+  document.body.style.overflow = '';
+}
+
+function toggleExpGrupo(col) {
+  const chks = [...document.querySelectorAll(`.exp-chk[data-col="${col}"]`)];
+  if (!chks.length) return;
+  const marcarTodos = chks.some(c => !c.checked);
+  chks.forEach(c => { c.checked = marcarTodos; });
+  _expAtualizaContador();
+}
+
+function _expAtualizaContador() {
+  const n = document.querySelectorAll('.exp-chk:checked').length;
+  const el = document.getElementById('exp-contador');
+  if (el) el.textContent = `${n} selecionado(s)`;
+  const btn = document.getElementById('exp-confirmar');
+  if (btn) btn.disabled = n === 0;
+}
+
+function confirmarExportacao() {
+  const ids = [...document.querySelectorAll('.exp-chk:checked')].map(c => c.value);
+  if (!ids.length) { showRotinasToast('Selecione ao menos um registro.', 'error'); return; }
+  const formato = document.querySelector('input[name="exp-formato"]:checked')?.value || 'xls';
+  // Preserva a ordem em que os registros aparecem no histórico
+  const registros = _historico.filter(r => ids.includes(r._id));
+  closeExportModal();
+  if (formato === 'pdf') exportarRegistrosPDF(registros);
+  else exportarRegistrosXLS(registros);
+}
+
+function exportarRegistrosXLS(registros) {
+  // Sombra local proposital: o restante do corpo (Impressoras/CFTV) segue
+  // operando sobre _historico sem precisar ser reescrito.
+  const _historico = registros;
   if (!_historico.length) { showRotinasToast('Nenhum dado.', 'error'); return; }
   const wb = XLSX.utils.book_new();
   const srv = _historico.filter(r => r._col === 'servidor');
-  if (srv.length) { const rows = []; srv.forEach(r => (r.leituras || []).forEach(l => rows.push({ 'Data': r.data, 'Servidor': l.nome, 'Total (GB)': l.totalGB, 'Disponível': l.disponivelGB, 'Usado': l.usadoGB, '% Uso': l.pct + '%', 'Obs': l.obs || '', 'Por': r.registradoPor }))); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Servidor'); }
+  if (srv.length) {
+    const rows = [];
+    srv.forEach(r => (r.leituras || []).forEach(l => {
+      // Estrutura nova (discos[]) com fallback para a antiga (totalGB no nível do servidor)
+      const discos = l.discos?.length ? l.discos
+        : [{ nome: 'C:', total: l.totalGB || 0, unidade: 'GB', disponivelGB: l.disponivelGB || 0, usadoGB: l.usadoGB || 0, pct: l.pct || 0 }];
+      discos.forEach(dk => rows.push({
+        'Data': r.data,
+        'Servidor': l.nome,
+        'Disco': dk.nome,
+        'Total': dk.total,
+        'Unidade': dk.unidade || 'GB',
+        'Disponível (GB)': dk.disponivelGB,
+        'Usado (GB)': dk.usadoGB,
+        '% Uso': (dk.pct || 0) + '%',
+        'Obs': l.obs || '',
+        'Por': r.registradoPor
+      }));
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Servidor');
+  }
   const imp = _historico.filter(r => r._col === 'impressoras');
   if (imp.length) { const rows = []; imp.forEach(r => { (r.leituras || []).forEach(l => rows.push({ 'Mês': r.mesAno, 'Tipo': l.tipo, 'Impressora': l.nome, 'Depto': l.departamento || '', 'Anterior': l.anterior || 0, 'Atual': l.atual || 0, 'Páginas': l.paginas || 0, 'Valor': l.valor || 0, 'Por': r.registradoPor })); if (r.faturamento) rows.push({ 'Mês': r.mesAno, 'Tipo': 'FATURAMENTO TOTAL', 'Impressora': '', 'Depto': '', 'Anterior': '', 'Atual': '', 'Páginas': '', 'Valor': r.faturamento.totalFatura, 'Por': r.registradoPor }); }); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Impressoras'); }
+  // CFTV: aba única com um bloco por DVR (cabeçalho + tabela própria),
+  // em vez de achatar todas as câmeras numa lista com o DVR repetido.
   const cftv = _historico.filter(r => r._col === 'cftv');
-  if (cftv.length) { const rows = []; cftv.forEach(r => (r.dvrs || []).forEach(dvr => (dvr.cameras || []).forEach(c => rows.push({ 'Data': r.data, 'DVR': dvr.nome, 'Canal': c.canal, 'Câmera': c.nome, 'Rack': c.rack || '', 'Status': c.status, 'Obs': c.obs || '', 'Por': r.registradoPor })))); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'CFTV'); }
+  if (cftv.length) {
+    const aoa = [];
+    cftv.forEach((r, idx) => {
+      if (idx > 0) { aoa.push([]); aoa.push([]); }
+      aoa.push([`CFTV — ${_pdfDataBR(r.data)}`]);
+      aoa.push([`Registrado por: ${r.registradoPor || '—'}  ·  Ativas: ${r.ATIVO || 0}  ·  Inativas: ${r.INATIVO || 0}  ·  Intermitentes: ${r.INTERMITENTE || 0}  ·  Não instaladas: ${r.NAO_INSTALADO || 0}`]);
+      if (r.obs) aoa.push([`Observação geral: ${r.obs}`]);
+
+      (r.dvrs || []).forEach(dvr => {
+        aoa.push([]);
+        aoa.push([dvr.nome, dvr.status ? `DVR ${dvr.status}` : '',
+        `${dvr.ATIVO || 0} ativas · ${dvr.INATIVO || 0} inativas · ${dvr.INTERMITENTE || 0} intermitentes · ${dvr.NAO_INSTALADO || 0} não instaladas`]);
+        if (dvr.obsD) aoa.push(['', dvr.obsD]);
+        aoa.push(['Canal', 'Câmera', 'Rack', 'Status', 'Obs']);
+        (dvr.cameras || []).forEach(c =>
+          aoa.push([c.canal, c.nome, c.rack || '', c.status, c.obs || '']));
+      });
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 40 }, { wch: 16 }, { wch: 34 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'CFTV');
+  }
   XLSX.writeFile(wb, `rotinas_${new Date().toISOString().slice(0, 10)}.xlsx`);
   showRotinasToast('Exportado! 📥', 'success');
 }
@@ -1318,6 +1814,9 @@ async function initRotinas() {
   await loadRotinasConfig();
   await loadUltimosRegs();
   renderServidoresChecklist();
+  // A leitura anterior ja veio junto do loadUltimosRegs — nenhuma ida extra
+  // ao Firestore e nenhum await a mais antes do checklist aparecer.
+  pintarLeituraAnterior();
   renderImpressorasChecklist();
   renderCFTVChecklist();
   const isAdmin = currentUser?.isAdmin || currentUser?.isSuperAdmin;

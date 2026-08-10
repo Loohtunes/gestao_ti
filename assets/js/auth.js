@@ -282,7 +282,7 @@ function applyRoleUI() {
   if (newTicketBtn) newTicketBtn.style.display = 'inline-flex';
 
   const isAdmin = !!(currentUser.isAdmin || currentUser.isSuperAdmin);
-  const isAttendant = currentUser.role !== 'requester';
+  const isAttendant = (typeof isUsuarioPrivilegiado === 'function' ? isUsuarioPrivilegiado(currentUser) : currentUser.role !== 'requester');
 
   // Botão alternar visualização
   const viewToggleBtn = document.getElementById('view-toggle-btn');
@@ -312,7 +312,7 @@ function applyRoleUI() {
   const filterDdMaterial = document.getElementById('filter-dd-material');
   if (filterDdMaterial) filterDdMaterial.style.display = isAttendant ? 'flex' : 'none';
 
-  if (currentUser.role === 'requester') {
+  if (!(typeof isUsuarioPrivilegiado === 'function' ? isUsuarioPrivilegiado(currentUser) : currentUser.role !== 'requester')) {
     // Solicitante — mostra dropdown de solicitante
     const ddAtt = document.getElementById('filter-dropdown-wrapper');
     const ddReq = document.getElementById('filter-requester-wrapper');
