@@ -149,7 +149,7 @@ function _renderAvisos() {
         if (a.type === 'obra') return _renderObraCard(a, me);
         const canEdit = a.autor === me;
         const canMover = a.escopo === 'time' ? true : (a.autor === me);
-        const canDel = a.escopo === 'pessoal' ? a.autor === me : gestor;
+        const canDel = a.escopo === 'pessoal' ? a.autor === me : (gestor || a.autor === me);
         const tag = a.escopo === 'time' ? 'Time' : 'Pessoal';
         return `<div class="cpain-postit" data-id="${a.id}" style="left:${a.x || 16}px;top:${a.y || 16}px;background:${a.cor || CORES_AVISO[0]};">
           <div class="cpain-postit-head" data-drag="${canMover ? '1' : '0'}">

@@ -1282,3 +1282,121 @@ function _pmAcessosCSS() {
 `;
   document.head.appendChild(st);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ATUALIZAÇÃO DO SISTEMA — splash bloqueante de nova versão
+
+   Como funciona:
+   • APP_BUILD é a versão do código que ESTE navegador está rodando agora.
+     Fica embutida aqui no bundle — se o JS vier de cache antigo, este número
+     vem antigo junto, e é isso que permite detectar a defasagem.
+   • O Firestore config/versao guarda a última versão publicada { build: N }.
+     Um listener em tempo real compara: se o servidor > APP_BUILD, mostra o
+     splash bloqueante pedindo para atualizar (recarregar).
+   • Publicação automática: quando um Super Admin acessa já com o código novo
+     (APP_BUILD maior que o do servidor), o sistema grava config/versao. Assim
+     os demais usuários, ainda em cache antigo, recebem o splash na hora — sem
+     precisar de credencial de servidor no deploy.
+
+   >>> NÃO edite APP_BUILD à mão no deploy: use o helper  node bump-version.js
+   ══════════════════════════════════════════════════════════════════════════ */
+const APP_BUILD = 1;
+
+let _unsubVersao = null;
+let _splashAtualizacaoAberto = false;
+
+function _iniciarMonitorVersao() {
+  // Só monitora quando há usuário logado (não faz sentido na tela de login)
+  if (typeof currentUser === 'undefined' || !currentUser) return;
+  if (typeof db === 'undefined' || !db) return;
+  if (_unsubVersao) return; // já monitorando
+
+  _unsubVersao = db.collection('config').doc('versao').onSnapshot(function (snap) {
+    const dados = snap.exists ? (snap.data() || {}) : {};
+    const buildServidor = Number(dados.build || 0);
+
+    // Publicação automática pelo Super Admin com código mais novo
+    if (buildServidor < APP_BUILD && typeof isSuperAdmin === 'function' && isSuperAdmin()) {
+      db.collection('config').doc('versao').set({
+        build: APP_BUILD,
+        publicadoPor: currentUser.username,
+        publicadoEm: new Date().toISOString()
+      }, { merge: true }).catch(function (e) { console.error('[versao] publicar', e); });
+      return; // o próprio set dispara outro snapshot
+    }
+
+    // Defasado: o servidor tem versão mais nova que a que estou rodando
+    if (buildServidor > APP_BUILD) _mostrarSplashAtualizacao();
+  }, function (e) { console.error('[versao] listener', e); });
+}
+
+function _mostrarSplashAtualizacao() {
+  if (_splashAtualizacaoAberto) return;
+  _splashAtualizacaoAberto = true;
+  _injetarCssSplash();
+
+  const ov = document.createElement('div');
+  ov.id = 'splash-atualizacao';
+  ov.innerHTML =
+    '<div class="splash-atz-card">' +
+    '<div class="splash-atz-icone">' +
+    '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>' +
+    '<path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>' +
+    '</div>' +
+    '<h2 class="splash-atz-titulo">Nova versão disponível</h2>' +
+    '<p class="splash-atz-texto">O sistema foi atualizado. Recarregue para continuar com a versão mais recente.</p>' +
+    '<button class="splash-atz-btn" id="splash-atz-btn">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>' +
+    ' Atualizar agora</button>' +
+    '<div class="splash-atz-rodape">Premovale · atualização obrigatória</div>' +
+    '</div>';
+  document.body.appendChild(ov);
+
+  document.getElementById('splash-atz-btn').addEventListener('click', function () {
+    this.disabled = true;
+    this.innerHTML = 'Atualizando…';
+    try { location.reload(true); } catch (e) { location.reload(); }
+  });
+}
+
+function _injetarCssSplash() {
+  if (document.getElementById('splash-atz-css')) return;
+  const st = document.createElement('style');
+  st.id = 'splash-atz-css';
+  st.textContent =
+    '#splash-atualizacao{position:fixed;inset:0;z-index:2147483647;background:rgba(15,18,25,0.72);' +
+    'backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:center;' +
+    'justify-content:center;padding:1.5rem;animation:splashAtzFade 0.25s ease;}' +
+    '@keyframes splashAtzFade{from{opacity:0}to{opacity:1}}' +
+    '.splash-atz-card{background:var(--surface,#fff);border:1px solid var(--border2,#e5e7eb);' +
+    'border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.32);max-width:400px;width:100%;' +
+    'padding:2.2rem 2rem;text-align:center;font-family:var(--font-display,"Plus Jakarta Sans",sans-serif);' +
+    'animation:splashAtzUp 0.3s cubic-bezier(0.2,0.8,0.2,1);}' +
+    '@keyframes splashAtzUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}' +
+    '.splash-atz-icone{width:64px;height:64px;margin:0 auto 1.1rem;border-radius:16px;' +
+    'display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--accent,#6c5ce7) 14%,transparent);' +
+    'color:var(--accent,#6c5ce7);}' +
+    '.splash-atz-titulo{font-size:1.2rem;font-weight:800;color:var(--text,#111);margin:0 0 0.5rem;}' +
+    '.splash-atz-texto{font-size:0.86rem;line-height:1.55;color:var(--muted,#6b7280);margin:0 0 1.5rem;}' +
+    '.splash-atz-btn{display:inline-flex;align-items:center;gap:0.5rem;background:var(--accent,#6c5ce7);' +
+    'color:#fff;border:none;border-radius:11px;padding:0.75rem 1.5rem;font-size:0.92rem;font-weight:700;' +
+    'font-family:inherit;cursor:pointer;transition:filter 0.15s,transform 0.1s;box-shadow:0 6px 18px color-mix(in srgb,var(--accent,#6c5ce7) 40%,transparent);}' +
+    '.splash-atz-btn:hover{filter:brightness(1.08);}' +
+    '.splash-atz-btn:active{transform:translateY(1px);}' +
+    '.splash-atz-btn:disabled{opacity:0.7;cursor:default;}' +
+    '.splash-atz-rodape{margin-top:1.3rem;font-family:var(--font-mono,"Space Mono",monospace);' +
+    'font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted,#9ca3af);opacity:0.8;}';
+  document.head.appendChild(st);
+}
+
+// Sobe o monitor assim que a página carrega. Se a sessão ainda não resolveu,
+// tenta de novo em instantes (o currentUser aparece após o restore de sessão).
+function _bootMonitorVersao(tentativa) {
+  tentativa = tentativa || 0;
+  if (typeof currentUser !== 'undefined' && currentUser) { _iniciarMonitorVersao(); return; }
+  if (tentativa >= 20) return; // desiste após ~10s (provável tela de login)
+  setTimeout(function () { _bootMonitorVersao(tentativa + 1); }, 500);
+}
+document.addEventListener('DOMContentLoaded', function () { _bootMonitorVersao(0); });

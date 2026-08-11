@@ -1527,7 +1527,7 @@ function _renderObraFooter(obra, canAdmin) {
     <button class="btn-secondary" onclick="openEditarObraModal('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar
     </button>
-    <button class="btn-secondary" onclick="excluirObra('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;color:#ef4444;border-color:#ef4444;">
+    <button class="btn-secondary" onclick="_excluirObraSoft('${obra.id}')" style="display:flex;align-items:center;gap:0.4rem;color:#ef4444;border-color:#ef4444;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg> Excluir
     </button>`: '';
   const _histNovo = _historicoTemNovos(obra);
@@ -3115,15 +3115,9 @@ async function saveEditarObra() {
 }
 
 // ── Excluir / Reabrir ─────────────────────────────────────────────────────────
-async function excluirObra(obraId) {
-  if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
-  const obra = _obras.find(o => o.id === obraId);
-  const _ok = await _showConfirm('Excluir obra', `Excluir "${obra?.nome}"? Esta ação não pode ser desfeita.`, { okText: 'Excluir', danger: true });
-  if (!_ok) return;
-  await db.collection('obras').doc(obraId).delete();
-  showComercialToast('Obra excluída.', 'success');
-  closeObraModal();
-}
+// excluirObra() (hard delete) foi removida: a exclusão da obra ativa agora usa
+// _excluirObraSoft(), que move para a Lixeira. A exclusão definitiva acontece
+// só dentro da Lixeira, via _excluirObraPerm().
 
 async function reabrirObra(obraId) {
   if (!podeEditarComercial()) { showComercialToast('Acesso somente leitura — você não pode alterar obras.', 'error'); return; }
@@ -3610,6 +3604,7 @@ async function _excluirObraSoft(obraId) {
   try {
     await db.collection('obras').doc(obraId).update({ excluida: true, excluidaEm: new Date().toISOString().slice(0, 10), excluidaPor: currentUser.username });
     _audit(obraId, 'exclusao', 'Obra movida para a Lixeira');
+    if (typeof closeObraModal === 'function') closeObraModal();
     showComercialToast('Obra movida para a Lixeira. 🗑️', 'success');
   } catch (e) { console.error('[excluir soft]', e); showComercialToast('Erro ao excluir a obra.', 'error'); }
 }
