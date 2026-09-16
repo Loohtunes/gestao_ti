@@ -1282,54 +1282,196 @@ function _pmAcessosCSS() {
 `;
   document.head.appendChild(st);
 }
-
 /* ══════════════════════════════════════════════════════════════════════════
-   ATUALIZAÇÃO DO SISTEMA — splash bloqueante de nova versão
+   ATUALIZAÇÃO DO SISTEMA — versão automática por ETag + splash bloqueante
 
-   Como funciona:
-   • APP_BUILD é a versão do código que ESTE navegador está rodando agora.
-     Fica embutida aqui no bundle — se o JS vier de cache antigo, este número
-     vem antigo junto, e é isso que permite detectar a defasagem.
-   • O Firestore config/versao guarda a última versão publicada { build: N }.
-     Um listener em tempo real compara: se o servidor > APP_BUILD, mostra o
-     splash bloqueante pedindo para atualizar (recarregar).
-   • Publicação automática: quando um Super Admin acessa já com o código novo
-     (APP_BUILD maior que o do servidor), o sistema grava config/versao. Assim
-     os demais usuários, ainda em cache antigo, recebem o splash na hora — sem
-     precisar de credencial de servidor no deploy.
+   Como funciona (sem nenhum passo manual no deploy):
+   • O Firebase Hosting gera um ETag para cada arquivo servido — um hash do
+     conteúdo que muda sozinho sempre que o arquivo muda. Combinando os ETags
+     dos scripts da página temos uma "impressão digital" do build.
+   • BUILD_RODANDO = impressão digital dos scripts que ESTE navegador carregou
+     (lidos do cache). BUILD_SERVIDOR = a mesma coisa, lida do servidor agora.
+     Se diferem, houve deploy → splash bloqueante pedindo para recarregar.
+   • Número de versão (navbar): guardado no Firestore config/versao como
+     { versao: "1.0.0", buildId: "<impressão>" }. Quando um Super Admin acessa
+     após um deploy (buildId do servidor ≠ o guardado), o sistema incrementa o
+     patch (1.0.0 → 1.0.1) e grava o novo buildId — automaticamente. Para
+     marcar um marco (1.1.0, 2.0.0), basta editar o campo versao à mão no
+     console; o patch volta a subir a partir dali.
 
-   >>> NÃO edite APP_BUILD à mão no deploy: use o helper  node bump-version.js
+   Não há APP_BUILD nem helper de deploy: a detecção é 100% automática.
    ══════════════════════════════════════════════════════════════════════════ */
-const APP_BUILD = 1;
 
+// Fallback exibido enquanto o Firestore não respondeu
+let _versaoAtual = null;
 let _unsubVersao = null;
 let _splashAtualizacaoAberto = false;
+let _buildRodando = null;   // impressão digital do código em execução (cache)
+let _monitorVersaoOn = false;
 
-function _iniciarMonitorVersao() {
-  // Só monitora quando há usuário logado (não faz sentido na tela de login)
-  if (typeof currentUser === 'undefined' || !currentUser) return;
-  if (typeof db === 'undefined' || !db) return;
-  if (_unsubVersao) return; // já monitorando
-
-  _unsubVersao = db.collection('config').doc('versao').onSnapshot(function (snap) {
-    const dados = snap.exists ? (snap.data() || {}) : {};
-    const buildServidor = Number(dados.build || 0);
-
-    // Publicação automática pelo Super Admin com código mais novo
-    if (buildServidor < APP_BUILD && typeof isSuperAdmin === 'function' && isSuperAdmin()) {
-      db.collection('config').doc('versao').set({
-        build: APP_BUILD,
-        publicadoPor: currentUser.username,
-        publicadoEm: new Date().toISOString()
-      }, { merge: true }).catch(function (e) { console.error('[versao] publicar', e); });
-      return; // o próprio set dispara outro snapshot
+// Coleta as URLs dos <script src="assets/js/*.js"> da página (mesma origem)
+function _scriptsDoApp() {
+  const urls = [];
+  document.querySelectorAll('script[src]').forEach(function (s) {
+    const src = s.getAttribute('src') || '';
+    // só scripts locais do app; ignora CDNs (firebase etc.)
+    if (/assets\/js\/.+\.js(\?|$)/.test(src)) {
+      urls.push(s.src.split('?')[0]);
     }
-
-    // Defasado: o servidor tem versão mais nova que a que estou rodando
-    if (buildServidor > APP_BUILD) _mostrarSplashAtualizacao();
-  }, function (e) { console.error('[versao] listener', e); });
+  });
+  return urls.sort();
 }
 
+// Lê o ETag (ou Last-Modified) de uma URL. modo:'cache' pega a versão em
+// cache (a que está rodando); modo:'servidor' força buscar do servidor.
+async function _etagDe(url, modo) {
+  const opt = modo === 'servidor'
+    ? { method: 'HEAD', cache: 'no-store' }
+    : { method: 'HEAD', cache: 'force-cache' };
+  try {
+    const r = await fetch(url, opt);
+    return r.headers.get('etag') || r.headers.get('last-modified') || String(r.status);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Impressão digital do build a partir de uma lista de URLs (combina os ETags)
+async function _impressaoDe(urls, modo) {
+  if (!urls || !urls.length) return null;
+  const tags = await Promise.all(urls.map(function (u) { return _etagDe(u, modo); }));
+  if (tags.some(function (t) { return t === null; })) return null; // falha de leitura
+  return tags.join('|');
+}
+
+// Impressão dos scripts DA PÁGINA ATUAL (usada só pelo splash, que não grava
+// nada). Varia de página para página — por isso NÃO serve para o buildId.
+async function _impressaoBuild(modo) {
+  return _impressaoDe(_scriptsDoApp(), modo);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   >>> LISTA FIXA DO BUILD — TODOS OS JS DO SISTEMA <<<
+
+   O buildId global (que decide o incremento da versão) é calculado SEMPRE
+   sobre esta lista, igual em qualquer página. Assim o Super Admin incrementa
+   a versão UMA vez por deploy, e não a cada módulo que ele abre.
+
+   AO CRIAR UM .js NOVO usado por alguma página: acrescente aqui.
+   AO REMOVER: tire daqui. (sync.js fica fora: não é usado por nenhuma tela.)
+   ══════════════════════════════════════════════════════════════════════════ */
+const ARQUIVOS_BUILD = [
+  'app-shell.js', 'auth.js', 'comercial.js', 'comunicados.js', 'configuracoes.js',
+  'dashboard.js', 'detail.js', 'firebase.js', 'forms.js', 'history.js',
+  'infraestrutura.js', 'init.js', 'inventario.js', 'materials.js', 'materials_new.js',
+  'menu.js', 'rotinas.js', 'state.js', 'tickets.js', 'ui.js', 'widgets.js'
+];
+
+// Resolve a lista fixa para URLs absolutas, relativas à pasta assets/js do
+// próprio ui.js (funciona em qualquer página, esteja ela na raiz ou não).
+function _urlsBuildGlobal() {
+  let base = 'assets/js/';
+  try {
+    const meu = document.querySelector('script[src*="assets/js/ui.js"]');
+    if (meu) base = meu.src.replace(/ui\.js(\?.*)?$/, '');
+  } catch (e) { }
+  return ARQUIVOS_BUILD.map(function (nome) {
+    try { return new URL(base + nome, document.baseURI).href; }
+    catch (e) { return base + nome; }
+  });
+}
+
+// Impressão GLOBAL do build (lista fixa) — estável entre páginas.
+async function _impressaoGlobal(modo) {
+  return _impressaoDe(_urlsBuildGlobal(), modo);
+}
+
+async function _iniciarMonitorVersao() {
+  if (_monitorVersaoOn) return;
+  if (typeof currentUser === 'undefined' || !currentUser) return;
+  if (typeof db === 'undefined' || !db) return;
+  _monitorVersaoOn = true;
+
+  // Impressão do código que está rodando agora (lido do cache do navegador)
+  _buildRodando = await _impressaoBuild('cache');
+
+  // Listener do número de versão (para a navbar) + auto-incremento pelo SA
+  _unsubVersao = db.collection('config').doc('versao').onSnapshot(async function (snap) {
+    const dados = snap.exists ? (snap.data() || {}) : {};
+    _versaoAtual = dados.versao || null;
+    _pintarVersaoNavbar();
+
+    // Super Admin publica/incrementa quando detecta build novo no servidor.
+    // Usa a impressão GLOBAL (lista fixa) — estável entre páginas, então
+    // incrementa uma vez por deploy e NÃO a cada módulo aberto.
+    if (typeof isSuperAdmin === 'function' && isSuperAdmin()) {
+      const buildServidor = await _impressaoGlobal('servidor');
+      if (buildServidor && buildServidor !== dados.buildId) {
+        const nova = _proximoPatch(dados.versao);
+        db.collection('config').doc('versao').set({
+          versao: nova,
+          buildId: buildServidor,
+          publicadoPor: currentUser.username,
+          publicadoEm: new Date().toISOString()
+        }, { merge: true }).catch(function (e) { console.error('[versao] publicar', e); });
+      }
+    }
+  }, function (e) { console.error('[versao] listener', e); });
+
+  // Verificação periódica e ao focar a aba: código rodando vs servidor
+  _checarDefasagem();
+  setInterval(_checarDefasagem, 3 * 60 * 1000); // a cada 3 min
+  window.addEventListener('focus', _checarDefasagem);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) _checarDefasagem();
+  });
+}
+
+async function _checarDefasagem() {
+  if (_splashAtualizacaoAberto) return;
+  if (!_buildRodando) { _buildRodando = await _impressaoBuild('cache'); return; }
+  const buildServidor = await _impressaoBuild('servidor');
+  if (buildServidor && buildServidor !== _buildRodando) {
+    _mostrarSplashAtualizacao();
+  }
+}
+
+// Incrementa o patch de "x.y.z". Sem valor válido, começa em 1.0.0.
+function _proximoPatch(versao) {
+  const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(versao || ''));
+  if (!m) return '1.0.0';
+  return m[1] + '.' + m[2] + '.' + (parseInt(m[3], 10) + 1);
+}
+
+/* ── Versão na navbar (injetada — não altera os HTMLs) ────────────────────── */
+function _pintarVersaoNavbar() {
+  const titulo = document.querySelector('.nav-title');
+  if (!titulo) return;
+  let el = document.getElementById('nav-title-versao');
+  if (!el) {
+    el = document.createElement('span');
+    el.className = 'nav-title-versao';
+    el.id = 'nav-title-versao';
+    titulo.appendChild(el);
+    _injetarCssVersao();
+  }
+  el.textContent = _versaoAtual ? ('v' + _versaoAtual) : '';
+  el.title = 'Versão atual do sistema';
+}
+
+function _injetarCssVersao() {
+  if (document.getElementById('nav-versao-css')) return;
+  const st = document.createElement('style');
+  st.id = 'nav-versao-css';
+  st.textContent =
+    '.nav-title-versao{font-family:var(--font-mono,"Space Mono",monospace) !important;' +
+    'font-size:0.62rem !important;font-weight:400 !important;letter-spacing:0.02em !important;' +
+    'color:var(--muted,#9ca3af) !important;opacity:0.7 !important;margin-left:0.45rem !important;' +
+    'align-self:center !important;white-space:nowrap;}';
+  document.head.appendChild(st);
+}
+
+/* ── Splash bloqueante de atualização ─────────────────────────────────────── */
 function _mostrarSplashAtualizacao() {
   if (_splashAtualizacaoAberto) return;
   _splashAtualizacaoAberto = true;
@@ -1391,12 +1533,11 @@ function _injetarCssSplash() {
   document.head.appendChild(st);
 }
 
-// Sobe o monitor assim que a página carrega. Se a sessão ainda não resolveu,
-// tenta de novo em instantes (o currentUser aparece após o restore de sessão).
+// Sobe o monitor quando a sessão estiver pronta (currentUser após o restore).
 function _bootMonitorVersao(tentativa) {
   tentativa = tentativa || 0;
   if (typeof currentUser !== 'undefined' && currentUser) { _iniciarMonitorVersao(); return; }
-  if (tentativa >= 20) return; // desiste após ~10s (provável tela de login)
+  if (tentativa >= 20) return; // ~10s: provavelmente tela de login
   setTimeout(function () { _bootMonitorVersao(tentativa + 1); }, 500);
 }
 document.addEventListener('DOMContentLoaded', function () { _bootMonitorVersao(0); });
